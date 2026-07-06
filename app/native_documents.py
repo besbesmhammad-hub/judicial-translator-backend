@@ -5,6 +5,9 @@ import re
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
+import fitz
+import pytesseract
+from PIL import Image
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
@@ -12,7 +15,12 @@ from docx.oxml.ns import qn
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 from pptx import Presentation
-from pptx.enum.text import PP_ALIGN
+from pptx.enum.text import MSO_AUTO_SIZE, PP_ALIGN
+from pytesseract import Output
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen import canvas
+
+from .renderer import arabic_display, register_pdf_font
 
 
 TranslateBatch = Callable[[list[str], str], Awaitable[list[str]]]
@@ -163,6 +171,13 @@ def collect_docx_items(document: Document) -> list[TextItem]:
 
 
 def replace_pptx_paragraph_text(paragraph, translated: str) -> None:
+    text_frame = getattr(getattr(paragraph, "_parent", None), "text_frame", None)
+    if text_frame is not None:
+        text_frame.word_wrap = True
+        try:
+            text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
+        except Exception:
+            pass
     if not paragraph.runs:
         paragraph.add_run().text = translated
     else:
@@ -171,8 +186,15 @@ def replace_pptx_paragraph_text(paragraph, translated: str) -> None:
             run.text = ""
     if re.search(r"[\u0600-\u06FF]", translated or ""):
         paragraph.alignment = PP_ALIGN.RIGHT
+        ppr = paragraph._p.get_or_add_pPr()
+        ppr.set("rtl", "1")
         for run in paragraph.runs:
-            run.font.language_id = "ar-SA"
+            run.font.name = "Arial"
+            try:
+                if run.font.size:
+                    run.font.size = int(run.font.size * 0.9)
+            except Exception:
+                pass
 
 
 def collect_pptx_shape_items(shape) -> list[TextItem]:
@@ -285,3 +307,120 @@ async def translate_xlsx_native(content: bytes, translate_batch: TranslateBatch)
         "xlsx",
         changed,
     )
+
+
+def group_ocr_lines(data: dict, scale: float) -> list[dict]:
+    grouped: dict[tuple[int, int, int], list[int]] = {}
+    for index, text in enumerate(data.get("text", [])):
+        if not should_translate(text):
+            continue
+        try:
+            conf = float(data.get("conf", ["-1"])[index])
+        except (TypeError, ValueError):
+            conf = -1
+        if conf >= 0 and conf < 35:
+            continue
+        key = (
+            int(data.get("block_num", [0])[index]),
+            int(data.get("par_num", [0])[index]),
+            int(data.get("line_num", [0])[index]),
+        )
+        grouped.setdefault(key, []).append(index)
+
+    lines: list[dict] = []
+    for indexes in grouped.values():
+        words = [str(data["text"][index]).strip() for index in indexes if str(data["text"][index]).strip()]
+        if not words:
+            continue
+        left = min(int(data["left"][index]) for index in indexes) / scale
+        top = min(int(data["top"][index]) for index in indexes) / scale
+        right = max(int(data["left"][index]) + int(data["width"][index]) for index in indexes) / scale
+        bottom = max(int(data["top"][index]) + int(data["height"][index]) for index in indexes) / scale
+        text = " ".join(words)
+        if should_translate(text):
+            lines.append({"text": text, "left": left, "top": top, "right": right, "bottom": bottom})
+    return lines
+
+
+def collect_pdf_visual_items(content: bytes) -> tuple[list[dict], list[dict]]:
+    scale = 2.5
+    pages: list[dict] = []
+    items: list[dict] = []
+    with fitz.open(stream=content, filetype="pdf") as pdf:
+        for page_index, page in enumerate(pdf):
+            rect = page.rect
+            pixmap = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
+            image_bytes = pixmap.tobytes("png")
+            image = Image.open(io.BytesIO(image_bytes))
+            data = pytesseract.image_to_data(
+                image,
+                lang="ara+fra+eng",
+                config="--psm 6 -c preserve_interword_spaces=1",
+                output_type=Output.DICT,
+            )
+            lines = group_ocr_lines(data, scale)
+            page_record = {
+                "width": float(rect.width),
+                "height": float(rect.height),
+                "image": image_bytes,
+                "lines": lines,
+            }
+            pages.append(page_record)
+            for line in lines:
+                items.append({"page": page_index, "line": line, "text": line["text"]})
+    return pages, items
+
+
+def draw_wrapped_overlay(pdf, text: str, box: dict, page_height: float, font_name: str) -> None:
+    x = box["left"]
+    y_top = box["top"]
+    width = max(30, box["right"] - box["left"])
+    height = max(12, box["bottom"] - box["top"])
+    rtl = bool(re.search(r"[\u0600-\u06FF]", text or ""))
+    font_size = max(6, min(13, height * 0.72))
+    max_chars = max(8, int(width / max(font_size * 0.42, 3)))
+    chunks = [text[index:index + max_chars] for index in range(0, len(text), max_chars)] or [text]
+
+    y = page_height - y_top - font_size
+    for chunk in chunks[: max(1, int(height // max(font_size, 1)) + 1)]:
+        pdf.setFont(font_name, font_size)
+        if rtl:
+            pdf.drawRightString(x + width, y, arabic_display(chunk))
+        else:
+            pdf.drawString(x, y, chunk)
+        y -= font_size + 2
+
+
+async def translate_pdf_visual_native(content: bytes, translate_batch: TranslateBatch) -> tuple[bytes, str, str, int]:
+    pages, items = collect_pdf_visual_items(content)
+    if not items:
+        raise ValueError("No OCR text blocks found for visual PDF translation.")
+    translated = await translate_batch([item["text"] for item in items], "PDF visual in-place overlay translation")
+    if len(translated) != len(items):
+        raise ValueError("Visual PDF translation returned a mismatched segment count.")
+    for item, value in zip(items, translated):
+        item["line"]["translated"] = finalize_native_translation(item["text"], value)
+
+    stream = io.BytesIO()
+    first = pages[0]
+    pdf = canvas.Canvas(stream, pagesize=(first["width"], first["height"]))
+    font_name = register_pdf_font()
+    for page_index, page in enumerate(pages):
+        if page_index:
+            pdf.setPageSize((page["width"], page["height"]))
+        pdf.drawImage(ImageReader(io.BytesIO(page["image"])), 0, 0, width=page["width"], height=page["height"])
+        for line in page["lines"]:
+            translated_line = (line.get("translated") or "").strip()
+            if not translated_line:
+                continue
+            x = line["left"]
+            y = page["height"] - line["bottom"]
+            w = max(1, line["right"] - line["left"])
+            h = max(1, line["bottom"] - line["top"])
+            pdf.setFillColorRGB(1, 1, 1)
+            pdf.rect(x - 1, y - 1, w + 2, h + 3, stroke=0, fill=1)
+            pdf.setFillColorRGB(0.05, 0.05, 0.05)
+            draw_wrapped_overlay(pdf, translated_line, line, page["height"], font_name)
+        pdf.showPage()
+    pdf.save()
+    return stream.getvalue(), "application/pdf", "pdf", len(items)

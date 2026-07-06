@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from . import config
-from .native_documents import translate_docx_native, translate_pptx_native, translate_xlsx_native
+from .native_documents import translate_docx_native, translate_pdf_visual_native, translate_pptx_native, translate_xlsx_native
 from .parser import detect_file_format, parse_document
 from .renderer import render_document
 from .schemas import AnalyzeResponse, TranslateRequest, TranslateResponse
@@ -247,6 +247,8 @@ async def translate_file_document(
             native_result = await translate_pptx_native(content, translate_native_segments)
         elif file_format == "xlsx" and output_format == "xlsx":
             native_result = await translate_xlsx_native(content, translate_native_segments)
+        elif file_format == "pdf" and output_format == "pdf":
+            native_result = await translate_pdf_visual_native(content, translate_native_segments)
 
         if native_result is not None:
             content_out, media_type, extension, _changed = native_result
