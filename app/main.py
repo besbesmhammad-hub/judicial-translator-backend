@@ -76,6 +76,7 @@ def provider_http_error(error: Exception) -> HTTPException:
 async def health() -> dict:
     return {
         "ok": True,
+        "backend_revision": config.APP_REVISION,
         "model": config.LLM_MODEL,
         "llm_configured": bool(config.LLM_API_KEY),
         "native_formats": ["pdf", "docx", "pptx", "xlsx", "html", "txt"],

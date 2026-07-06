@@ -1,4 +1,15 @@
 import os
+import subprocess
+
+
+def current_revision() -> str:
+    explicit = os.getenv("APP_REVISION") or os.getenv("SPACE_VERSION")
+    if explicit:
+        return explicit
+    try:
+        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
+    except Exception:
+        return "unknown"
 
 
 def csv_env(name: str, default: str) -> list[str]:
@@ -29,3 +40,4 @@ ALLOWED_ORIGINS = csv_env(
     "ALLOWED_ORIGINS",
     "https://taupe-gingersnap-1b1260.netlify.app,https://judicial-translator-20260706031117.netlify.app,http://localhost:8888,http://127.0.0.1:8888,http://localhost:5001,http://127.0.0.1:5001,http://localhost:5012,http://127.0.0.1:5012",
 )
+APP_REVISION = current_revision()
