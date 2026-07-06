@@ -88,6 +88,16 @@ def translation_routes() -> list[dict]:
             }
             for model in config.POLLINATIONS_MODELS
         )
+        routes.extend(
+            {
+                "provider": "kilo",
+                "endpoint": config.KILO_ENDPOINT,
+                "model": model,
+                "headers": {"content-type": "application/json"},
+                "json_mode": False,
+            }
+            for model in config.KILO_MODELS
+        )
     return routes
 
 

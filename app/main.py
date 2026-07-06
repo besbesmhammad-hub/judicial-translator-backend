@@ -80,7 +80,7 @@ async def health() -> dict:
         "llm_configured": bool(config.LLM_API_KEY),
         "native_formats": ["pdf", "docx", "pptx", "xlsx", "html", "txt"],
         "keyless_fallbacks_enabled": config.ENABLE_KEYLESS_FALLBACKS,
-        "keyless_fallback_providers": ["pollinations"] if config.ENABLE_KEYLESS_FALLBACKS else [],
+        "keyless_fallback_providers": ["pollinations", "kilo"] if config.ENABLE_KEYLESS_FALLBACKS else [],
         "active_skills": ACTIVE_SKILLS,
     }
 
