@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: judicial-translator-backend
+    env: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: LLM_MODEL
+        value: qwen/qwen3-next-80b-a3b-instruct:free
+      - key: LLM_FALLBACK_MODELS
+        value: qwen/qwen3-next-80b-a3b-instruct:free,meta-llama/llama-3.3-70b-instruct:free,google/gemma-3-27b-it:free
+      - key: SITE_URL
+        value: https://judicial-translator-20260706031117.netlify.app
+      - key: ALLOWED_ORIGINS
+        value: https://judicial-translator-20260706031117.netlify.app,http://localhost:8888,http://127.0.0.1:8888
+      - key: MAX_CHARS_PER_CHUNK
+        value: "2200"
+      - key: LLM_MAX_TOKENS
+        value: "2200"
+      - key: OPENROUTER_API_KEY
+        sync: false
