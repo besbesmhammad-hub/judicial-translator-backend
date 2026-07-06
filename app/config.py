@@ -17,6 +17,9 @@ LLM_FALLBACK_MODELS = [
     if item.strip()
 ]
 LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+ENABLE_KEYLESS_FALLBACKS = os.getenv("ENABLE_KEYLESS_FALLBACKS", "true").lower() not in {"0", "false", "no", "off"}
+POLLINATIONS_ENDPOINT = os.getenv("POLLINATIONS_ENDPOINT", "https://text.pollinations.ai/openai/v1/chat/completions")
+POLLINATIONS_MODELS = csv_env("POLLINATIONS_MODELS", "openai-fast,gpt-oss-20b")
 SITE_URL = os.getenv("SITE_URL", "https://taupe-gingersnap-1b1260.netlify.app")
 MAX_CHARS_PER_CHUNK = int(os.getenv("MAX_CHARS_PER_CHUNK", "2200"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2200"))

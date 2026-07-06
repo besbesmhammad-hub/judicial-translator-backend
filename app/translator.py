@@ -54,6 +54,43 @@ def model_candidates() -> list[str]:
     return list(dict.fromkeys(item for item in candidates if item))
 
 
+def openrouter_headers() -> dict:
+    headers = {"content-type": "application/json"}
+    if config.LLM_API_KEY:
+        headers["authorization"] = f"Bearer {config.LLM_API_KEY}"
+    if "openrouter.ai" in config.LLM_ENDPOINT:
+        headers["http-referer"] = config.SITE_URL
+        headers["x-title"] = "Judicial Translator Backend"
+    return headers
+
+
+def translation_routes() -> list[dict]:
+    routes: list[dict] = []
+    if config.LLM_API_KEY:
+        routes.extend(
+            {
+                "provider": "openrouter",
+                "endpoint": config.LLM_ENDPOINT,
+                "model": model,
+                "headers": openrouter_headers(),
+                "json_mode": True,
+            }
+            for model in model_candidates()
+        )
+    if config.ENABLE_KEYLESS_FALLBACKS:
+        routes.extend(
+            {
+                "provider": "pollinations",
+                "endpoint": config.POLLINATIONS_ENDPOINT,
+                "model": model,
+                "headers": {"content-type": "application/json"},
+                "json_mode": False,
+            }
+            for model in config.POLLINATIONS_MODELS
+        )
+    return routes
+
+
 def retry_delay_seconds(error: Exception | None, attempt: int) -> float:
     message = str(error or "")
     retry_match = re.search(r'retry_after_seconds"?\s*:\s*([0-9.]+)', message, re.I)
@@ -86,9 +123,9 @@ def is_credit_error(error: Exception | None) -> bool:
 def friendly_provider_error(error: Exception | None) -> str:
     if is_rate_limit_error(error):
         return (
-            "OpenRouter a limite les modeles gratuits pour le moment (429 Too Many Requests). "
-            "Reessaie dans 1 a 2 minutes, ou ajoute un modele/API payant pour enlever cette limite. "
-            "Le fichier a bien ete detecte; c'est le fournisseur IA qui refuse temporairement les appels."
+            "Tous les fournisseurs gratuits disponibles sont limites pour le moment (429 Too Many Requests). "
+            "Reessaie dans 1 a 2 minutes. Le fichier a bien ete detecte; ce sont les fournisseurs IA gratuits "
+            "qui refusent temporairement les appels."
         )
     if is_credit_error(error):
         return (
@@ -262,17 +299,15 @@ async def translate_text(
     structure_notes: str | None = None,
     use_llm_classifier: bool = True,
 ) -> dict:
-    if not config.LLM_API_KEY:
-        raise RuntimeError("OPENROUTER_API_KEY is not configured")
+    routes = translation_routes()
+    if not routes:
+        raise RuntimeError("No LLM provider is configured")
 
     text = clean_text(text)
     source = source_lang if source_lang != "auto" else detect_language(text)
     target = target_lang or ("francais" if source == "arabe" else "arabe")
 
-    headers = {"authorization": f"Bearer {config.LLM_API_KEY}", "content-type": "application/json"}
-    if "openrouter.ai" in config.LLM_ENDPOINT:
-        headers["http-referer"] = config.SITE_URL
-        headers["x-title"] = "Judicial Translator Backend"
+    headers = openrouter_headers()
 
     translations: list[str] = []
     summaries: list[str] = []
@@ -280,7 +315,7 @@ async def translate_text(
     metadata: dict = {}
     async with httpx.AsyncClient(timeout=120) as client:
         heuristic_kind = document_kind or detect_document_kind(text)
-        if use_llm_classifier:
+        if use_llm_classifier and config.LLM_API_KEY:
             classification = await classify_document_with_llm(client, headers, text, heuristic_kind)
         else:
             route = choose_route(text, heuristic_kind)
@@ -318,26 +353,35 @@ async def translate_text(
             rate_limit_errors = 0
             credit_errors = 0
             attempts_made = 0
-            used_model = config.LLM_MODEL
-            for candidate_model in model_candidates():
+            used_model = routes[0]["model"]
+            for route_candidate in routes:
                 for attempt in range(3):
                     attempts_made += 1
                     body = {
-                        "model": candidate_model,
+                        "model": route_candidate["model"],
                         "messages": messages,
                         "temperature": 0.03,
                         "max_tokens": config.LLM_MAX_TOKENS,
-                        "response_format": {"type": "json_object"},
                     }
+                    if route_candidate["json_mode"]:
+                        body["response_format"] = {"type": "json_object"}
                     try:
-                        response = await client.post(config.LLM_ENDPOINT, headers=headers, json=body)
+                        response = await client.post(
+                            route_candidate["endpoint"],
+                            headers=route_candidate["headers"],
+                            json=body,
+                        )
                         if response.status_code == 400:
                             body.pop("response_format", None)
-                            response = await client.post(config.LLM_ENDPOINT, headers=headers, json=body)
+                            response = await client.post(
+                                route_candidate["endpoint"],
+                                headers=route_candidate["headers"],
+                                json=body,
+                            )
                         response.raise_for_status()
                         parsed = extract_json(response.json()["choices"][0]["message"]["content"])
                         if str(parsed.get("translation") or "").strip():
-                            used_model = candidate_model
+                            used_model = f"{route_candidate['provider']}/{route_candidate['model']}"
                             break
                         last_error = RuntimeError("Model returned an empty translation.")
                     except Exception as error:
@@ -357,7 +401,7 @@ async def translate_text(
                 if credit_errors and credit_errors >= max(1, attempts_made - rate_limit_errors):
                     raise ProviderCreditError(friendly_provider_error(last_error))
                 plain_body = {
-                    "model": model_candidates()[0],
+                    "model": routes[0]["model"],
                     "messages": [
                         messages[0],
                         {
@@ -369,17 +413,32 @@ async def translate_text(
                     "max_tokens": config.LLM_MAX_TOKENS,
                 }
                 try:
-                    response = await client.post(config.LLM_ENDPOINT, headers=headers, json=plain_body)
-                    response.raise_for_status()
-                    parsed = extract_json(response.json()["choices"][0]["message"]["content"])
+                    for route_candidate in routes:
+                        plain_body["model"] = route_candidate["model"]
+                        try:
+                            response = await client.post(
+                                route_candidate["endpoint"],
+                                headers=route_candidate["headers"],
+                                json=plain_body,
+                            )
+                            response.raise_for_status()
+                            parsed = extract_json(response.json()["choices"][0]["message"]["content"])
+                            if str(parsed.get("translation") or "").strip():
+                                used_model = f"{route_candidate['provider']}/{route_candidate['model']}"
+                                break
+                        except Exception as route_error:
+                            last_error = route_error
+                            continue
                 except Exception as error:
                     if is_rate_limit_error(error):
                         raise ProviderRateLimitError(friendly_provider_error(error)) from error
                     if is_credit_error(error):
                         raise ProviderCreditError(friendly_provider_error(error)) from error
                     raise
-                if not str(parsed.get("translation") or "").strip() and last_error:
-                    raise last_error
+                if not parsed or not str(parsed.get("translation") or "").strip():
+                    if last_error:
+                        raise last_error
+                    raise RuntimeError("All free LLM fallback routes returned an empty translation.")
             translations.append(clean_translation_output(parsed.get("translation") or ""))
             summaries.extend(parsed.get("summary") or [])
             notes_out.extend(parsed.get("quality_notes") or [])
