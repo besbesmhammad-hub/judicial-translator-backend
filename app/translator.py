@@ -202,9 +202,9 @@ async def classify_document_with_llm(client: httpx.AsyncClient, headers: dict, t
                     [
                         "You are a silent document classifier for an adaptive translation pipeline.",
                         "Do not translate. Classify the document route only.",
-                        "Allowed routes: legal, financial, tunisianFinance, technical, medical, administrative, general.",
+                        "Allowed routes: legal, financial, tunisianFinance, technical, medical, administrative, presentation, general.",
                         "Return only valid JSON:",
-                        '{"route":"legal|financial|tunisianFinance|technical|medical|administrative|general","document_kind":"","confidence":0.0,"reasons":[]}',
+                        '{"route":"legal|financial|tunisianFinance|technical|medical|administrative|presentation|general","document_kind":"","confidence":0.0,"reasons":[]}',
                     ]
                 ),
             },

@@ -72,6 +72,16 @@ ROUTE_PRESETS = {
             "Translate names consistently and keep numbering exactly.",
         ],
     },
+    "presentation": {
+        "profile": "auto-presentation-specialist",
+        "label": "presentation / training / educational slide document",
+        "rules": [
+            "Treat the content as slide or training material, not as a legal or financial document unless explicit legal/financial terms dominate.",
+            "Preserve slide/page order, titles, module names, learning objectives, action items and calls to action.",
+            "Keep the translated style natural, concise and human, suitable for presentation pages.",
+            "Do not add invoice, tax, accounting, judicial or official terminology when the source is educational or coaching content.",
+        ],
+    },
     "general": {
         "profile": "auto-general-specialist",
         "label": "general / mixed",
@@ -222,19 +232,22 @@ def detect_document_kind(text: str) -> str:
         "technical": "technical / engineering / software document",
         "medical": "medical / clinical document",
         "administrative": "administrative / international organization document",
+        "presentation": "presentation / training / educational slide document",
         "general": "general / mixed document",
     }[route]
 
 
 def choose_route(text: str, document_kind: str) -> str:
     sample = f"{document_kind}\n{text}".lower()
+    if re.search(r"\[(?:page|slide) \d+\]|powerpoint|presentation|slide deck|diapositive|module|formation|training|workshop|webinaire|course|coaching|learning objective|objectif|exercice|appel a l'action|call to action|حقيبة تدريبية|دقيبة تدريبية|تدريبية|الوحدة|الهدف|التحول|تمرين|المهارات|الكفاءات|المراهق|التربوي|الشاشات|الباك|سجل الآن", sample):
+        return "presentation"
     if re.search(r"tunisie|tunisien|tunisienne|loi de finances|code des douanes|comptabilité publique|comptabilite publique|recouvrement|irpp|impôt sur les sociétés|droits de douane|retenue à la source|retenue a la source|droits d'enregistrement|droit de consommation|قانون المالية|ميزانية الدولة|ديوانة|مجلة الديوانة|المحاسبة العمومية|الأداء على القيمة المضافة|الضريبة على الشركات", sample):
         return "tunisianFinance"
     if re.search(r"etats membres|états membres|delegations|délégations|conference generale|conférence générale|comite|comité|session|member states|general conference|committee|recommande la commission|recommande le comite", sample):
         return "administrative"
     if re.search(r"tribunal|court|cour d'appel|expert judiciaire|jugement|ordonnance|contrat|clause|article|prejudice|responsabilite|liability|contract", sample):
         return "legal"
-    if re.search(r"bilan|grand livre|facture|tva|ht|ttc|debit|credit|creance|debiteur|creancier|invoice|vat|balance sheet|accounting", sample):
+    if re.search(r"\bbilan\b|\bgrand livre\b|\bfacture\b|\btva\b|\bht\b|\bttc\b|\bdebit\b|\bcredit\b|\bcreance\b|\bdebiteur\b|\bcreancier\b|\binvoice\b|\bvat\b|\bbalance sheet\b|\baccounting\b", sample):
         return "financial"
     if re.search(r"patient|diagnostic|traitement|medecin|clinical|medical|dosage", sample):
         return "medical"
