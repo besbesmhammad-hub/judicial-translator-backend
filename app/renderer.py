@@ -2,15 +2,43 @@ from __future__ import annotations
 
 import html
 import io
+import os
 import re
 
-import fitz
+import arabic_reshaper
+from bidi.algorithm import get_display
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
 
 
 def is_arabic(text: str) -> bool:
     return len(re.findall(r"[\u0600-\u06FF]", text)) > len(re.findall(r"[A-Za-z]", text))
+
+
+def arabic_display(text: str) -> str:
+    if not re.search(r"[\u0600-\u06FF]", text or ""):
+        return text
+    return get_display(arabic_reshaper.reshape(text))
+
+
+def register_pdf_font() -> str:
+    candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/Arial.ttf",
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            try:
+                pdfmetrics.registerFont(TTFont("JudicialSans", path))
+                return "JudicialSans"
+            except Exception:
+                continue
+    return "Helvetica"
 
 
 def split_blocks(text: str) -> list[str]:
@@ -110,35 +138,39 @@ def render_html(text: str, title: str = "Translated document") -> bytes:
 
 
 def render_pdf(text: str, title: str = "Translated document") -> bytes:
-    doc = fitz.open()
-    page = doc.new_page(width=595, height=842)
+    stream = io.BytesIO()
+    pdf = canvas.Canvas(stream, pagesize=A4)
+    width, height = A4
     margin = 48
-    y = margin
+    y = height - margin
     rtl = is_arabic(text)
+    font_name = register_pdf_font()
     lines = [title, ""] + text.splitlines()
     font_size = 13 if rtl else 11
     for line in lines:
-        if y > 800:
-            page = doc.new_page(width=595, height=842)
-            y = margin
+        if y < margin:
+            pdf.showPage()
+            y = height - margin
         value = line.strip()
         if not value:
-            y += 12
+            y -= 12
             continue
-        if len(value) > 105:
-            chunks = [value[index:index + 105] for index in range(0, len(value), 105)]
+        limit = 70 if rtl else 95
+        if len(value) > limit:
+            chunks = [value[index:index + limit] for index in range(0, len(value), limit)]
         else:
             chunks = [value]
         for chunk in chunks:
-            if y > 800:
-                page = doc.new_page(width=595, height=842)
-                y = margin
-            rect = fitz.Rect(margin, y, 595 - margin, y + 24)
-            page.insert_textbox(rect, chunk, fontsize=font_size, align=2 if rtl else 0)
-            y += 18
-    stream = io.BytesIO()
-    doc.save(stream)
-    doc.close()
+            if y < margin:
+                pdf.showPage()
+                y = height - margin
+            pdf.setFont(font_name, font_size)
+            if rtl:
+                pdf.drawRightString(width - margin, y, arabic_display(chunk))
+            else:
+                pdf.drawString(margin, y, chunk)
+            y -= font_size + 6
+    pdf.save()
     return stream.getvalue()
 
 

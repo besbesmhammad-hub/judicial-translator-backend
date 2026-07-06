@@ -15,6 +15,7 @@ RUN apt-get update \
     tesseract-ocr-ara \
     tesseract-ocr-fra \
     tesseract-ocr-eng \
+    fonts-dejavu-core \
   && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
