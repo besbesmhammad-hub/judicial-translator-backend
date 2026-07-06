@@ -310,7 +310,7 @@ async def translate_xlsx_native(content: bytes, translate_batch: TranslateBatch)
 
 
 def group_ocr_lines(data: dict, scale: float) -> list[dict]:
-    grouped: dict[tuple[int, int, int], list[int]] = {}
+    grouped: dict[tuple[int, int], list[int]] = {}
     for index, text in enumerate(data.get("text", [])):
         if not should_translate(text):
             continue
@@ -323,7 +323,6 @@ def group_ocr_lines(data: dict, scale: float) -> list[dict]:
         key = (
             int(data.get("block_num", [0])[index]),
             int(data.get("par_num", [0])[index]),
-            int(data.get("line_num", [0])[index]),
         )
         grouped.setdefault(key, []).append(index)
 
@@ -342,8 +341,31 @@ def group_ocr_lines(data: dict, scale: float) -> list[dict]:
     return lines
 
 
+def meaningful_block_text(text: str) -> str:
+    return re.sub(r"[\W\d_]+", "", text or "", flags=re.UNICODE)
+
+
+def extract_pdf_text_blocks(page) -> list[dict]:
+    blocks: list[dict] = []
+    for raw in page.get_text("blocks"):
+        if len(raw) < 5:
+            continue
+        text = re.sub(r"\s+", " ", str(raw[4] or "")).strip()
+        if not should_translate(text):
+            continue
+        blocks.append({
+            "text": text,
+            "left": float(raw[0]),
+            "top": float(raw[1]),
+            "right": float(raw[2]),
+            "bottom": float(raw[3]),
+        })
+    compact = "".join(meaningful_block_text(block["text"]) for block in blocks)
+    return blocks if len(compact) >= 25 else []
+
+
 def collect_pdf_visual_items(content: bytes) -> tuple[list[dict], list[dict]]:
-    scale = 2.5
+    scale = 1.8
     pages: list[dict] = []
     items: list[dict] = []
     with fitz.open(stream=content, filetype="pdf") as pdf:
@@ -351,14 +373,16 @@ def collect_pdf_visual_items(content: bytes) -> tuple[list[dict], list[dict]]:
             rect = page.rect
             pixmap = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
             image_bytes = pixmap.tobytes("png")
-            image = Image.open(io.BytesIO(image_bytes))
-            data = pytesseract.image_to_data(
-                image,
-                lang="ara+fra+eng",
-                config="--psm 6 -c preserve_interword_spaces=1",
-                output_type=Output.DICT,
-            )
-            lines = group_ocr_lines(data, scale)
+            lines = extract_pdf_text_blocks(page)
+            if not lines:
+                image = Image.open(io.BytesIO(image_bytes))
+                data = pytesseract.image_to_data(
+                    image,
+                    lang="ara+fra+eng",
+                    config="--psm 6 -c preserve_interword_spaces=1",
+                    output_type=Output.DICT,
+                )
+                lines = group_ocr_lines(data, scale)
             page_record = {
                 "width": float(rect.width),
                 "height": float(rect.height),

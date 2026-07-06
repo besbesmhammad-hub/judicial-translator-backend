@@ -48,7 +48,7 @@ def build_segment_payload(segments: list[str]) -> str:
     return "\n\n".join(parts)
 
 
-def segment_batches(segments: list[str], max_chars: int = 1800) -> list[list[tuple[int, str]]]:
+def segment_batches(segments: list[str], max_chars: int = 4200) -> list[list[tuple[int, str]]]:
     batches: list[list[tuple[int, str]]] = []
     current: list[tuple[int, str]] = []
     current_chars = 0
@@ -179,9 +179,14 @@ async def translate_file_document(
 ) -> StreamingResponse:
     content = await file.read()
     filename = file.filename or "document.txt"
-    text, structure_notes = parse_document(filename, content)
     file_format = detect_file_format(filename, content)
-    detected_kind = detect_document_kind(text)
+    if file_format == "pdf" and output_format in {"same", "pdf"}:
+        text = ""
+        structure_notes = "PDF visual translation: original pages are preserved as backgrounds; OCR is performed once during visual overlay."
+        detected_kind = "presentation / visual PDF document"
+    else:
+        text, structure_notes = parse_document(filename, content)
+        detected_kind = detect_document_kind(text)
 
     async def translate_native_segments(segments: list[str], context: str) -> list[str]:
         translated_segments = [""] * len(segments)
