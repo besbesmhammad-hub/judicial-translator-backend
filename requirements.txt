@@ -11,3 +11,5 @@ beautifulsoup4==4.13.4
 lxml==6.0.0
 PyMuPDF==1.26.3
 reportlab==4.4.2
+pytesseract==0.3.13
+Pillow==11.3.0

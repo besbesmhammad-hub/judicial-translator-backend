@@ -11,6 +11,7 @@ from .skills import ACTIVE_SKILLS, detect_document_kind
 from .translator import ProviderCreditError, ProviderRateLimitError, friendly_provider_error, translate_text
 import io
 import re
+import shutil
 
 
 SEGMENT_PATTERN = re.compile(r"\[\[\[JT_SEG_(\d{4})\]\]\]([\s\S]*?)(?:\[\[\[/JT_SEG_\1\]\]\]|$)")
@@ -80,6 +81,8 @@ async def health() -> dict:
         "model": config.LLM_MODEL,
         "llm_configured": bool(config.LLM_API_KEY),
         "native_formats": ["pdf", "docx", "pptx", "xlsx", "html", "txt"],
+        "ocr_available": bool(shutil.which("tesseract")),
+        "ocr_languages": ["ara", "fra", "eng"],
         "keyless_fallbacks_enabled": config.ENABLE_KEYLESS_FALLBACKS,
         "keyless_fallback_providers": ["pollinations", "kilo"] if config.ENABLE_KEYLESS_FALLBACKS else [],
         "active_skills": ACTIVE_SKILLS,
@@ -265,7 +268,7 @@ async def translate_file_document(
         content_out, media_type, extension = render_document(
             translated["translation"],
             output_format,
-            f"Translated - {filename}",
+            "Translated document",
         )
         safe_name = re.sub(r"[^A-Za-z0-9._-]+", "-", filename.rsplit(".", 1)[0]).strip("-") or "document"
         return StreamingResponse(
