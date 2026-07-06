@@ -1,3 +1,12 @@
+---
+title: Judicial Translator Backend
+emoji: 📄
+colorFrom: blue
+colorTo: gray
+sdk: docker
+app_port: 8080
+---
+
 # Judicial Translator Backend
 
 FastAPI backend for heavy document translation workflows.
