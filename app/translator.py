@@ -146,13 +146,29 @@ def friendly_provider_error(error: Exception | None) -> str:
 
 
 def clean_translation_output(value: str) -> str:
+    value = repair_mojibake(str(value or ""))
     return (
-        str(value or "")
+        value
         .replace("\n\\ ", "\n")
         .replace("\n\\", "\n")
         .replace("\n\n\n", "\n\n")
         .strip()
     )
+
+
+def repair_mojibake(value: str) -> str:
+    text = str(value or "")
+    if re.search(r"[\u0600-\u06FF]", text):
+        return text
+    if not re.search(r"[ÃÂØÙ][\u0080-\u00FF]?", text):
+        return text
+    try:
+        repaired = text.encode("latin1").decode("utf-8")
+        if re.search(r"[\u0600-\u06FF]", repaired):
+            return repaired
+    except UnicodeError:
+        pass
+    return text
 
 
 def extract_json(content: str) -> dict:
