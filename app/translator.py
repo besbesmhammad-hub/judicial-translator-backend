@@ -8,6 +8,14 @@ from . import config
 from .skills import ACTIVE_SKILLS, ROUTE_PRESETS, choose_route, detect_document_kind, detect_language, retrieve_terms
 
 
+class ProviderRateLimitError(RuntimeError):
+    pass
+
+
+class ProviderCreditError(RuntimeError):
+    pass
+
+
 def clean_text(value: str) -> str:
     return value.replace("\r\n", "\n").replace("\x00", "").strip()
 
@@ -50,12 +58,44 @@ def retry_delay_seconds(error: Exception | None, attempt: int) -> float:
     message = str(error or "")
     retry_match = re.search(r'retry_after_seconds"?\s*:\s*([0-9.]+)', message, re.I)
     if retry_match:
-        return min(15.0, float(retry_match.group(1)))
+        return min(25.0, float(retry_match.group(1)) + 0.75)
     if "429" in message:
-        return 6.0
+        return min(20.0, 4.0 + attempt * 3.0)
     if "402" in message:
         return 0.3
     return 0.5 * attempt
+
+
+def provider_error_message(error: Exception | None) -> str:
+    message = str(error or "")
+    if isinstance(error, httpx.HTTPStatusError):
+        message = error.response.text or message
+    return message
+
+
+def is_rate_limit_error(error: Exception | None) -> bool:
+    message = provider_error_message(error).lower()
+    return "429" in message or "too many requests" in message or "rate-limit" in message or "rate limited" in message
+
+
+def is_credit_error(error: Exception | None) -> bool:
+    message = provider_error_message(error).lower()
+    return "402" in message or "requires more credits" in message or "can only afford" in message
+
+
+def friendly_provider_error(error: Exception | None) -> str:
+    if is_rate_limit_error(error):
+        return (
+            "OpenRouter a limite les modeles gratuits pour le moment (429 Too Many Requests). "
+            "Reessaie dans 1 a 2 minutes, ou ajoute un modele/API payant pour enlever cette limite. "
+            "Le fichier a bien ete detecte; c'est le fournisseur IA qui refuse temporairement les appels."
+        )
+    if is_credit_error(error):
+        return (
+            "OpenRouter indique que les credits disponibles sont insuffisants pour cette taille de traduction. "
+            "Le backend peut lire le document, mais il faut reduire la taille ou utiliser un compte/modele avec plus de credits."
+        )
+    return str(error or "Erreur fournisseur IA.")
 
 
 def clean_translation_output(value: str) -> str:
@@ -220,6 +260,7 @@ async def translate_text(
     notes: str | None = None,
     document_kind: str | None = None,
     structure_notes: str | None = None,
+    use_llm_classifier: bool = True,
 ) -> dict:
     if not config.LLM_API_KEY:
         raise RuntimeError("OPENROUTER_API_KEY is not configured")
@@ -239,7 +280,17 @@ async def translate_text(
     metadata: dict = {}
     async with httpx.AsyncClient(timeout=120) as client:
         heuristic_kind = document_kind or detect_document_kind(text)
-        classification = await classify_document_with_llm(client, headers, text, heuristic_kind)
+        if use_llm_classifier:
+            classification = await classify_document_with_llm(client, headers, text, heuristic_kind)
+        else:
+            route = choose_route(text, heuristic_kind)
+            classification = {
+                "route": route,
+                "document_kind": heuristic_kind,
+                "confidence": 0.65,
+                "reasons": ["LLM classifier skipped because the file route was already detected server-side."],
+                "source": "server-format-routing",
+            }
         route = classification["route"]
         preset = ROUTE_PRESETS[route]
         kind = classification["document_kind"]
@@ -264,9 +315,13 @@ async def translate_text(
                 structure_notes,
             )
             last_error: Exception | None = None
+            rate_limit_errors = 0
+            credit_errors = 0
+            attempts_made = 0
             used_model = config.LLM_MODEL
             for candidate_model in model_candidates():
-                for attempt in range(2):
+                for attempt in range(3):
+                    attempts_made += 1
                     body = {
                         "model": candidate_model,
                         "messages": messages,
@@ -287,11 +342,20 @@ async def translate_text(
                         last_error = RuntimeError("Model returned an empty translation.")
                     except Exception as error:
                         last_error = error
-                    if attempt < 1:
+                        if is_rate_limit_error(error):
+                            rate_limit_errors += 1
+                        if is_credit_error(error):
+                            credit_errors += 1
+                            break
+                    if attempt < 2:
                         await asyncio.sleep(retry_delay_seconds(last_error, attempt + 1))
                 if parsed is not None and str(parsed.get("translation") or "").strip():
                     break
             if parsed is None or not str(parsed.get("translation") or "").strip():
+                if attempts_made and rate_limit_errors >= attempts_made:
+                    raise ProviderRateLimitError(friendly_provider_error(last_error))
+                if credit_errors and credit_errors >= max(1, attempts_made - rate_limit_errors):
+                    raise ProviderCreditError(friendly_provider_error(last_error))
                 plain_body = {
                     "model": model_candidates()[0],
                     "messages": [
@@ -304,9 +368,16 @@ async def translate_text(
                     "temperature": 0.03,
                     "max_tokens": config.LLM_MAX_TOKENS,
                 }
-                response = await client.post(config.LLM_ENDPOINT, headers=headers, json=plain_body)
-                response.raise_for_status()
-                parsed = extract_json(response.json()["choices"][0]["message"]["content"])
+                try:
+                    response = await client.post(config.LLM_ENDPOINT, headers=headers, json=plain_body)
+                    response.raise_for_status()
+                    parsed = extract_json(response.json()["choices"][0]["message"]["content"])
+                except Exception as error:
+                    if is_rate_limit_error(error):
+                        raise ProviderRateLimitError(friendly_provider_error(error)) from error
+                    if is_credit_error(error):
+                        raise ProviderCreditError(friendly_provider_error(error)) from error
+                    raise
                 if not str(parsed.get("translation") or "").strip() and last_error:
                     raise last_error
             translations.append(clean_translation_output(parsed.get("translation") or ""))

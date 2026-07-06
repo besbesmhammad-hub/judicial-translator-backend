@@ -4,11 +4,11 @@ from fastapi.responses import StreamingResponse
 
 from . import config
 from .native_documents import translate_docx_native, translate_pptx_native, translate_xlsx_native
-from .parser import parse_document
+from .parser import detect_file_format, parse_document
 from .renderer import render_document
 from .schemas import AnalyzeResponse, TranslateRequest, TranslateResponse
 from .skills import ACTIVE_SKILLS, detect_document_kind
-from .translator import translate_text
+from .translator import ProviderCreditError, ProviderRateLimitError, friendly_provider_error, translate_text
 import io
 import re
 
@@ -64,12 +64,21 @@ def segment_batches(segments: list[str], max_chars: int = 1800) -> list[list[tup
     return batches
 
 
+def provider_http_error(error: Exception) -> HTTPException:
+    if isinstance(error, ProviderRateLimitError):
+        return HTTPException(status_code=429, detail=str(error))
+    if isinstance(error, ProviderCreditError):
+        return HTTPException(status_code=402, detail=str(error))
+    return HTTPException(status_code=502, detail=friendly_provider_error(error))
+
+
 @app.get("/health")
 async def health() -> dict:
     return {
         "ok": True,
         "model": config.LLM_MODEL,
         "llm_configured": bool(config.LLM_API_KEY),
+        "native_formats": ["pdf", "docx", "pptx", "xlsx", "html", "txt"],
         "active_skills": ACTIVE_SKILLS,
     }
 
@@ -82,6 +91,7 @@ async def analyze_file(file: UploadFile = File(...)) -> dict:
         "success": True,
         "text": text,
         "document_kind": detect_document_kind(text),
+        "file_format": detect_file_format(file.filename or "document.txt", content),
         "structure_notes": notes,
         "active_skills": ACTIVE_SKILLS,
         "characters": len(text),
@@ -100,7 +110,7 @@ async def translate(request: TranslateRequest) -> dict:
             structure_notes=request.structure_notes,
         )
     except Exception as error:
-        raise HTTPException(status_code=502, detail=str(error)) from error
+        raise provider_http_error(error) from error
 
 
 @app.post("/v1/translate-file", response_model=TranslateResponse)
@@ -122,7 +132,7 @@ async def translate_file(
             structure_notes=structure_notes,
         )
     except Exception as error:
-        raise HTTPException(status_code=502, detail=str(error)) from error
+        raise provider_http_error(error) from error
 
 
 @app.post("/v1/render-document")
@@ -150,7 +160,7 @@ async def render_translated_document(
             headers={"Content-Disposition": f'attachment; filename="translated-document.{extension}"'},
         )
     except Exception as error:
-        raise HTTPException(status_code=502, detail=str(error)) from error
+        raise provider_http_error(error) from error
 
 
 @app.post("/v1/translate-file-document")
@@ -164,7 +174,7 @@ async def translate_file_document(
     content = await file.read()
     filename = file.filename or "document.txt"
     text, structure_notes = parse_document(filename, content)
-    lower = filename.lower()
+    file_format = detect_file_format(filename, content)
     detected_kind = detect_document_kind(text)
 
     async def translate_native_segments(segments: list[str], context: str) -> list[str]:
@@ -196,6 +206,7 @@ async def translate_file_document(
                 notes=segment_notes,
                 document_kind=detected_kind,
                 structure_notes=f"{structure_notes}\n{context}",
+                use_llm_classifier=False,
             )
             parsed = parse_segmented_translation(result["translation"], len(batch_values))
             if parsed is None and len(batch_values) == 1:
@@ -210,25 +221,25 @@ async def translate_file_document(
         return translated_segments
 
     if output_format == "same":
-        if lower.endswith(".pdf"):
+        if file_format == "pdf":
             output_format = "pdf"
-        elif lower.endswith(".docx"):
+        elif file_format == "docx":
             output_format = "docx"
-        elif lower.endswith(".pptx"):
+        elif file_format == "pptx":
             output_format = "pptx"
-        elif lower.endswith((".xlsx", ".xlsm")):
+        elif file_format == "xlsx":
             output_format = "xlsx"
-        elif lower.endswith((".html", ".htm")):
+        elif file_format == "html":
             output_format = "html"
         else:
             output_format = "txt"
     try:
         native_result = None
-        if lower.endswith(".docx") and output_format == "docx":
+        if file_format == "docx" and output_format == "docx":
             native_result = await translate_docx_native(content, translate_native_segments)
-        elif lower.endswith(".pptx") and output_format == "pptx":
+        elif file_format == "pptx" and output_format == "pptx":
             native_result = await translate_pptx_native(content, translate_native_segments)
-        elif lower.endswith((".xlsx", ".xlsm")) and output_format == "xlsx":
+        elif file_format == "xlsx" and output_format == "xlsx":
             native_result = await translate_xlsx_native(content, translate_native_segments)
 
         if native_result is not None:
@@ -260,4 +271,4 @@ async def translate_file_document(
             headers={"Content-Disposition": f'attachment; filename="{safe_name}-translated.{extension}"'},
         )
     except Exception as error:
-        raise HTTPException(status_code=502, detail=str(error)) from error
+        raise provider_http_error(error) from error

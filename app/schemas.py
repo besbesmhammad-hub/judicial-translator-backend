@@ -39,6 +39,7 @@ class AnalyzeResponse(BaseModel):
     success: bool
     text: str
     document_kind: str
+    file_format: str | None = None
     structure_notes: str
     active_skills: list[str]
     characters: int

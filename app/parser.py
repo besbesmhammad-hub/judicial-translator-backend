@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import re
+import zipfile
 from html import unescape
 
 import fitz
@@ -34,6 +35,24 @@ def annotate_structure(text: str) -> str:
         else:
             lines.append(line)
     return "\n".join(lines).strip()
+
+
+def rtl_score(text: str) -> int:
+    return len(re.findall(r"[\u0600-\u06FF]", text or ""))
+
+
+def page_is_rtl(blocks: list[tuple]) -> bool:
+    text = "\n".join(str(block[4]) for block in blocks if len(block) > 4)
+    rtl = rtl_score(text)
+    latin = len(re.findall(r"[A-Za-z]", text or ""))
+    return rtl > 20 and rtl >= latin
+
+
+def sorted_pdf_blocks(blocks: list[tuple]) -> list[tuple]:
+    readable = [block for block in blocks if len(block) > 4 and str(block[4]).strip()]
+    if page_is_rtl(readable):
+        return sorted(readable, key=lambda block: (round(block[1], 1), -round(block[0], 1)))
+    return sorted(readable, key=lambda block: (round(block[1], 1), round(block[0], 1)))
 
 
 def parse_html(content: bytes | str) -> str:
@@ -172,9 +191,8 @@ def parse_pdf(content: bytes) -> str:
     try:
         pdf = fitz.open(stream=content, filetype="pdf")
         for index, page in enumerate(pdf, start=1):
-            blocks = page.get_text("blocks")
-            blocks = sorted(blocks, key=lambda block: (round(block[1], 1), round(block[0], 1)))
-            text = "\n".join(block[4].strip() for block in blocks if block[4].strip())
+            blocks = sorted_pdf_blocks(page.get_text("blocks"))
+            text = "\n".join(block[4].strip() for block in blocks)
             pages.append(f"[PAGE {index}]\n{annotate_structure(text)}")
         parsed = "\n\n".join(pages).strip()
         if parsed:
@@ -188,16 +206,46 @@ def parse_pdf(content: bytes) -> str:
     return normalize("\n\n".join(pages))
 
 
-def parse_document(filename: str, content: bytes) -> tuple[str, str]:
-    lower = filename.lower()
+def detect_file_format(filename: str, content: bytes) -> str:
+    lower = (filename or "").lower()
+    header = content[:16]
+    if header.startswith(b"%PDF"):
+        return "pdf"
+    if header.startswith(b"PK"):
+        try:
+            with zipfile.ZipFile(io.BytesIO(content)) as archive:
+                names = set(archive.namelist())
+            if "word/document.xml" in names:
+                return "docx"
+            if "ppt/presentation.xml" in names:
+                return "pptx"
+            if "xl/workbook.xml" in names:
+                return "xlsx"
+        except zipfile.BadZipFile:
+            pass
     if lower.endswith(".docx"):
-        return parse_docx(content), "DOCX parsed server-side with paragraphs, headings and tables."
+        return "docx"
     if lower.endswith(".pptx"):
-        return parse_pptx(content), "PPTX parsed server-side with slides, text boxes and tables."
+        return "pptx"
     if lower.endswith((".xlsx", ".xlsm")):
-        return parse_xlsx(content), "XLSX parsed server-side with sheets, rows and cells."
+        return "xlsx"
     if lower.endswith(".pdf"):
-        return parse_pdf(content), "PDF parsed server-side with page markers and layout-aware block order."
-    if lower.endswith((".html", ".htm")):
-        return parse_html(content), "HTML parsed server-side with headings, lists and tables."
+        return "pdf"
+    if lower.endswith((".html", ".htm")) or content[:256].lstrip().lower().startswith((b"<!doctype html", b"<html")):
+        return "html"
+    return "txt"
+
+
+def parse_document(filename: str, content: bytes) -> tuple[str, str]:
+    file_format = detect_file_format(filename, content)
+    if file_format == "docx":
+        return parse_docx(content), "DOCX detected and parsed server-side with paragraphs, headings and tables."
+    if file_format == "pptx":
+        return parse_pptx(content), "PPTX detected and parsed server-side with slides, text boxes and tables."
+    if file_format == "xlsx":
+        return parse_xlsx(content), "XLSX detected and parsed server-side with sheets, rows and cells."
+    if file_format == "pdf":
+        return parse_pdf(content), "PDF detected and parsed server-side with page markers and layout-aware block order."
+    if file_format == "html":
+        return parse_html(content), "HTML detected and parsed server-side with headings, lists and tables."
     return annotate_structure(content.decode("utf-8", errors="ignore")), "Plain text parsed server-side with structural annotation."
