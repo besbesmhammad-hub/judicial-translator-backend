@@ -16,6 +16,9 @@ import shutil
 
 
 SEGMENT_PATTERN = re.compile(r"\[\[\[JT_SEG_(\d{4})\]\]\]([\s\S]*?)(?:\[\[\[/JT_SEG_\1\]\]\]|$)")
+SEGMENT_OPEN_RE = re.compile(r"\[\[\[JT_SEG_\d{4}\]\]\]")
+SEGMENT_CLOSE_RE = re.compile(r"\[\[\[/JT_SEG_\d{4}\]\]\]")
+SEGMENT_ANY_RE = re.compile(r"\[\[\[/?JT_SEG_\d{4}\]\]\]")
 
 app = FastAPI(title="Judicial Translator Backend", version="1.0.0")
 
@@ -39,6 +42,18 @@ def parse_segmented_translation(value: str, count: int) -> list[str] | None:
             return None
         ordered[index] = text.strip()
     return ordered
+
+
+def split_by_segment_markers(value: str, count: int) -> list[str] | None:
+    """Positional fallback: split the model output on any JT_SEG marker and keep
+    the chunks in order. Works when the model preserved the segment count and
+    ordering but dropped/renumbered/corrupted the exact index digits."""
+    text = value or ""
+    parts = SEGMENT_ANY_RE.split(text)
+    cleaned = [part.strip() for part in parts if part and part.strip()]
+    if len(cleaned) != count:
+        return None
+    return cleaned
 
 
 def build_segment_payload(segments: list[str]) -> str:
@@ -189,6 +204,37 @@ async def translate_file_document(
         text, structure_notes = await asyncio.to_thread(parse_document, filename, content)
         detected_kind = detect_document_kind(text)
 
+    async def translate_one_segment(text: str) -> str:
+        """Translate a single segment as its own request. The single-segment
+        path in translate_native_segments recovers even if markers are dropped."""
+        single = [text]
+        payload = build_segment_payload(single)
+        segment_notes = "\n".join(
+            item
+            for item in [
+                notes,
+                "Mode document natif: traduire uniquement le texte entre les marqueurs JT_SEG.",
+                "Conserver exactement chaque marqueur de debut et de fin; ne pas les traduire.",
+                "Ne pas fusionner, supprimer, renumeroter ou resumer les segments.",
+            ]
+            if item
+        )
+        result = await translate_text(
+            text=payload,
+            source_lang=source_lang,
+            target_lang=target_lang,
+            notes=segment_notes,
+            document_kind=detected_kind,
+            structure_notes=f"{structure_notes}\n{context}",
+            use_llm_classifier=False,
+        )
+        parsed = parse_segmented_translation(result["translation"], 1)
+        if parsed is None:
+            parsed = split_by_segment_markers(result["translation"], 1)
+        if parsed is None:
+            parsed = [SEGMENT_ANY_RE.sub("", result["translation"]).strip()]
+        return parsed[0]
+
     async def translate_native_segments(segments: list[str], context: str) -> list[str]:
         translated_segments = [""] * len(segments)
         cache: dict[str, str] = {}
@@ -222,9 +268,21 @@ async def translate_file_document(
             )
             parsed = parse_segmented_translation(result["translation"], len(batch_values))
             if parsed is None and len(batch_values) == 1:
-                parsed = [re.sub(r"\[\[\[/?JT_SEG_\d{4}\]\]\]", "", result["translation"]).strip()]
+                parsed = [SEGMENT_ANY_RE.sub("", result["translation"]).strip()]
+            if parsed is None:
+                # Positional fallback: same count, same order, markers may be corrupted.
+                parsed = split_by_segment_markers(result["translation"], len(batch_values))
+            if parsed is None and len(batch_values) > 1:
+                # Final fallback: translate each segment individually so a single
+                # flaky model response cannot sink the whole document.
+                parsed = []
+                for value in batch_values:
+                    translated = await translate_one_segment(value)
+                    parsed.append(translated)
             if parsed is None:
                 raise ValueError("The model did not preserve native document segment markers.")
+            # Strip any residual markers as a safety net before writing into the document.
+            parsed = [SEGMENT_ANY_RE.sub("", item).strip() for item in parsed]
             for index, original, translated in zip(batch_indexes, batch_values, parsed):
                 cache[original] = translated
                 translated_segments[index] = translated
