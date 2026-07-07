@@ -204,38 +204,37 @@ async def translate_file_document(
         text, structure_notes = await asyncio.to_thread(parse_document, filename, content)
         detected_kind = detect_document_kind(text)
 
-    async def translate_one_segment(text: str) -> str:
-        """Translate a single segment as its own request. The single-segment
-        path in translate_native_segments recovers even if markers are dropped."""
-        single = [text]
-        payload = build_segment_payload(single)
-        segment_notes = "\n".join(
-            item
-            for item in [
-                notes,
-                "Mode document natif: traduire uniquement le texte entre les marqueurs JT_SEG.",
-                "Conserver exactement chaque marqueur de debut et de fin; ne pas les traduire.",
-                "Ne pas fusionner, supprimer, renumeroter ou resumer les segments.",
-            ]
-            if item
-        )
-        result = await translate_text(
-            text=payload,
-            source_lang=source_lang,
-            target_lang=target_lang,
-            notes=segment_notes,
-            document_kind=detected_kind,
-            structure_notes=f"{structure_notes}\n{context}",
-            use_llm_classifier=False,
-        )
-        parsed = parse_segmented_translation(result["translation"], 1)
-        if parsed is None:
-            parsed = split_by_segment_markers(result["translation"], 1)
-        if parsed is None:
-            parsed = [SEGMENT_ANY_RE.sub("", result["translation"]).strip()]
-        return parsed[0]
-
     async def translate_native_segments(segments: list[str], context: str) -> list[str]:
+        async def translate_one_segment(text: str) -> str:
+            """Translate a single segment as its own request. The single-segment
+            path recovers even if markers are dropped."""
+            payload = build_segment_payload([text])
+            segment_notes = "\n".join(
+                item
+                for item in [
+                    notes,
+                    "Mode document natif: traduire uniquement le texte entre les marqueurs JT_SEG.",
+                    "Conserver exactement chaque marqueur de debut et de fin; ne pas les traduire.",
+                    "Ne pas fusionner, supprimer, renumeroter ou resumer les segments.",
+                ]
+                if item
+            )
+            result = await translate_text(
+                text=payload,
+                source_lang=source_lang,
+                target_lang=target_lang,
+                notes=segment_notes,
+                document_kind=detected_kind,
+                structure_notes=f"{structure_notes}\n{context}",
+                use_llm_classifier=False,
+            )
+            parsed = parse_segmented_translation(result["translation"], 1)
+            if parsed is None:
+                parsed = split_by_segment_markers(result["translation"], 1)
+            if parsed is None:
+                parsed = [SEGMENT_ANY_RE.sub("", result["translation"]).strip()]
+            return parsed[0]
+
         translated_segments = [""] * len(segments)
         cache: dict[str, str] = {}
         for batch in segment_batches(segments):
