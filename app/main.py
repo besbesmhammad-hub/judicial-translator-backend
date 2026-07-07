@@ -9,6 +9,7 @@ from .renderer import render_document
 from .schemas import AnalyzeResponse, TranslateRequest, TranslateResponse
 from .skills import ACTIVE_SKILLS, detect_document_kind
 from .translator import ProviderCreditError, ProviderRateLimitError, friendly_provider_error, translate_text
+import asyncio
 import io
 import re
 import shutil
@@ -92,7 +93,7 @@ async def health() -> dict:
 @app.post("/v1/analyze-file", response_model=AnalyzeResponse)
 async def analyze_file(file: UploadFile = File(...)) -> dict:
     content = await file.read()
-    text, notes = parse_document(file.filename or "document.txt", content)
+    text, notes = await asyncio.to_thread(parse_document, file.filename or "document.txt", content)
     return {
         "success": True,
         "text": text,
@@ -127,7 +128,7 @@ async def translate_file(
     notes: str | None = Form(None),
 ) -> dict:
     content = await file.read()
-    text, structure_notes = parse_document(file.filename or "document.txt", content)
+    text, structure_notes = await asyncio.to_thread(parse_document, file.filename or "document.txt", content)
     try:
         return await translate_text(
             text=text,
@@ -185,7 +186,7 @@ async def translate_file_document(
         structure_notes = "PDF visual translation: original pages are preserved as backgrounds; OCR is performed once during visual overlay."
         detected_kind = "presentation / visual PDF document"
     else:
-        text, structure_notes = parse_document(filename, content)
+        text, structure_notes = await asyncio.to_thread(parse_document, filename, content)
         detected_kind = detect_document_kind(text)
 
     async def translate_native_segments(segments: list[str], context: str) -> list[str]:

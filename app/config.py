@@ -36,6 +36,8 @@ KILO_MODELS = csv_env("KILO_MODELS", "nvidia/nemotron-3-super-120b-a12b:free,ste
 SITE_URL = os.getenv("SITE_URL", "https://taupe-gingersnap-1b1260.netlify.app")
 MAX_CHARS_PER_CHUNK = int(os.getenv("MAX_CHARS_PER_CHUNK", "2200"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2200"))
+LLM_PROVIDER_TIMEOUT = float(os.getenv("LLM_PROVIDER_TIMEOUT", "35"))
+LLM_PROVIDER_RETRIES = int(os.getenv("LLM_PROVIDER_RETRIES", "1"))
 ALLOWED_ORIGINS = csv_env(
     "ALLOWED_ORIGINS",
     "https://taupe-gingersnap-1b1260.netlify.app,https://judicial-translator-20260706031117.netlify.app,http://localhost:8888,http://127.0.0.1:8888,http://localhost:5001,http://127.0.0.1:5001,http://localhost:5012,http://127.0.0.1:5012",

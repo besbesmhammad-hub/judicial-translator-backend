@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import re
+import asyncio
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
@@ -415,16 +416,7 @@ def draw_wrapped_overlay(pdf, text: str, box: dict, page_height: float, font_nam
         y -= font_size + 2
 
 
-async def translate_pdf_visual_native(content: bytes, translate_batch: TranslateBatch) -> tuple[bytes, str, str, int]:
-    pages, items = collect_pdf_visual_items(content)
-    if not items:
-        raise ValueError("No OCR text blocks found for visual PDF translation.")
-    translated = await translate_batch([item["text"] for item in items], "PDF visual in-place overlay translation")
-    if len(translated) != len(items):
-        raise ValueError("Visual PDF translation returned a mismatched segment count.")
-    for item, value in zip(items, translated):
-        item["line"]["translated"] = finalize_native_translation(item["text"], value)
-
+def render_pdf_visual_overlay(pages: list[dict]) -> bytes:
     stream = io.BytesIO()
     first = pages[0]
     pdf = canvas.Canvas(stream, pagesize=(first["width"], first["height"]))
@@ -447,4 +439,18 @@ async def translate_pdf_visual_native(content: bytes, translate_batch: Translate
             draw_wrapped_overlay(pdf, translated_line, line, page["height"], font_name)
         pdf.showPage()
     pdf.save()
-    return stream.getvalue(), "application/pdf", "pdf", len(items)
+    return stream.getvalue()
+
+
+async def translate_pdf_visual_native(content: bytes, translate_batch: TranslateBatch) -> tuple[bytes, str, str, int]:
+    pages, items = await asyncio.to_thread(collect_pdf_visual_items, content)
+    if not items:
+        raise ValueError("No OCR text blocks found for visual PDF translation.")
+    translated = await translate_batch([item["text"] for item in items], "PDF visual in-place overlay translation")
+    if len(translated) != len(items):
+        raise ValueError("Visual PDF translation returned a mismatched segment count.")
+    for item, value in zip(items, translated):
+        item["line"]["translated"] = finalize_native_translation(item["text"], value)
+
+    content_out = await asyncio.to_thread(render_pdf_visual_overlay, pages)
+    return content_out, "application/pdf", "pdf", len(items)

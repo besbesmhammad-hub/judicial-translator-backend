@@ -339,7 +339,9 @@ async def translate_text(
     summaries: list[str] = []
     notes_out: list[str] = []
     metadata: dict = {}
-    async with httpx.AsyncClient(timeout=120) as client:
+    timeout = httpx.Timeout(config.LLM_PROVIDER_TIMEOUT, connect=min(10.0, config.LLM_PROVIDER_TIMEOUT))
+    attempts_per_provider = max(1, config.LLM_PROVIDER_RETRIES)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         heuristic_kind = document_kind or detect_document_kind(text)
         if use_llm_classifier and config.LLM_API_KEY:
             classification = await classify_document_with_llm(client, headers, text, heuristic_kind)
@@ -381,7 +383,7 @@ async def translate_text(
             attempts_made = 0
             used_model = routes[0]["model"]
             for route_candidate in routes:
-                for attempt in range(3):
+                for attempt in range(attempts_per_provider):
                     attempts_made += 1
                     body = {
                         "model": route_candidate["model"],
@@ -417,7 +419,7 @@ async def translate_text(
                         if is_credit_error(error):
                             credit_errors += 1
                             break
-                    if attempt < 2:
+                    if attempt < attempts_per_provider - 1:
                         await asyncio.sleep(retry_delay_seconds(last_error, attempt + 1))
                 if parsed is not None and str(parsed.get("translation") or "").strip():
                     break
