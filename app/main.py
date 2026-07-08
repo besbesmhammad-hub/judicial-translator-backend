@@ -1,6 +1,6 @@
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from . import config
 from .native_documents import translate_docx_native, translate_pdf_visual_native, translate_pptx_native, translate_xlsx_native
@@ -11,8 +11,12 @@ from .skills import ACTIVE_SKILLS, detect_document_kind
 from .translator import ProviderCreditError, ProviderRateLimitError, friendly_provider_error, translate_text
 import asyncio
 import io
+import json
+import os
 import re
 import shutil
+import uuid
+from pathlib import Path
 
 
 SEGMENT_PATTERN = re.compile(r"\[\[\[JT_SEG_(\d{4})\]\]\]([\s\S]*?)(?:\[\[\[/JT_SEG_\1\]\]\]|$)")
@@ -22,6 +26,8 @@ SEGMENT_ANY_RE = re.compile(r"\[\[\[/?JT_SEG_\d{4}\]\]\]")
 # Loose variant: catches malformed markers with 2-3 brackets, whitespace inside,
 # or partial markers that LLMs sometimes emit (e.g. "[[/JT_SEG_0000]]").
 SEGMENT_LOOSE_RE = re.compile(r"\[{2,3}\s*/?\s*JT_SEG_\d{4}\s*\]{2,3}")
+JOB_DIR = Path(os.getenv("TRANSLATION_JOB_DIR", "/tmp/judicial_translator_jobs"))
+JOB_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="Judicial Translator Backend", version="1.0.0")
 
@@ -92,6 +98,70 @@ def provider_http_error(error: Exception) -> HTTPException:
     return HTTPException(status_code=502, detail=friendly_provider_error(error))
 
 
+def job_path(job_id: str, suffix: str) -> Path:
+    safe_id = re.sub(r"[^a-f0-9-]", "", job_id.lower())
+    return JOB_DIR / f"{safe_id}.{suffix}"
+
+
+def write_job(job_id: str, payload: dict) -> None:
+    status_path = job_path(job_id, "json")
+    payload = {"job_id": job_id, **payload}
+    temp_path = status_path.with_suffix(".json.tmp")
+    temp_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    temp_path.replace(status_path)
+
+
+def read_job(job_id: str) -> dict:
+    status_path = job_path(job_id, "json")
+    if not status_path.exists():
+        raise HTTPException(status_code=404, detail="Job introuvable ou expire.")
+    return json.loads(status_path.read_text(encoding="utf-8"))
+
+
+async def run_document_job(
+    job_id: str,
+    content: bytes,
+    filename: str,
+    source_lang: str,
+    target_lang: str | None,
+    notes: str | None,
+    output_format: str,
+) -> None:
+    write_job(job_id, {
+        "status": "processing",
+        "progress": 12,
+        "message": "Document reçu. Détection du format et préparation.",
+        "filename": filename,
+    })
+    try:
+        content_out, media_type, output_filename = await build_translated_document(
+            content=content,
+            filename=filename,
+            source_lang=source_lang,
+            target_lang=target_lang,
+            notes=notes,
+            output_format=output_format,
+        )
+        result_path = job_path(job_id, "bin")
+        result_path.write_bytes(content_out)
+        write_job(job_id, {
+            "status": "completed",
+            "progress": 100,
+            "message": "Document traduit prêt.",
+            "filename": filename,
+            "output_filename": output_filename,
+            "media_type": media_type,
+            "bytes": len(content_out),
+        })
+    except Exception as error:
+        write_job(job_id, {
+            "status": "failed",
+            "progress": 100,
+            "message": friendly_provider_error(error),
+            "filename": filename,
+        })
+
+
 @app.get("/health")
 async def health() -> dict:
     return {
@@ -160,6 +230,54 @@ async def translate_file(
         raise provider_http_error(error) from error
 
 
+@app.post("/v1/translation-jobs")
+async def create_translation_job(
+    file: UploadFile = File(...),
+    source_lang: str = Form("auto"),
+    target_lang: str | None = Form(None),
+    notes: str | None = Form(None),
+    output_format: str = Form("same"),
+) -> dict:
+    content = await file.read()
+    job_id = str(uuid.uuid4())
+    filename = file.filename or "document.txt"
+    write_job(job_id, {
+        "status": "queued",
+        "progress": 1,
+        "message": "Document ajouté à la file de traduction.",
+        "filename": filename,
+    })
+    asyncio.create_task(run_document_job(job_id, content, filename, source_lang, target_lang, notes, output_format))
+    return {
+        "success": True,
+        "job_id": job_id,
+        "status": "queued",
+        "progress": 1,
+        "status_url": f"/v1/translation-jobs/{job_id}",
+        "download_url": f"/v1/translation-jobs/{job_id}/download",
+    }
+
+
+@app.get("/v1/translation-jobs/{job_id}")
+async def get_translation_job(job_id: str) -> dict:
+    return read_job(job_id)
+
+
+@app.get("/v1/translation-jobs/{job_id}/download")
+async def download_translation_job(job_id: str) -> FileResponse:
+    job = read_job(job_id)
+    if job.get("status") != "completed":
+        raise HTTPException(status_code=409, detail=job.get("message") or "Document pas encore prêt.")
+    result_path = job_path(job_id, "bin")
+    if not result_path.exists():
+        raise HTTPException(status_code=404, detail="Fichier traduit introuvable.")
+    return FileResponse(
+        result_path,
+        media_type=job.get("media_type") or "application/octet-stream",
+        filename=job.get("output_filename") or "translated-document",
+    )
+
+
 @app.post("/v1/render-document")
 async def render_translated_document(
     request: TranslateRequest,
@@ -197,7 +315,32 @@ async def translate_file_document(
     output_format: str = Form("same"),
 ) -> StreamingResponse:
     content = await file.read()
-    filename = file.filename or "document.txt"
+    try:
+        content_out, media_type, output_filename = await build_translated_document(
+            content=content,
+            filename=file.filename or "document.txt",
+            source_lang=source_lang,
+            target_lang=target_lang,
+            notes=notes,
+            output_format=output_format,
+        )
+        return StreamingResponse(
+            io.BytesIO(content_out),
+            media_type=media_type,
+            headers={"Content-Disposition": f'attachment; filename="{output_filename}"'},
+        )
+    except Exception as error:
+        raise provider_http_error(error) from error
+
+
+async def build_translated_document(
+    content: bytes,
+    filename: str,
+    source_lang: str = "auto",
+    target_lang: str | None = None,
+    notes: str | None = None,
+    output_format: str = "same",
+) -> tuple[bytes, str, str]:
     file_format = detect_file_format(filename, content)
     if file_format == "pdf" and output_format in {"same", "pdf"}:
         text = ""
@@ -306,44 +449,33 @@ async def translate_file_document(
             output_format = "html"
         else:
             output_format = "txt"
-    try:
-        native_result = None
-        if file_format == "docx" and output_format == "docx":
-            native_result = await translate_docx_native(content, translate_native_segments)
-        elif file_format == "pptx" and output_format == "pptx":
-            native_result = await translate_pptx_native(content, translate_native_segments)
-        elif file_format == "xlsx" and output_format == "xlsx":
-            native_result = await translate_xlsx_native(content, translate_native_segments)
-        elif file_format == "pdf" and output_format == "pdf":
-            native_result = await translate_pdf_visual_native(content, translate_native_segments)
 
-        if native_result is not None:
-            content_out, media_type, extension, _changed = native_result
-            safe_name = re.sub(r"[^A-Za-z0-9._-]+", "-", filename.rsplit(".", 1)[0]).strip("-") or "document"
-            return StreamingResponse(
-                io.BytesIO(content_out),
-                media_type=media_type,
-                headers={"Content-Disposition": f'attachment; filename="{safe_name}-translated.{extension}"'},
-            )
+    native_result = None
+    if file_format == "docx" and output_format == "docx":
+        native_result = await translate_docx_native(content, translate_native_segments)
+    elif file_format == "pptx" and output_format == "pptx":
+        native_result = await translate_pptx_native(content, translate_native_segments)
+    elif file_format == "xlsx" and output_format == "xlsx":
+        native_result = await translate_xlsx_native(content, translate_native_segments)
+    elif file_format == "pdf" and output_format == "pdf":
+        native_result = await translate_pdf_visual_native(content, translate_native_segments)
 
-        translated = await translate_text(
-            text=text,
-            source_lang=source_lang,
-            target_lang=target_lang,
-            notes=notes,
-            document_kind=detected_kind,
-            structure_notes=structure_notes,
-        )
-        content_out, media_type, extension = render_document(
-            translated["translation"],
-            output_format,
-            "Translated document",
-        )
-        safe_name = re.sub(r"[^A-Za-z0-9._-]+", "-", filename.rsplit(".", 1)[0]).strip("-") or "document"
-        return StreamingResponse(
-            io.BytesIO(content_out),
-            media_type=media_type,
-            headers={"Content-Disposition": f'attachment; filename="{safe_name}-translated.{extension}"'},
-        )
-    except Exception as error:
-        raise provider_http_error(error) from error
+    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "-", filename.rsplit(".", 1)[0]).strip("-") or "document"
+    if native_result is not None:
+        content_out, media_type, extension, _changed = native_result
+        return content_out, media_type, f"{safe_name}-translated.{extension}"
+
+    translated = await translate_text(
+        text=text,
+        source_lang=source_lang,
+        target_lang=target_lang,
+        notes=notes,
+        document_kind=detected_kind,
+        structure_notes=structure_notes,
+    )
+    content_out, media_type, extension = render_document(
+        translated["translation"],
+        output_format,
+        "Translated document",
+    )
+    return content_out, media_type, f"{safe_name}-translated.{extension}"
