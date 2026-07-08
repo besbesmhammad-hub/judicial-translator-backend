@@ -103,8 +103,17 @@ def repair_arabic_terms(source: str, translated: str) -> str:
     return value
 
 
+# Matches JT_SEG markers including malformed variants (2-3 brackets, stray spaces).
+SEGMENT_LOOSE_RE = re.compile(r"\[{2,3}\s*/?\s*JT_SEG_\d{4}\s*\]{2,3}")
+
+
+def strip_segment_markers(value: str) -> str:
+    """Final safety net: remove any residual JT_SEG markers before text reaches the document."""
+    return SEGMENT_LOOSE_RE.sub("", value or "").strip()
+
+
 def finalize_native_translation(source: str, translated: str) -> str:
-    value = (translated or "").strip() or source
+    value = strip_segment_markers(translated) or source
     if re.search(r"[\u0600-\u06FF]", value):
         value = repair_arabic_terms(source, value)
     value = preserve_numeric_tokens(source, value)

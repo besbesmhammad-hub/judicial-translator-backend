@@ -19,6 +19,9 @@ SEGMENT_PATTERN = re.compile(r"\[\[\[JT_SEG_(\d{4})\]\]\]([\s\S]*?)(?:\[\[\[/JT_
 SEGMENT_OPEN_RE = re.compile(r"\[\[\[JT_SEG_\d{4}\]\]\]")
 SEGMENT_CLOSE_RE = re.compile(r"\[\[\[/JT_SEG_\d{4}\]\]\]")
 SEGMENT_ANY_RE = re.compile(r"\[\[\[/?JT_SEG_\d{4}\]\]\]")
+# Loose variant: catches malformed markers with 2-3 brackets, whitespace inside,
+# or partial markers that LLMs sometimes emit (e.g. "[[/JT_SEG_0000]]").
+SEGMENT_LOOSE_RE = re.compile(r"\[{2,3}\s*/?\s*JT_SEG_\d{4}\s*\]{2,3}")
 
 app = FastAPI(title="Judicial Translator Backend", version="1.0.0")
 
@@ -232,7 +235,7 @@ async def translate_file_document(
             if parsed is None:
                 parsed = split_by_segment_markers(result["translation"], 1)
             if parsed is None:
-                parsed = [SEGMENT_ANY_RE.sub("", result["translation"]).strip()]
+                parsed = [SEGMENT_LOOSE_RE.sub("", SEGMENT_ANY_RE.sub("", result["translation"])).strip()]
             return parsed[0]
 
         translated_segments = [""] * len(segments)
@@ -267,7 +270,7 @@ async def translate_file_document(
             )
             parsed = parse_segmented_translation(result["translation"], len(batch_values))
             if parsed is None and len(batch_values) == 1:
-                parsed = [SEGMENT_ANY_RE.sub("", result["translation"]).strip()]
+                parsed = [SEGMENT_LOOSE_RE.sub("", SEGMENT_ANY_RE.sub("", result["translation"])).strip()]
             if parsed is None:
                 # Positional fallback: same count, same order, markers may be corrupted.
                 parsed = split_by_segment_markers(result["translation"], len(batch_values))
@@ -280,8 +283,9 @@ async def translate_file_document(
                     parsed.append(translated)
             if parsed is None:
                 raise ValueError("The model did not preserve native document segment markers.")
-            # Strip any residual markers as a safety net before writing into the document.
-            parsed = [SEGMENT_ANY_RE.sub("", item).strip() for item in parsed]
+            # Strip any residual markers (including malformed ones) as a safety net
+            # before writing into the document, so leaked markers never reach the file.
+            parsed = [SEGMENT_LOOSE_RE.sub("", SEGMENT_ANY_RE.sub("", item)).strip() for item in parsed]
             for index, original, translated in zip(batch_indexes, batch_values, parsed):
                 cache[original] = translated
                 translated_segments[index] = translated
