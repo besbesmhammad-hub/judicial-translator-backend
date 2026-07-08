@@ -133,33 +133,64 @@ async def run_document_job(
         "message": "Document reçu. Détection du format et préparation.",
         "filename": filename,
     })
-    try:
-        content_out, media_type, output_filename = await build_translated_document(
-            content=content,
-            filename=filename,
-            source_lang=source_lang,
-            target_lang=target_lang,
-            notes=notes,
-            output_format=output_format,
-        )
-        result_path = job_path(job_id, "bin")
-        result_path.write_bytes(content_out)
-        write_job(job_id, {
-            "status": "completed",
-            "progress": 100,
-            "message": "Document traduit prêt.",
-            "filename": filename,
-            "output_filename": output_filename,
-            "media_type": media_type,
-            "bytes": len(content_out),
-        })
-    except Exception as error:
-        write_job(job_id, {
-            "status": "failed",
-            "progress": 100,
-            "message": friendly_provider_error(error),
-            "filename": filename,
-        })
+    cooldowns = [35, 90, 180, 300]
+    max_attempts = len(cooldowns) + 1
+    for attempt in range(1, max_attempts + 1):
+        try:
+            write_job(job_id, {
+                "status": "processing",
+                "progress": min(85, 12 + (attempt - 1) * 8),
+                "message": f"Traduction en cours avec les fournisseurs gratuits. Tentative {attempt}/{max_attempts}.",
+                "filename": filename,
+            })
+            content_out, media_type, output_filename = await build_translated_document(
+                content=content,
+                filename=filename,
+                source_lang=source_lang,
+                target_lang=target_lang,
+                notes=notes,
+                output_format=output_format,
+            )
+            result_path = job_path(job_id, "bin")
+            result_path.write_bytes(content_out)
+            write_job(job_id, {
+                "status": "completed",
+                "progress": 100,
+                "message": "Document traduit prêt.",
+                "filename": filename,
+                "output_filename": output_filename,
+                "media_type": media_type,
+                "bytes": len(content_out),
+            })
+            return
+        except ProviderRateLimitError as error:
+            if attempt >= max_attempts:
+                write_job(job_id, {
+                    "status": "failed",
+                    "progress": 100,
+                    "message": friendly_provider_error(error),
+                    "filename": filename,
+                })
+                return
+            delay = cooldowns[attempt - 1]
+            write_job(job_id, {
+                "status": "waiting",
+                "progress": min(90, 18 + attempt * 10),
+                "message": f"Fournisseurs gratuits saturés (429). Nouvelle tentative automatique dans {delay} secondes.",
+                "filename": filename,
+                "retry_in_seconds": delay,
+                "attempt": attempt,
+                "max_attempts": max_attempts,
+            })
+            await asyncio.sleep(delay)
+        except Exception as error:
+            write_job(job_id, {
+                "status": "failed",
+                "progress": 100,
+                "message": friendly_provider_error(error),
+                "filename": filename,
+            })
+            return
 
 
 @app.get("/health")
