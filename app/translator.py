@@ -151,6 +151,21 @@ def provider_timeout(route: dict, text: str, structure_notes: str | None = None)
     return httpx.Timeout(seconds, connect=min(8.0, seconds))
 
 
+def should_use_llm_classifier(text: str, structure_notes: str | None = None) -> bool:
+    if not config.LLM_API_KEY:
+        return False
+    hints = f"{structure_notes or ''}\n{text[:800]}".lower()
+    native_or_heavy = (
+        len(clean_text(text)) > 1200
+        or any(token in hints for token in ("native", "visual", "pptx", "xlsx", "pdf", "docx", "ocr"))
+    )
+    if native_or_heavy:
+        return False
+    if ":free" in str(config.LLM_MODEL or ""):
+        return False
+    return True
+
+
 def retry_delay_seconds(error: Exception | None, attempt: int) -> float:
     message = str(error or "")
     retry_match = re.search(r'retry_after_seconds"?\s*:\s*([0-9.]+)', message, re.I)
@@ -392,7 +407,7 @@ async def translate_text(
     attempts_per_provider = max(1, config.LLM_PROVIDER_RETRIES)
     async with httpx.AsyncClient(timeout=httpx.Timeout(config.LLM_PROVIDER_TIMEOUT, connect=min(8.0, config.LLM_PROVIDER_TIMEOUT))) as client:
         heuristic_kind = document_kind or detect_document_kind(text)
-        if use_llm_classifier and config.LLM_API_KEY:
+        if use_llm_classifier and should_use_llm_classifier(text, structure_notes):
             classification = await classify_document_with_llm(client, headers, text, heuristic_kind)
         else:
             route = choose_route(text, heuristic_kind)
@@ -400,7 +415,7 @@ async def translate_text(
                 "route": route,
                 "document_kind": heuristic_kind,
                 "confidence": 0.65,
-                "reasons": ["LLM classifier skipped because the file route was already detected server-side."],
+                "reasons": ["LLM classifier skipped in favor of fast server-side routing."],
                 "source": "server-format-routing",
             }
         route = classification["route"]
