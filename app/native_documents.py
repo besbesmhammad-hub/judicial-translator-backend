@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import re
 import asyncio
+import os
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
@@ -374,6 +375,128 @@ def extract_pdf_text_blocks(page) -> list[dict]:
     return blocks if len(compact) >= 25 else []
 
 
+def pdf_font_path() -> str | None:
+    candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/Arial.ttf",
+    ]
+    return next((path for path in candidates if os.path.exists(path)), None)
+
+
+def sampled_pdf_fill(page, rect: fitz.Rect) -> tuple[float, float, float]:
+    try:
+        pixmap = page.get_pixmap(matrix=fitz.Matrix(1, 1), alpha=False)
+        image = Image.open(io.BytesIO(pixmap.tobytes("png"))).convert("RGB")
+        width, height = image.size
+        points = [
+            (rect.x0 + 2, rect.y0 + 2),
+            (rect.x1 - 2, rect.y0 + 2),
+            (rect.x0 + 2, rect.y1 - 2),
+            (rect.x1 - 2, rect.y1 - 2),
+        ]
+        colors = []
+        for x_raw, y_raw in points:
+            x = max(0, min(width - 1, int(x_raw)))
+            y = max(0, min(height - 1, int(y_raw)))
+            colors.append(image.getpixel((x, y)))
+        channels = list(zip(*colors))
+        return tuple(sorted(channel)[len(channel) // 2] / 255 for channel in channels)
+    except Exception:
+        return (1, 1, 1)
+
+
+def fitz_align_for_text(text: str) -> int:
+    return fitz.TEXT_ALIGN_RIGHT if re.search(r"[\u0600-\u06FF]", text or "") else fitz.TEXT_ALIGN_LEFT
+
+
+def fitz_text_for_pdf(text: str) -> str:
+    return arabic_display(text) if re.search(r"[\u0600-\u06FF]", text or "") else text
+
+
+def text_color_for_fill(fill: tuple[float, float, float]) -> tuple[float, float, float]:
+    r, g, b = fill
+    luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    return (1, 1, 1) if luminance < 0.42 else (0.04, 0.04, 0.04)
+
+
+def insert_replacement_text(page, rect: fitz.Rect, text: str, font_name: str, fill: tuple[float, float, float]) -> None:
+    value = fitz_text_for_pdf(text)
+    align = fitz_align_for_text(text)
+    color = text_color_for_fill(fill)
+    box_height = max(8, rect.height)
+    font_size = min(13, max(6, box_height * 0.68))
+    padded = fitz.Rect(rect.x0 + 1, rect.y0 + 1, rect.x1 - 1, rect.y1 - 1)
+    for size in [font_size, 11, 10, 9, 8, 7, 6]:
+        if size > font_size:
+            continue
+        leftover = page.insert_textbox(
+            padded,
+            value,
+            fontname=font_name,
+            fontsize=size,
+            color=color,
+            align=align,
+        )
+        if leftover >= -0.5:
+            return
+
+
+async def translate_pdf_text_native(content: bytes, translate_batch: TranslateBatch) -> tuple[bytes, str, str, int] | None:
+    doc = fitz.open(stream=content, filetype="pdf")
+    pages: list[dict] = []
+    items: list[dict] = []
+    for page_index, page in enumerate(doc):
+        blocks = extract_pdf_text_blocks(page)
+        page_items = []
+        for block in blocks:
+            rect = fitz.Rect(block["left"], block["top"], block["right"], block["bottom"])
+            item = {
+                "text": block["text"],
+                "rect": rect,
+                "fill": sampled_pdf_fill(page, rect),
+            }
+            page_items.append(item)
+            items.append({"page": page_index, **item})
+        pages.append({"items": page_items})
+
+    if not items:
+        doc.close()
+        return None
+
+    translated = await translate_batch([item["text"] for item in items], "PDF embedded-text in-place translation")
+    if len(translated) != len(items):
+        doc.close()
+        raise ValueError("PDF text translation returned a mismatched segment count.")
+
+    by_page: dict[int, list[dict]] = {}
+    for item, value in zip(items, translated):
+        item["translated"] = finalize_native_translation(item["text"], value)
+        by_page.setdefault(item["page"], []).append(item)
+
+    font_file = pdf_font_path()
+    for page_index, page in enumerate(doc):
+        page_items = by_page.get(page_index, [])
+        if not page_items:
+            continue
+        for item in page_items:
+            page.add_redact_annot(item["rect"], fill=item["fill"])
+        page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+        font_name = "helv"
+        if font_file:
+            try:
+                page.insert_font(fontname="JudicialSans", fontfile=font_file)
+                font_name = "JudicialSans"
+            except Exception:
+                font_name = "helv"
+        for item in page_items:
+            insert_replacement_text(page, item["rect"], item["translated"], font_name, item["fill"])
+
+    output = doc.tobytes(garbage=4, deflate=True)
+    doc.close()
+    return output, "application/pdf", "pdf", len(items)
+
+
 def collect_pdf_visual_items(content: bytes) -> tuple[list[dict], list[dict]]:
     scale = 1.8
     pages: list[dict] = []
@@ -452,6 +575,10 @@ def render_pdf_visual_overlay(pages: list[dict]) -> bytes:
 
 
 async def translate_pdf_visual_native(content: bytes, translate_batch: TranslateBatch) -> tuple[bytes, str, str, int]:
+    text_native = await translate_pdf_text_native(content, translate_batch)
+    if text_native is not None:
+        return text_native
+
     pages, items = await asyncio.to_thread(collect_pdf_visual_items, content)
     if not items:
         raise ValueError("No OCR text blocks found for visual PDF translation.")
