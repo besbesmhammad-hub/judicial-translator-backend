@@ -389,11 +389,16 @@ def sampled_pdf_fill(page, rect: fitz.Rect) -> tuple[float, float, float]:
         pixmap = page.get_pixmap(matrix=fitz.Matrix(1, 1), alpha=False)
         image = Image.open(io.BytesIO(pixmap.tobytes("png"))).convert("RGB")
         width, height = image.size
+        margin = 4
         points = [
-            (rect.x0 + 2, rect.y0 + 2),
-            (rect.x1 - 2, rect.y0 + 2),
-            (rect.x0 + 2, rect.y1 - 2),
-            (rect.x1 - 2, rect.y1 - 2),
+            (rect.x0 - margin, rect.y0 - margin),
+            (rect.x1 + margin, rect.y0 - margin),
+            (rect.x0 - margin, rect.y1 + margin),
+            (rect.x1 + margin, rect.y1 + margin),
+            (rect.x0 - margin, (rect.y0 + rect.y1) / 2),
+            (rect.x1 + margin, (rect.y0 + rect.y1) / 2),
+            ((rect.x0 + rect.x1) / 2, rect.y0 - margin),
+            ((rect.x0 + rect.x1) / 2, rect.y1 + margin),
         ]
         colors = []
         for x_raw, y_raw in points:
