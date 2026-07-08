@@ -358,6 +358,53 @@ def meaningful_block_text(text: str) -> str:
 
 def extract_pdf_text_blocks(page) -> list[dict]:
     blocks: list[dict] = []
+    try:
+        page_dict = page.get_text("dict")
+    except Exception:
+        page_dict = {"blocks": []}
+
+    for raw_block in page_dict.get("blocks", []):
+        if raw_block.get("type") != 0:
+            continue
+        for line in raw_block.get("lines", []):
+            spans = [span for span in line.get("spans", []) if str(span.get("text") or "").strip()]
+            if not spans:
+                continue
+            text = re.sub(r"\s+", " ", " ".join(str(span.get("text") or "") for span in spans)).strip()
+            if not should_translate(text):
+                continue
+            x0 = min(float(span["bbox"][0]) for span in spans)
+            y0 = min(float(span["bbox"][1]) for span in spans)
+            x1 = max(float(span["bbox"][2]) for span in spans)
+            y1 = max(float(span["bbox"][3]) for span in spans)
+            blocks.append({
+                "text": text,
+                "left": x0,
+                "top": y0,
+                "right": x1,
+                "bottom": y1,
+            })
+
+    if not blocks:
+        for raw in page.get_text("blocks"):
+            if len(raw) < 5:
+                continue
+            text = re.sub(r"\s+", " ", str(raw[4] or "")).strip()
+            if not should_translate(text):
+                continue
+            blocks.append({
+                "text": text,
+                "left": float(raw[0]),
+                "top": float(raw[1]),
+                "right": float(raw[2]),
+                "bottom": float(raw[3]),
+            })
+    compact = "".join(meaningful_block_text(block["text"]) for block in blocks)
+    return blocks if len(compact) >= 25 else []
+
+
+def extract_pdf_page_blocks(page) -> list[dict]:
+    blocks: list[dict] = []
     for raw in page.get_text("blocks"):
         if len(raw) < 5:
             continue
