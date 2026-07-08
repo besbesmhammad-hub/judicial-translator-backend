@@ -132,6 +132,25 @@ def prioritized_translation_routes(text: str, structure_notes: str | None = None
     return sorted(routes, key=sort_key)
 
 
+def provider_timeout(route: dict, text: str, structure_notes: str | None = None) -> httpx.Timeout:
+    hints = f"{structure_notes or ''}\n{text[:800]}".lower()
+    native_or_heavy = (
+        len(clean_text(text)) > 1200
+        or any(token in hints for token in ("native", "visual", "pptx", "xlsx", "pdf", "docx", "ocr"))
+    )
+    base = config.LLM_PROVIDER_TIMEOUT
+    provider = route.get("provider", "")
+    model = str(route.get("model", ""))
+
+    if provider in {"pollinations", "kilo"}:
+        seconds = min(base, 12.0 if native_or_heavy else 14.0)
+    elif provider == "openrouter" and ":free" in model:
+        seconds = min(base, 12.0)
+    else:
+        seconds = base
+    return httpx.Timeout(seconds, connect=min(8.0, seconds))
+
+
 def retry_delay_seconds(error: Exception | None, attempt: int) -> float:
     message = str(error or "")
     retry_match = re.search(r'retry_after_seconds"?\s*:\s*([0-9.]+)', message, re.I)
@@ -370,9 +389,8 @@ async def translate_text(
     summaries: list[str] = []
     notes_out: list[str] = []
     metadata: dict = {}
-    timeout = httpx.Timeout(config.LLM_PROVIDER_TIMEOUT, connect=min(10.0, config.LLM_PROVIDER_TIMEOUT))
     attempts_per_provider = max(1, config.LLM_PROVIDER_RETRIES)
-    async with httpx.AsyncClient(timeout=timeout) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(config.LLM_PROVIDER_TIMEOUT, connect=min(8.0, config.LLM_PROVIDER_TIMEOUT))) as client:
         heuristic_kind = document_kind or detect_document_kind(text)
         if use_llm_classifier and config.LLM_API_KEY:
             classification = await classify_document_with_llm(client, headers, text, heuristic_kind)
@@ -429,6 +447,7 @@ async def translate_text(
                             route_candidate["endpoint"],
                             headers=route_candidate["headers"],
                             json=body,
+                            timeout=provider_timeout(route_candidate, chunk, structure_notes),
                         )
                         if response.status_code == 400:
                             body.pop("response_format", None)
@@ -436,6 +455,7 @@ async def translate_text(
                                 route_candidate["endpoint"],
                                 headers=route_candidate["headers"],
                                 json=body,
+                                timeout=provider_timeout(route_candidate, chunk, structure_notes),
                             )
                         response.raise_for_status()
                         parsed = extract_json(response.json()["choices"][0]["message"]["content"])
@@ -479,6 +499,7 @@ async def translate_text(
                                 route_candidate["endpoint"],
                                 headers=route_candidate["headers"],
                                 json=plain_body,
+                                timeout=provider_timeout(route_candidate, chunk, structure_notes),
                             )
                             response.raise_for_status()
                             parsed = extract_json(response.json()["choices"][0]["message"]["content"])

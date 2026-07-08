@@ -30,13 +30,13 @@ LLM_FALLBACK_MODELS = [
 LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
 ENABLE_KEYLESS_FALLBACKS = os.getenv("ENABLE_KEYLESS_FALLBACKS", "true").lower() not in {"0", "false", "no", "off"}
 POLLINATIONS_ENDPOINT = os.getenv("POLLINATIONS_ENDPOINT", "https://text.pollinations.ai/openai/v1/chat/completions")
-POLLINATIONS_MODELS = csv_env("POLLINATIONS_MODELS", "openai-fast,gpt-oss-20b")
+POLLINATIONS_MODELS = csv_env("POLLINATIONS_MODELS", "gpt-oss-20b,openai-fast")
 KILO_ENDPOINT = os.getenv("KILO_ENDPOINT", "https://api.kilo.ai/api/gateway/v1/chat/completions")
 KILO_MODELS = csv_env("KILO_MODELS", "nvidia/nemotron-3-super-120b-a12b:free,stepfun/step-3.7-flash:free,poolside/laguna-xs.2:free")
 SITE_URL = os.getenv("SITE_URL", "https://taupe-gingersnap-1b1260.netlify.app")
 MAX_CHARS_PER_CHUNK = int(os.getenv("MAX_CHARS_PER_CHUNK", "2200"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2200"))
-LLM_PROVIDER_TIMEOUT = float(os.getenv("LLM_PROVIDER_TIMEOUT", "35"))
+LLM_PROVIDER_TIMEOUT = float(os.getenv("LLM_PROVIDER_TIMEOUT", "15"))
 LLM_PROVIDER_RETRIES = int(os.getenv("LLM_PROVIDER_RETRIES", "1"))
 ALLOWED_ORIGINS = csv_env(
     "ALLOWED_ORIGINS",
