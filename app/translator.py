@@ -195,6 +195,21 @@ def is_credit_error(error: Exception | None) -> bool:
     return "402" in message or "requires more credits" in message or "can only afford" in message
 
 
+def translation_matches_target(value: str, target_lang: str | None) -> bool:
+    text = clean_translation_output(value or "")
+    letters = re.findall(r"[A-Za-z\u0600-\u06FF]", text)
+    if len(letters) < 4:
+        return True
+    arabic = len(re.findall(r"[\u0600-\u06FF]", text))
+    latin = len(re.findall(r"[A-Za-z]", text))
+    target = (target_lang or "").lower()
+    if "arab" in target or "arabe" in target:
+        return arabic >= max(3, latin * 0.6)
+    if "fran" in target or "french" in target:
+        return latin >= max(3, arabic * 0.6)
+    return True
+
+
 def friendly_provider_error(error: Exception | None) -> str:
     if is_rate_limit_error(error):
         return (
@@ -474,9 +489,13 @@ async def translate_text(
                             )
                         response.raise_for_status()
                         parsed = extract_json(response.json()["choices"][0]["message"]["content"])
-                        if str(parsed.get("translation") or "").strip():
+                        if str(parsed.get("translation") or "").strip() and translation_matches_target(parsed.get("translation") or "", target):
                             used_model = f"{route_candidate['provider']}/{route_candidate['model']}"
                             break
+                        if str(parsed.get("translation") or "").strip():
+                            last_error = RuntimeError("Model returned text in the wrong target language.")
+                            parsed = None
+                            continue
                         last_error = RuntimeError("Model returned an empty translation.")
                     except Exception as error:
                         last_error = error
@@ -518,9 +537,13 @@ async def translate_text(
                             )
                             response.raise_for_status()
                             parsed = extract_json(response.json()["choices"][0]["message"]["content"])
-                            if str(parsed.get("translation") or "").strip():
+                            if str(parsed.get("translation") or "").strip() and translation_matches_target(parsed.get("translation") or "", target):
                                 used_model = f"{route_candidate['provider']}/{route_candidate['model']}"
                                 break
+                            if str(parsed.get("translation") or "").strip():
+                                last_error = RuntimeError("Model returned text in the wrong target language.")
+                                parsed = None
+                                continue
                         except Exception as route_error:
                             last_error = route_error
                             continue
