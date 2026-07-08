@@ -101,6 +101,37 @@ def translation_routes() -> list[dict]:
     return routes
 
 
+def prioritized_translation_routes(text: str, structure_notes: str | None = None) -> list[dict]:
+    routes = translation_routes()
+    if not routes:
+        return routes
+
+    hints = f"{structure_notes or ''}\n{text[:800]}".lower()
+    native_or_heavy = (
+        len(clean_text(text)) > 1200
+        or any(token in hints for token in ("native", "visual", "pptx", "xlsx", "pdf", "docx", "ocr"))
+    )
+
+    def sort_key(route: dict) -> tuple[int, int, str]:
+        provider = route.get("provider", "")
+        is_openrouter_free = provider == "openrouter" and ":free" in str(route.get("model", ""))
+        if native_or_heavy:
+            provider_rank = {
+                "pollinations": 0,
+                "kilo": 1,
+                "openrouter": 3 if is_openrouter_free else 2,
+            }.get(provider, 9)
+        else:
+            provider_rank = {
+                "openrouter": 2 if is_openrouter_free else 0,
+                "pollinations": 1,
+                "kilo": 2,
+            }.get(provider, 9)
+        return provider_rank, 1 if is_openrouter_free else 0, str(route.get("model", ""))
+
+    return sorted(routes, key=sort_key)
+
+
 def retry_delay_seconds(error: Exception | None, attempt: int) -> float:
     message = str(error or "")
     retry_match = re.search(r'retry_after_seconds"?\s*:\s*([0-9.]+)', message, re.I)
@@ -325,7 +356,7 @@ async def translate_text(
     structure_notes: str | None = None,
     use_llm_classifier: bool = True,
 ) -> dict:
-    routes = translation_routes()
+    routes = prioritized_translation_routes(text, structure_notes)
     if not routes:
         raise RuntimeError("No LLM provider is configured")
 
