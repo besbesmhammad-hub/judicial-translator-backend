@@ -22,6 +22,7 @@ from pytesseract import Output
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
+from .ocr_utils import is_low_quality_text
 from .renderer import arabic_display, register_pdf_font
 
 
@@ -401,7 +402,10 @@ def extract_pdf_text_blocks(page) -> list[dict]:
                 "bottom": float(raw[3]),
             })
     compact = "".join(meaningful_block_text(block["text"]) for block in blocks)
-    return blocks if len(compact) >= 25 else []
+    if len(compact) < 25:
+        return []
+    sample = "\n".join(block["text"] for block in blocks[:8])
+    return [] if is_low_quality_text(sample) else blocks
 
 
 def extract_pdf_page_blocks(page) -> list[dict]:

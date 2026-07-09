@@ -1,27 +1,21 @@
 from __future__ import annotations
 
-import io
 import re
 import zipfile
 from html import unescape
 
 import fitz
-import pytesseract
 from bs4 import BeautifulSoup
 from docx import Document
 from openpyxl import load_workbook
-from PIL import Image
 from pptx import Presentation
 from pypdf import PdfReader
 
+from .ocr_utils import choose_better_text, is_low_quality_text, normalize_text, ocr_pdf_page_text
+
 
 def normalize(text: str) -> str:
-    return (
-        text.replace("\r\n", "\n")
-        .replace("\x00", "")
-        .replace("\u00a0", " ")
-        .strip()
-    )
+    return normalize_text(text)
 
 
 def annotate_structure(text: str) -> str:
@@ -55,23 +49,6 @@ def sorted_pdf_blocks(blocks: list[tuple]) -> list[tuple]:
     if page_is_rtl(readable):
         return sorted(readable, key=lambda block: (round(block[1], 1), -round(block[0], 1)))
     return sorted(readable, key=lambda block: (round(block[1], 1), round(block[0], 1)))
-
-
-def meaningful_text(text: str) -> str:
-    return re.sub(r"\[[A-Z]+ \d+\]|\s+", "", text or "")
-
-
-def is_sparse_pdf_text(text: str) -> bool:
-    compact = meaningful_text(text)
-    return len(compact) < 20
-
-
-def ocr_pdf_page(page) -> str:
-    matrix = fitz.Matrix(2.5, 2.5)
-    pixmap = page.get_pixmap(matrix=matrix, alpha=False)
-    image = Image.open(io.BytesIO(pixmap.tobytes("png")))
-    text = pytesseract.image_to_string(image, lang="ara+fra+eng", config="--psm 3 -c preserve_interword_spaces=1")
-    return normalize(text)
 
 
 def parse_html(content: bytes | str) -> str:
@@ -211,17 +188,15 @@ def parse_pdf(content: bytes) -> str:
         pdf = fitz.open(stream=content, filetype="pdf")
         for index, page in enumerate(pdf, start=1):
             blocks = sorted_pdf_blocks(page.get_text("blocks"))
-            text = "\n".join(block[4].strip() for block in blocks)
-            if is_sparse_pdf_text(text):
+            text = normalize("\n".join(block[4].strip() for block in blocks))
+            if is_low_quality_text(text):
                 try:
-                    ocr_text = ocr_pdf_page(page)
-                    if len(meaningful_text(ocr_text)) > len(meaningful_text(text)):
-                        text = ocr_text
+                    text = choose_better_text(text, ocr_pdf_page_text(page))
                 except Exception:
                     pass
             pages.append(f"[PAGE {index}]\n{annotate_structure(text)}")
         parsed = "\n\n".join(pages).strip()
-        if parsed and not is_sparse_pdf_text(parsed):
+        if parsed and not is_low_quality_text(parsed):
             return parsed
         pages.clear()
     except Exception:
