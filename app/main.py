@@ -268,7 +268,13 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     legal_sources = retrieve_legal_context(f"{message}\n{context_block}", limit=5)
     legal_context = "\n\n".join(
         "\n".join([
-            f"Source: {source['title']} | page {source['page']} | {source.get('heading') or 'extrait'}",
+            " | ".join([
+                f"Source: {source['title']}",
+                f"page {source['page']}",
+                source.get("heading") or "extrait",
+                source.get("authority") or "autorite non precisee",
+                source.get("source_tier") or "niveau non precise",
+            ]),
             source["excerpt"],
         ])
         for source in legal_sources
@@ -287,7 +293,8 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Tu verifies les montants, dates, taxes, debits/credits, tiers, periodes et hypotheses avant de conclure.",
         "Si une information manque, dis exactement ce qu'il faut demander au client.",
         "Pour les lois, ne pretend jamais qu'une regle est certaine ou a jour sans source/date. Donne la position probable, les reserves et ce qu'il faut verifier dans le texte officiel.",
-        "Les corpus internes actuellement charges contiennent des textes mis a jour autour de 2017; pour une reponse client finale, signale qu'il faut verifier les lois de finances, normes modificatives, interpretations ulterieures, circulaires, et textes sectoriels applicables, notamment en matiere bancaire, OPCVM, assurance, reassurance, takaful, micro-credit, OSBL et consolidation.",
+        "Les corpus internes actuellement charges contiennent surtout des textes consolides autour de 2017-2018, puis quelques circulaires professionnelles, formulaires de stage et rapports institutionnels plus recents. Ne traite jamais un rapport moral ou un formulaire comme une regle de droit contraignante.",
+        "Pour une reponse client finale, signale qu'il faut verifier les lois de finances, normes modificatives, interpretations ulterieures, circulaires, et textes sectoriels applicables, notamment en matiere bancaire, OPCVM, assurance, reassurance, takaful, micro-credit, OSBL, consolidation et reglementation professionnelle.",
         "Si des sources internes sont fournies, utilise-les avant ta connaissance generale et cite le titre/page dans la reponse quand c'est pertinent.",
         "Pour la Tunisie, prefere la terminologie locale: TVA, IRPP, IS, retenue a la source, droit de timbre, CNSS, matricule fiscal, regime reel/forfaitaire, liasse fiscale.",
         "Ne reponds pas comme un traducteur sauf si l'utilisateur demande une traduction. Par defaut, agis comme un assistant IA expert-comptable.",
