@@ -66,7 +66,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
 
     query_text = query.lower()
     domain_boosts = {
-        "tva_droit_consommation": r"\btva\b|taxe sur la valeur ajout|valeur ajoutee|valeur ajoutée|droit de consommation|assujetti|deduction|déduction|exoner|exonér",
+        "tva_droit_consommation": r"\btva\b|taxe sur la valeur ajout|valeur ajoutee|valeur ajoutée|droit de consommation|assujetti|deduction|déduction|exoner|exonér|restitution de la taxe",
         "enregistrement_timbre": r"enregistrement|timbre|mutation|acte|donation|succession|bail|vente immobili",
         "fiscalite_locale": r"fiscalite locale|fiscalité locale|taxe sur les immeubles|tcl|collectivite|collectivité|commune|municipal",
         "loi_comptable": r"loi comptable|systeme comptable|système comptable|normes comptables|etats financiers|états financiers",
@@ -78,6 +78,15 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "nc_04_stocks": r"\bnc 04\b|stocks|cout d'acquisition|coût d'acquisition|cout de production|coût de production|depreciation des stocks|dépréciation des stocks",
         "nc_05_immobilisations_corporelles": r"\bnc 05\b|immobilisations corporelles|amortissement|valeur residuelle|valeur résiduelle|depreciation|dépréciation",
         "nc_06_immobilisations_incorporelles": r"\bnc 06\b|immobilisations incorporelles|actifs incorporels|logiciel|fonds commercial|recherche et developpement|recherche et développement",
+        "nc_07_placements": r"\bnc 07\b|placements|titres|portefeuille|placement a court terme|placement à court terme|placement a long terme|placement à long terme",
+        "nc_08_resultat_net": r"\bnc 08\b|resultat net|résultat net|element extraordinaire|élément extraordinaire|activites ordinaires|activités ordinaires|performance",
+        "nc_09_contrats_construction": r"\bnc 09\b|contrats de construction|avancement|pourcentage d'avancement|pourcentage d’avancement|chantier|maitre d'ouvrage|maître d'ouvrage",
+        "nc_10_charges_reportees": r"\bnc 10\b|charges reportees|charges reportées|frais preliminaires|frais préliminaires|frais d'emission|frais d’émission|report de charges",
+        "nc_11_modifications_comptables": r"\bnc 11\b|modifications comptables|changement de methode|changement de méthode|correction d'erreur|correction d’erreur|estimation comptable",
+        "nc_12_subventions_publiques": r"\bnc 12\b|subventions publiques|aides publiques|subvention d'investissement|subvention d’exploitation|subvention d'exploitation|prime d'investissement|aide de l'etat|aide de l'état",
+        "nc_13_charges_emprunt": r"\bnc 13\b|charges d'emprunt|charges d’emprunt|cout d'emprunt|coût d'emprunt|interets intercalaires|intérêts intercalaires",
+        "nc_14_eventualites_post_cloture": r"\bnc 14\b|eventualites|éventualités|evenements posterieurs|événements postérieurs|date de cloture|date de clôture|passif eventuel|passif éventuel",
+        "nc_15_monnaies_etrangeres": r"\bnc 15\b|monnaies etrangeres|monnaies étrangères|ecart de change|écart de change|difference de change|différence de change|taux de change|devise",
     }
 
     scored = []
@@ -98,6 +107,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         pattern = domain_boosts.get(record.get("doc_id", ""))
         if pattern and re.search(pattern, query_text, re.I):
             score *= 2.8
+        if "subvention" in query_text or "aide publique" in query_text or "aides publiques" in query_text:
+            if record.get("doc_id") == "nc_12_subventions_publiques":
+                score *= 4.0
+            elif record.get("doc_id") == "tva_droit_consommation" and "tva" not in query_text:
+                score *= 0.35
         if record.get("heading") and re.search(r"article|art\.|chapitre|section|titre", record["heading"], re.I):
             score *= 1.1
         if score:
