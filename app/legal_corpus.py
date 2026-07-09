@@ -110,6 +110,12 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "nc_37_coentreprises": r"\bnc 37\b|coentreprises|entite controlee conjointement|entité contrôlée conjointement|activites controlees conjointement|activités contrôlées conjointement|controle conjoint|contrôle conjoint",
         "nc_38_regroupements_entreprises": r"\bnc 38\b|regroupements d'entreprises|regroupement d'entreprises|fusion|acquisition d'une entreprise|acquisition d’une entreprise|goodwill|ecart d'acquisition|écart d’acquisition",
         "nc_39_parties_liees": r"\bnc 39\b|parties liees|parties liées|transactions entre parties liees|transactions entre parties liées|societe mere|société mère|filiale liée",
+        "nc_40_structures_sportives": r"\bnc 40\b|structures sportives privees|structures sportives privées|federation sportive|fédération sportive|association sportive|club sportif",
+        "nc_41_contrats_location": r"\bnc 41\b|contrats de location|location-financement|location financement|credit-bail|crédit-bail|location simple|preneur|bailleur",
+        "nc_42_comptabilite_simplifiee": r"\bnc 42\b|comptabilite simplifiee|comptabilité simplifiée|petite entreprise|regime simplifie|régime simplifié",
+        "nct_43_takaful_etats_financiers": r"\bnct 43\b|takaful|retakaful|rétakaful|etats financiers takaful|états financiers takaful|commission wakala|moudharaba",
+        "nct_44_takaful_controle_interne": r"\bnct 44\b|controle interne takaful|contrôle interne takaful|organisation comptable takaful|retakaful|rétakaful|operateur du fonds|opérateur du fonds",
+        "nct_45_osbl": r"\bnct 45\b|organismes sans but lucratif|osbl|associations|partis politiques|organisme sans but lucratif|fonds associatif",
     }
 
     scored = []
@@ -184,6 +190,24 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         if ("consolid" in query_text or "groupe" in query_text) and ("coentreprise" in query_text or "controle conjoint" in query_text or "contrôle conjoint" in query_text):
             if record.get("doc_id") == "nc_37_coentreprises":
                 score *= 3.5
+        if ("takaful" in query_text or "retakaful" in query_text or "rétakaful" in query_text) and ("controle interne" in query_text or "contrôle interne" in query_text):
+            if record.get("doc_id") == "nct_44_takaful_controle_interne":
+                score *= 4.0
+            elif record.get("doc_id") == "nct_43_takaful_etats_financiers":
+                score *= 0.45
+        if ("takaful" in query_text or "retakaful" in query_text or "rétakaful" in query_text) and ("etat financier" in query_text or "état financier" in query_text or "etats financiers" in query_text or "états financiers" in query_text or "presentation" in query_text or "présentation" in query_text):
+            if record.get("doc_id") == "nct_43_takaful_etats_financiers":
+                score *= 4.0
+            elif record.get("doc_id") == "nct_44_takaful_controle_interne":
+                score *= 0.4
+        if ("structure sportive" in query_text or "club sportif" in query_text or "federation sportive" in query_text or "fédération sportive" in query_text):
+            if record.get("doc_id") == "nc_40_structures_sportives":
+                score *= 4.0
+            elif record.get("doc_id") == "loi_comptable":
+                score *= 0.3
+        if ("association" in query_text or "osbl" in query_text or "organisme sans but lucratif" in query_text or "parti politique" in query_text) and ("etat financier" in query_text or "état financier" in query_text or "etats financiers" in query_text or "états financiers" in query_text):
+            if record.get("doc_id") == "nct_45_osbl":
+                score *= 4.0
         if record.get("heading") and re.search(r"article|art\.|chapitre|section|titre", record["heading"], re.I):
             score *= 1.1
         if score:
