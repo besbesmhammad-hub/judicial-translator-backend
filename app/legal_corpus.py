@@ -64,6 +64,16 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
     for token in query_counts:
         doc_freq[token] = sum(1 for record in corpus if token in set(record["_tokens"]))
 
+    query_text = query.lower()
+    domain_boosts = {
+        "tva_droit_consommation": r"\btva\b|taxe sur la valeur ajout|valeur ajoutee|valeur ajoutée|droit de consommation|assujetti|deduction|déduction|exoner|exonér",
+        "enregistrement_timbre": r"enregistrement|timbre|mutation|acte|donation|succession|bail|vente immobili",
+        "fiscalite_locale": r"fiscalite locale|fiscalité locale|taxe sur les immeubles|tcl|collectivite|collectivité|commune|municipal",
+        "loi_comptable": r"loi comptable|systeme comptable|système comptable|normes comptables|etats financiers|états financiers",
+        "cadre_conceptuel_comptable": r"cadre conceptuel|qualitative|hypothese sous-jacente|hypothèse sous-jacente|information financiere|information financière",
+        "droits_taxes_hors_codes": r"taxes non incorporees|taxes non incorporées|circulation|voyage|assurance|telecommunication|télécommunication|hotel|hôtel",
+    }
+
     scored = []
     for record in corpus:
         tokens = record["_tokens"]
@@ -79,6 +89,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 continue
             inverse_df = math.log((1 + total_docs) / (1 + doc_freq.get(token, 0))) + 1
             score += query_count * (1 + math.log(frequency)) * inverse_df
+        pattern = domain_boosts.get(record.get("doc_id", ""))
+        if pattern and re.search(pattern, query_text, re.I):
+            score *= 2.8
+        if record.get("heading") and re.search(r"article|art\.|chapitre|section|titre", record["heading"], re.I):
+            score *= 1.1
         if score:
             scored.append((score, record))
 
