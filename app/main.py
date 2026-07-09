@@ -19,6 +19,7 @@ from .translator import (
     provider_body,
     provider_content,
     provider_timeout,
+    clean_translation_output,
     translate_text,
 )
 import asyncio
@@ -271,6 +272,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Ne donne pas de certitude juridique/fiscale si le document ou la date applicable manque; propose une verification.",
         "Pour la Tunisie, prefere la terminologie locale: TVA, IRPP, IS, retenue a la source, droit de timbre, CNSS, matricule fiscal, regime reel/forfaitaire, liasse fiscale.",
         "Ne reponds pas comme un traducteur sauf si l'utilisateur demande une traduction.",
+        "Style: professionnel, sans emoji, sans formule marketing, avec des etapes nettes et directement exploitables.",
         "Retourne uniquement un JSON valide avec: answer, assumptions, next_steps, warnings.",
     ])
     user_prompt = "\n\n".join([
@@ -304,15 +306,18 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     )
                 response.raise_for_status()
                 parsed = extract_json(provider_content(route, response.json()))
-                answer = str(parsed.get("answer") or parsed.get("translation") or "").strip()
+                answer = clean_translation_output(str(parsed.get("answer") or parsed.get("translation") or "")).strip()
                 if not answer:
                     raise RuntimeError("Model returned an empty accounting answer.")
+                assumptions = parsed.get("assumptions") if isinstance(parsed.get("assumptions"), list) else []
+                next_steps = parsed.get("next_steps") if isinstance(parsed.get("next_steps"), list) else []
+                warnings = parsed.get("warnings") if isinstance(parsed.get("warnings"), list) else []
                 return {
                     "success": True,
                     "answer": answer,
-                    "assumptions": parsed.get("assumptions") if isinstance(parsed.get("assumptions"), list) else [],
-                    "next_steps": parsed.get("next_steps") if isinstance(parsed.get("next_steps"), list) else [],
-                    "warnings": parsed.get("warnings") if isinstance(parsed.get("warnings"), list) else [],
+                    "assumptions": [clean_translation_output(str(item)) for item in assumptions],
+                    "next_steps": [clean_translation_output(str(item)) for item in next_steps],
+                    "warnings": [clean_translation_output(str(item)) for item in warnings],
                     "model": f"{route['provider']}/{route['model']}",
                 }
             except Exception as error:
