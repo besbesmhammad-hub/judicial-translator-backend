@@ -29,6 +29,7 @@ LLM_FALLBACK_MODELS = [
 ]
 LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+GEMINI_API_KEY_READY = bool(GEMINI_API_KEY and GEMINI_API_KEY.startswith("AIza"))
 GEMINI_ENDPOINT_BASE = os.getenv("GEMINI_ENDPOINT_BASE", "https://generativelanguage.googleapis.com/v1beta")
 GEMINI_MODELS = csv_env("GEMINI_MODELS", "gemini-2.5-flash,gemini-2.0-flash,gemini-1.5-flash")
 ENABLE_KEYLESS_FALLBACKS = os.getenv("ENABLE_KEYLESS_FALLBACKS", "true").lower() not in {"0", "false", "no", "off"}
