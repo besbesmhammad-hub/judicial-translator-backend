@@ -102,6 +102,14 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "nc_29_assurance_provisions_techniques": r"\bnc 29\b|provisions techniques|provision mathematique|provision mathématique|provision pour sinistres|participation aux benefices|participation aux bénéfices|assurance provision",
         "nc_30_assurance_charges_techniques": r"\bnc 30\b|charges techniques|sinistres|ristournes|participation aux benefices|participation aux bénéfices|charges assurance",
         "nc_31_assurance_placements": r"\bnc 31\b|placements assurance|placements reassurance|placements réassurance|passif reglemente|passif réglementé|couverture des engagements|juste valeur placement",
+        "nc_32_microcredit_etats_financiers": r"\bnc 32\b|micro-credits|micro crédits|microcrédits|etats financiers des associations|états financiers des associations|association autorisee|association autorisée",
+        "nc_33_microcredit_controle_interne": r"\bnc 33\b|controle interne micro-credit|contrôle interne micro-crédit|organisation comptable micro-credit|organisation comptable micro-crédit|association de micro-credit|association de micro-crédit",
+        "nc_34_microcredit_revenus": r"\bnc 34\b|micro-credits et revenus y afferents|micro-crédits et revenus y afférents|evaluation des micro-credits|évaluation des micro-crédits|revenus micro-credit|revenus micro-crédit",
+        "nc_35_consolidation": r"\bnc 35\b|etats financiers consolides|états financiers consolidés|consolidation|entreprise mere|entreprise mère|groupe d'entreprises",
+        "nc_36_associees": r"\bnc 36\b|entreprises associees|entreprises associées|influence notable|mise en equivalence|mise en équivalence",
+        "nc_37_coentreprises": r"\bnc 37\b|coentreprises|entite controlee conjointement|entité contrôlée conjointement|activites controlees conjointement|activités contrôlées conjointement|controle conjoint|contrôle conjoint",
+        "nc_38_regroupements_entreprises": r"\bnc 38\b|regroupements d'entreprises|regroupement d'entreprises|fusion|acquisition d'une entreprise|acquisition d’une entreprise|goodwill|ecart d'acquisition|écart d’acquisition",
+        "nc_39_parties_liees": r"\bnc 39\b|parties liees|parties liées|transactions entre parties liees|transactions entre parties liées|societe mere|société mère|filiale liée",
     }
 
     scored = []
@@ -147,6 +155,34 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 0.35
         if ("banque" in query_text or "bancaire" in query_text) and "portefeuille" in query_text:
             if record.get("doc_id") == "nc_25_bancaire_portefeuille_titres":
+                score *= 3.5
+        if ("micro-credit" in query_text or "micro credit" in query_text or "microcrédit" in query_text or "microcredits" in query_text or "micro-crédits" in query_text) and ("controle interne" in query_text or "contrôle interne" in query_text):
+            if record.get("doc_id") == "nc_33_microcredit_controle_interne":
+                score *= 4.0
+            elif record.get("doc_id") == "nc_32_microcredit_etats_financiers":
+                score *= 0.45
+        if ("micro-credit" in query_text or "micro credit" in query_text or "microcrédit" in query_text or "microcredits" in query_text or "micro-crédits" in query_text) and ("etat financier" in query_text or "état financier" in query_text or "etats financiers" in query_text or "états financiers" in query_text or "presentation" in query_text or "présentation" in query_text):
+            if record.get("doc_id") == "nc_32_microcredit_etats_financiers":
+                score *= 4.0
+            elif record.get("doc_id") == "nc_33_microcredit_controle_interne":
+                score *= 0.4
+        if ("micro-credit" in query_text or "micro credit" in query_text or "microcrédit" in query_text or "microcredits" in query_text or "micro-crédits" in query_text) and "revenu" in query_text:
+            if record.get("doc_id") == "nc_34_microcredit_revenus":
+                score *= 4.0
+            elif record.get("doc_id") == "nc_32_microcredit_etats_financiers":
+                score *= 0.4
+        if ("consolid" in query_text or "groupe" in query_text) and "assoc" in query_text:
+            if record.get("doc_id") == "nc_36_associees":
+                score *= 3.5
+            elif record.get("doc_id") == "droits_taxes_hors_codes":
+                score *= 0.2
+        if "entreprise assoc" in query_text or "influence notable" in query_text:
+            if record.get("doc_id") == "nc_36_associees":
+                score *= 4.0
+            elif record.get("doc_id") == "droits_taxes_hors_codes":
+                score *= 0.15
+        if ("consolid" in query_text or "groupe" in query_text) and ("coentreprise" in query_text or "controle conjoint" in query_text or "contrôle conjoint" in query_text):
+            if record.get("doc_id") == "nc_37_coentreprises":
                 score *= 3.5
         if record.get("heading") and re.search(r"article|art\.|chapitre|section|titre", record["heading"], re.I):
             score *= 1.1
