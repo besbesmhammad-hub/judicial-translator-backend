@@ -42,6 +42,10 @@ SEGMENT_ANY_RE = re.compile(r"\[\[\[/?JT_SEG_\d{4}\]\]\]")
 # Loose variant: catches malformed markers with 2-3 brackets, whitespace inside,
 # or partial markers that LLMs sometimes emit (e.g. "[[/JT_SEG_0000]]").
 SEGMENT_LOOSE_RE = re.compile(r"\[{2,3}\s*/?\s*JT_SEG_\d{4}\s*\]{2,3}")
+SECTION_SPLIT_RE = re.compile(
+    r"\*\*(Assumptions|Next steps|Warnings)\*\*\s*:\s*",
+    re.I,
+)
 JOB_DIR = Path(os.getenv("TRANSLATION_JOB_DIR", "/tmp/judicial_translator_jobs"))
 JOB_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -112,6 +116,52 @@ def provider_http_error(error: Exception) -> HTTPException:
     if isinstance(error, ProviderCreditError):
         return HTTPException(status_code=402, detail=str(error))
     return HTTPException(status_code=502, detail=friendly_provider_error(error))
+
+
+def split_list_block(value: str) -> list[str]:
+    items: list[str] = []
+    for line in (value or "").splitlines():
+        line = clean_translation_output(line).strip()
+        if not line:
+            continue
+        line = re.sub(r"^\d+\.\s*", "", line)
+        line = re.sub(r"^[-*]\s*", "", line)
+        if line:
+            items.append(line)
+    return items
+
+
+def normalize_chat_payload(parsed: dict) -> tuple[str, list[str], list[str], list[str]]:
+    answer = clean_translation_output(str(parsed.get("answer") or parsed.get("translation") or "")).strip()
+    assumptions = parsed.get("assumptions") if isinstance(parsed.get("assumptions"), list) else []
+    next_steps = parsed.get("next_steps") if isinstance(parsed.get("next_steps"), list) else []
+    warnings = parsed.get("warnings") if isinstance(parsed.get("warnings"), list) else []
+
+    if answer and (not assumptions or not next_steps or not warnings):
+        parts = SECTION_SPLIT_RE.split(answer)
+        if len(parts) > 1:
+            clean_answer = clean_translation_output(parts[0]).strip()
+            extracted: dict[str, list[str]] = {"assumptions": [], "next_steps": [], "warnings": []}
+            for index in range(1, len(parts), 2):
+                label = parts[index].strip().lower()
+                block = parts[index + 1] if index + 1 < len(parts) else ""
+                if label == "assumptions" and not assumptions:
+                    extracted["assumptions"] = split_list_block(block)
+                elif label == "next steps" and not next_steps:
+                    extracted["next_steps"] = split_list_block(block)
+                elif label == "warnings" and not warnings:
+                    extracted["warnings"] = split_list_block(block)
+            answer = clean_answer or answer
+            assumptions = assumptions or extracted["assumptions"]
+            next_steps = next_steps or extracted["next_steps"]
+            warnings = warnings or extracted["warnings"]
+
+    return (
+        answer,
+        [clean_translation_output(str(item)).strip() for item in assumptions if str(item).strip()],
+        [clean_translation_output(str(item)).strip() for item in next_steps if str(item).strip()],
+        [clean_translation_output(str(item)).strip() for item in warnings if str(item).strip()],
+    )
 
 
 def job_path(job_id: str, suffix: str) -> Path:
@@ -293,13 +343,16 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Tu verifies les montants, dates, taxes, debits/credits, tiers, periodes et hypotheses avant de conclure.",
         "Si une information manque, dis exactement ce qu'il faut demander au client.",
         "Pour les lois, ne pretend jamais qu'une regle est certaine ou a jour sans source/date. Donne la position probable, les reserves et ce qu'il faut verifier dans le texte officiel.",
+        "Interdiction stricte: n'affirme jamais une mise a jour posterieure aux sources fournies, un taux, un seuil, une obligation electronique, une reforme ou une loi de finances recente si cette information n'apparait pas explicitement dans les sources recuperees. N'invente jamais des exemples du type 'eventuelle hausse en 2024'.",
         "Les corpus internes actuellement charges contiennent surtout des textes consolides autour de 2017-2018, puis quelques circulaires professionnelles, formulaires de stage et rapports institutionnels plus recents. Ne traite jamais un rapport moral ou un formulaire comme une regle de droit contraignante.",
         "Pour une reponse client finale, signale qu'il faut verifier les lois de finances, normes modificatives, interpretations ulterieures, circulaires, et textes sectoriels applicables, notamment en matiere bancaire, OPCVM, assurance, reassurance, takaful, micro-credit, OSBL, consolidation et reglementation professionnelle.",
         "Si des sources internes sont fournies, utilise-les avant ta connaissance generale et cite le titre/page dans la reponse quand c'est pertinent.",
         "Pour la Tunisie, prefere la terminologie locale: TVA, IRPP, IS, retenue a la source, droit de timbre, CNSS, matricule fiscal, regime reel/forfaitaire, liasse fiscale.",
         "Ne reponds pas comme un traducteur sauf si l'utilisateur demande une traduction. Par defaut, agis comme un assistant IA expert-comptable.",
+        "Si l'utilisateur demande une presentation generale d'un sujet juridique ou fiscal, structure la reponse en deux niveaux: 1) ce que disent les sources internes recuperees, 2) ce qui doit etre verifie faute de source plus recente. Ne melange pas les deux.",
         "Style: professionnel, sans emoji, sans formule marketing, avec des etapes nettes et directement exploitables.",
-        "Retourne uniquement un JSON valide avec: answer, assumptions, next_steps, warnings.",
+        "Le champ 'answer' doit contenir uniquement la reponse principale. Ne colle jamais dedans les sections Assumptions, Next steps ou Warnings.",
+        "Retourne uniquement un JSON valide avec exactement ces cles: answer, assumptions, next_steps, warnings.",
     ])
     user_prompt = "\n\n".join([
         f"Langue de reponse: {language}",
@@ -334,18 +387,15 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     )
                 response.raise_for_status()
                 parsed = extract_json(provider_content(route, response.json()))
-                answer = clean_translation_output(str(parsed.get("answer") or parsed.get("translation") or "")).strip()
+                answer, assumptions, next_steps, warnings = normalize_chat_payload(parsed)
                 if not answer:
                     raise RuntimeError("Model returned an empty accounting answer.")
-                assumptions = parsed.get("assumptions") if isinstance(parsed.get("assumptions"), list) else []
-                next_steps = parsed.get("next_steps") if isinstance(parsed.get("next_steps"), list) else []
-                warnings = parsed.get("warnings") if isinstance(parsed.get("warnings"), list) else []
                 return {
                     "success": True,
                     "answer": answer,
-                    "assumptions": [clean_translation_output(str(item)) for item in assumptions],
-                    "next_steps": [clean_translation_output(str(item)) for item in next_steps],
-                    "warnings": [clean_translation_output(str(item)) for item in warnings],
+                    "assumptions": assumptions,
+                    "next_steps": next_steps,
+                    "warnings": warnings,
                     "sources": legal_sources,
                     "model": f"{route['provider']}/{route['model']}",
                 }
