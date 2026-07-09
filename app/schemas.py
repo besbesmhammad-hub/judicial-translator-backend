@@ -10,6 +10,12 @@ class TranslateRequest(BaseModel):
     structure_notes: str | None = None
 
 
+class AccountingChatRequest(BaseModel):
+    message: str = Field(..., min_length=1)
+    context: str | None = None
+    language: str = "francais"
+
+
 class RetrievedTerm(BaseModel):
     id: str
     source: str

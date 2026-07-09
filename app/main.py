@@ -6,9 +6,21 @@ from . import config
 from .native_documents import translate_docx_native, translate_pdf_visual_native, translate_pptx_native, translate_xlsx_native
 from .parser import detect_file_format, parse_document
 from .renderer import render_document
-from .schemas import AnalyzeResponse, TranslateRequest, TranslateResponse
+from .schemas import AccountingChatRequest, AnalyzeResponse, TranslateRequest, TranslateResponse
 from .skills import ACTIVE_SKILLS, detect_document_kind
-from .translator import ProviderCreditError, ProviderRateLimitError, friendly_provider_error, translate_text
+from .translator import (
+    ProviderCreditError,
+    ProviderRateLimitError,
+    extract_json,
+    friendly_provider_error,
+    is_credit_error,
+    is_rate_limit_error,
+    prioritized_translation_routes,
+    provider_body,
+    provider_content,
+    provider_timeout,
+    translate_text,
+)
 import asyncio
 import io
 import json
@@ -17,6 +29,8 @@ import re
 import shutil
 import uuid
 from pathlib import Path
+
+import httpx
 
 
 SEGMENT_PATTERN = re.compile(r"\[\[\[JT_SEG_(\d{4})\]\]\]([\s\S]*?)(?:\[\[\[/JT_SEG_\1\]\]\]|$)")
@@ -140,7 +154,7 @@ async def run_document_job(
             write_job(job_id, {
                 "status": "processing",
                 "progress": min(85, 12 + (attempt - 1) * 8),
-                "message": f"Traduction en cours avec les fournisseurs gratuits. Tentative {attempt}/{max_attempts}.",
+                "message": f"Traitement IA en cours avec Gemini et les fournisseurs de secours. Tentative {attempt}/{max_attempts}.",
                 "filename": filename,
             })
             content_out, media_type, output_filename = await build_translated_document(
@@ -176,7 +190,7 @@ async def run_document_job(
             write_job(job_id, {
                 "status": "waiting",
                 "progress": min(90, 18 + attempt * 10),
-                "message": f"Fournisseurs gratuits saturés (429). Nouvelle tentative automatique dans {delay} secondes.",
+                "message": f"Fournisseur IA saturé (429). Nouvelle tentative automatique dans {delay} secondes.",
                 "filename": filename,
                 "retry_in_seconds": delay,
                 "attempt": attempt,
@@ -239,6 +253,75 @@ async def translate(request: TranslateRequest) -> dict:
         )
     except Exception as error:
         raise provider_http_error(error) from error
+
+
+@app.post("/v1/accounting-chat")
+async def accounting_chat(request: AccountingChatRequest) -> dict:
+    message = request.message.strip()
+    context = (request.context or "").strip()
+    language = request.language or "francais"
+    context_block = context[:18000]
+    system_prompt = "\n".join([
+        "Tu es un assistant IA senior pour experts-comptables, commissaires aux comptes, auditeurs, fiscalistes et cabinets comptables.",
+        "Tu aides sur comptabilite generale, fiscalite tunisienne et francophone, TVA, IRPP, IS, paie, audit, controle interne, lettrage, rapprochements, bilan, grand livre, declarations, notes de synthese et traduction de pieces professionnelles.",
+        "Tu reponds de facon pratique, structuree et exploitable par un cabinet.",
+        "Tu verifies les montants, dates, taxes, debits/credits, tiers, periodes et hypotheses avant de conclure.",
+        "Si une information manque, dis exactement ce qu'il faut demander au client.",
+        "Ne donne pas de certitude juridique/fiscale si le document ou la date applicable manque; propose une verification.",
+        "Pour la Tunisie, prefere la terminologie locale: TVA, IRPP, IS, retenue a la source, droit de timbre, CNSS, matricule fiscal, regime reel/forfaitaire, liasse fiscale.",
+        "Ne reponds pas comme un traducteur sauf si l'utilisateur demande une traduction.",
+        "Retourne uniquement un JSON valide avec: answer, assumptions, next_steps, warnings.",
+    ])
+    user_prompt = "\n\n".join([
+        f"Langue de reponse: {language}",
+        context_block and f"Contexte/document fourni:\n{context_block}",
+        f"Question du cabinet:\n{message}",
+    ]).strip()
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    routes = prioritized_translation_routes(f"{message}\n{context_block}", "expert-comptable assistant chat")
+    last_error: Exception | None = None
+    async with httpx.AsyncClient(timeout=httpx.Timeout(config.LLM_PROVIDER_TIMEOUT, connect=8.0)) as client:
+        for route in routes:
+            body = provider_body(route, messages, min(config.LLM_MAX_TOKENS, 2200), json_mode=True)
+            try:
+                response = await client.post(
+                    route["endpoint"],
+                    headers=route["headers"],
+                    json=body,
+                    timeout=provider_timeout(route, message, "expert-comptable assistant chat"),
+                )
+                if response.status_code == 400 and route.get("api_style") != "gemini":
+                    body.pop("response_format", None)
+                    response = await client.post(
+                        route["endpoint"],
+                        headers=route["headers"],
+                        json=body,
+                        timeout=provider_timeout(route, message, "expert-comptable assistant chat"),
+                    )
+                response.raise_for_status()
+                parsed = extract_json(provider_content(route, response.json()))
+                answer = str(parsed.get("answer") or parsed.get("translation") or "").strip()
+                if not answer:
+                    raise RuntimeError("Model returned an empty accounting answer.")
+                return {
+                    "success": True,
+                    "answer": answer,
+                    "assumptions": parsed.get("assumptions") if isinstance(parsed.get("assumptions"), list) else [],
+                    "next_steps": parsed.get("next_steps") if isinstance(parsed.get("next_steps"), list) else [],
+                    "warnings": parsed.get("warnings") if isinstance(parsed.get("warnings"), list) else [],
+                    "model": f"{route['provider']}/{route['model']}",
+                }
+            except Exception as error:
+                last_error = error
+                continue
+    if is_rate_limit_error(last_error):
+        raise provider_http_error(ProviderRateLimitError(friendly_provider_error(last_error)))
+    if is_credit_error(last_error):
+        raise provider_http_error(ProviderCreditError(friendly_provider_error(last_error)))
+    raise provider_http_error(last_error or RuntimeError("Aucun fournisseur IA disponible."))
 
 
 @app.post("/v1/translate-file", response_model=TranslateResponse)
