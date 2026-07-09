@@ -95,6 +95,13 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "nc_21_bancaire_etats_financiers": r"\bnc 21\b|etats financiers des etablissements bancaires|états financiers des établissements bancaires|bilan bancaire|produit bancaire|etablissement bancaire|établissement bancaire",
         "nc_22_bancaire_controle_interne": r"\bnc 22\b|controle interne bancaire|contrôle interne bancaire|organisation comptable bancaire|etablissement bancaire|établissement bancaire|conformite bancaire|conformité bancaire",
         "nc_23_bancaire_devises": r"\bnc 23\b|operations en devises|opérations en devises|comptabilite multi-devises|comptabilité multi-devises|cours de change interbancaire|banque centrale de tunisie",
+        "nc_24_bancaire_engagements_revenus": r"\bnc 24\b|engagements bancaires|engagement de garantie|engagement de financement|credits documentaires|crédits documentaires|prets et avances|prêts et avances",
+        "nc_25_bancaire_portefeuille_titres": r"\bnc 25\b|portefeuille-titres bancaire|portefeuille titres bancaire|titres a revenu fixe|titres à revenu fixe|titres a revenu variable|titres à revenu variable|banque portefeuille titres",
+        "nc_27_assurance_controle_interne": r"\bnc 27\b|controle interne assurance|contrôle interne assurance|organisation comptable assurance|reassurance|réassurance|entreprise d'assurance|entreprise d’assurances",
+        "nc_28_assurance_revenus": r"\bnc 28\b|revenus assurance|revenus reassurance|revenus réassurance|prime pure|prime d'assurance|taxes d'assurance|chargements",
+        "nc_29_assurance_provisions_techniques": r"\bnc 29\b|provisions techniques|provision mathematique|provision mathématique|provision pour sinistres|participation aux benefices|participation aux bénéfices|assurance provision",
+        "nc_30_assurance_charges_techniques": r"\bnc 30\b|charges techniques|sinistres|ristournes|participation aux benefices|participation aux bénéfices|charges assurance",
+        "nc_31_assurance_placements": r"\bnc 31\b|placements assurance|placements reassurance|placements réassurance|passif reglemente|passif réglementé|couverture des engagements|juste valeur placement",
     }
 
     scored = []
@@ -125,6 +132,22 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 4.0
             elif record.get("doc_id") == "nc_16_opcvm_etats_financiers":
                 score *= 0.45
+        if ("assurance" in query_text or "réassurance" in query_text or "reassurance" in query_text) and ("controle interne" in query_text or "contrôle interne" in query_text):
+            if record.get("doc_id") == "nc_27_assurance_controle_interne":
+                score *= 4.0
+        if ("assurance" in query_text or "réassurance" in query_text or "reassurance" in query_text) and "revenu" in query_text:
+            if record.get("doc_id") == "nc_28_assurance_revenus":
+                score *= 4.0
+            elif record.get("doc_id") == "droits_taxes_hors_codes":
+                score *= 0.25
+        if ("assurance" in query_text or "réassurance" in query_text or "reassurance" in query_text) and "placement" in query_text:
+            if record.get("doc_id") == "nc_31_assurance_placements":
+                score *= 4.0
+            elif record.get("doc_id") in {"droits_taxes_hors_codes", "nc_07_placements"}:
+                score *= 0.35
+        if ("banque" in query_text or "bancaire" in query_text) and "portefeuille" in query_text:
+            if record.get("doc_id") == "nc_25_bancaire_portefeuille_titres":
+                score *= 3.5
         if record.get("heading") and re.search(r"article|art\.|chapitre|section|titre", record["heading"], re.I):
             score *= 1.1
         if score:
