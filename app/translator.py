@@ -64,8 +64,25 @@ def openrouter_headers() -> dict:
     return headers
 
 
+def gemini_endpoint(model: str) -> str:
+    base = config.GEMINI_ENDPOINT_BASE.rstrip("/")
+    return f"{base}/models/{model}:generateContent?key={config.GEMINI_API_KEY}"
+
+
 def translation_routes() -> list[dict]:
     routes: list[dict] = []
+    if config.GEMINI_API_KEY:
+        routes.extend(
+            {
+                "provider": "gemini",
+                "endpoint": gemini_endpoint(model),
+                "model": model,
+                "headers": {"content-type": "application/json"},
+                "json_mode": True,
+                "api_style": "gemini",
+            }
+            for model in config.GEMINI_MODELS
+        )
     if config.LLM_API_KEY:
         routes.extend(
             {
@@ -74,6 +91,7 @@ def translation_routes() -> list[dict]:
                 "model": model,
                 "headers": openrouter_headers(),
                 "json_mode": True,
+                "api_style": "openai",
             }
             for model in model_candidates()
         )
@@ -85,6 +103,7 @@ def translation_routes() -> list[dict]:
                 "model": model,
                 "headers": {"content-type": "application/json"},
                 "json_mode": False,
+                "api_style": "openai",
             }
             for model in config.POLLINATIONS_MODELS
         )
@@ -95,6 +114,7 @@ def translation_routes() -> list[dict]:
                 "model": model,
                 "headers": {"content-type": "application/json"},
                 "json_mode": False,
+                "api_style": "openai",
             }
             for model in config.KILO_MODELS
         )
@@ -117,15 +137,17 @@ def prioritized_translation_routes(text: str, structure_notes: str | None = None
         is_openrouter_free = provider == "openrouter" and ":free" in str(route.get("model", ""))
         if native_or_heavy:
             provider_rank = {
-                "pollinations": 0,
-                "kilo": 1,
-                "openrouter": 3 if is_openrouter_free else 2,
+                "gemini": 0,
+                "pollinations": 1,
+                "kilo": 2,
+                "openrouter": 4 if is_openrouter_free else 3,
             }.get(provider, 9)
         else:
             provider_rank = {
-                "openrouter": 2 if is_openrouter_free else 0,
-                "pollinations": 1,
-                "kilo": 2,
+                "gemini": 0,
+                "openrouter": 3 if is_openrouter_free else 1,
+                "pollinations": 2,
+                "kilo": 3,
             }.get(provider, 9)
         return provider_rank, 1 if is_openrouter_free else 0, str(route.get("model", ""))
 
@@ -142,7 +164,9 @@ def provider_timeout(route: dict, text: str, structure_notes: str | None = None)
     provider = route.get("provider", "")
     model = str(route.get("model", ""))
 
-    if provider in {"pollinations", "kilo"}:
+    if provider == "gemini":
+        seconds = max(base, 30.0 if native_or_heavy else 25.0)
+    elif provider in {"pollinations", "kilo"}:
         seconds = min(base, 12.0 if native_or_heavy else 14.0)
     elif provider == "openrouter" and ":free" in model:
         seconds = min(base, 12.0)
@@ -268,6 +292,52 @@ def extract_json(content: str) -> dict:
                 "metadata": {},
             }
         return json.loads(match.group(0))
+
+
+def provider_body(route: dict, messages: list[dict], max_tokens: int, json_mode: bool = True) -> dict:
+    if route.get("api_style") == "gemini":
+        system_parts = [message["content"] for message in messages if message.get("role") == "system"]
+        user_parts = [message["content"] for message in messages if message.get("role") != "system"]
+        body = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": "\n\n".join(user_parts)}],
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.03,
+                "maxOutputTokens": max_tokens,
+            },
+        }
+        if system_parts:
+            body["systemInstruction"] = {"parts": [{"text": "\n\n".join(system_parts)}]}
+        if json_mode:
+            body["generationConfig"]["responseMimeType"] = "application/json"
+        return body
+
+    body = {
+        "model": route["model"],
+        "messages": messages,
+        "temperature": 0.03,
+        "max_tokens": max_tokens,
+    }
+    if json_mode and route.get("json_mode"):
+        body["response_format"] = {"type": "json_object"}
+    return body
+
+
+def provider_content(route: dict, payload: dict) -> str:
+    if route.get("api_style") == "gemini":
+        candidates = payload.get("candidates") or []
+        if not candidates:
+            raise RuntimeError("Gemini returned no candidates.")
+        parts = candidates[0].get("content", {}).get("parts") or []
+        text = "\n".join(str(part.get("text") or "") for part in parts).strip()
+        if not text:
+            raise RuntimeError("Gemini returned empty content.")
+        return text
+    return payload["choices"][0]["message"]["content"]
 
 
 async def classify_document_with_llm(client: httpx.AsyncClient, headers: dict, text: str, fallback_kind: str) -> dict:
@@ -464,14 +534,7 @@ async def translate_text(
             for route_candidate in routes:
                 for attempt in range(attempts_per_provider):
                     attempts_made += 1
-                    body = {
-                        "model": route_candidate["model"],
-                        "messages": messages,
-                        "temperature": 0.03,
-                        "max_tokens": config.LLM_MAX_TOKENS,
-                    }
-                    if route_candidate["json_mode"]:
-                        body["response_format"] = {"type": "json_object"}
+                    body = provider_body(route_candidate, messages, config.LLM_MAX_TOKENS, json_mode=True)
                     try:
                         response = await client.post(
                             route_candidate["endpoint"],
@@ -479,7 +542,7 @@ async def translate_text(
                             json=body,
                             timeout=provider_timeout(route_candidate, chunk, structure_notes),
                         )
-                        if response.status_code == 400:
+                        if response.status_code == 400 and route_candidate.get("api_style") != "gemini":
                             body.pop("response_format", None)
                             response = await client.post(
                                 route_candidate["endpoint"],
@@ -488,7 +551,7 @@ async def translate_text(
                                 timeout=provider_timeout(route_candidate, chunk, structure_notes),
                             )
                         response.raise_for_status()
-                        parsed = extract_json(response.json()["choices"][0]["message"]["content"])
+                        parsed = extract_json(provider_content(route_candidate, response.json()))
                         if str(parsed.get("translation") or "").strip() and translation_matches_target(parsed.get("translation") or "", target):
                             used_model = f"{route_candidate['provider']}/{route_candidate['model']}"
                             break
@@ -514,29 +577,26 @@ async def translate_text(
                 if credit_errors and credit_errors >= max(1, attempts_made - rate_limit_errors):
                     raise ProviderCreditError(friendly_provider_error(last_error))
                 plain_body = {
-                    "model": routes[0]["model"],
                     "messages": [
                         messages[0],
                         {
                             "role": "user",
                             "content": f"{messages[1]['content']}\n\nIf JSON is difficult, return only the complete translation text.",
                         },
-                    ],
-                    "temperature": 0.03,
-                    "max_tokens": config.LLM_MAX_TOKENS,
+                    ]
                 }
                 try:
                     for route_candidate in routes:
-                        plain_body["model"] = route_candidate["model"]
                         try:
+                            request_body = provider_body(route_candidate, plain_body["messages"], config.LLM_MAX_TOKENS, json_mode=False)
                             response = await client.post(
                                 route_candidate["endpoint"],
                                 headers=route_candidate["headers"],
-                                json=plain_body,
+                                json=request_body,
                                 timeout=provider_timeout(route_candidate, chunk, structure_notes),
                             )
                             response.raise_for_status()
-                            parsed = extract_json(response.json()["choices"][0]["message"]["content"])
+                            parsed = extract_json(provider_content(route_candidate, response.json()))
                             if str(parsed.get("translation") or "").strip() and translation_matches_target(parsed.get("translation") or "", target):
                                 used_model = f"{route_candidate['provider']}/{route_candidate['model']}"
                                 break
