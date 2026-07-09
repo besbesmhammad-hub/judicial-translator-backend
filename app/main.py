@@ -73,7 +73,7 @@ def build_segment_payload(segments: list[str]) -> str:
     return "\n\n".join(parts)
 
 
-def segment_batches(segments: list[str], max_chars: int = 4200) -> list[list[tuple[int, str]]]:
+def segment_batches(segments: list[str], max_chars: int = 9000) -> list[list[tuple[int, str]]]:
     batches: list[list[tuple[int, str]]] = []
     current: list[tuple[int, str]] = []
     current_chars = 0
