@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import re
@@ -8,6 +9,7 @@ import sys
 from pathlib import Path
 
 import fitz
+from docx import Document
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -156,6 +158,51 @@ DOCS = [
         "year": 2026,
         "domain": "reglementation_professionnelle",
     },
+    {
+        "filename": "Les tribunaux de premières instances.docx",
+        "doc_id": "tribunaux_premiere_instance_guide",
+        "title": "Les tribunaux de premiere instance",
+        "authority": "Source explicative judiciaire tunisienne",
+        "source_tier": "secondary_legal_guide",
+        "year": 2026,
+        "domain": "organisation_judiciaire",
+    },
+    {
+        "filename": "La Cour de Cassation.docx",
+        "doc_id": "cour_cassation_guide",
+        "title": "La Cour de cassation",
+        "authority": "Source explicative judiciaire tunisienne",
+        "source_tier": "secondary_legal_guide",
+        "year": 2026,
+        "domain": "organisation_judiciaire",
+    },
+    {
+        "filename": "sa.pdf",
+        "doc_id": "checklist_constitution_sa_api",
+        "title": "Checklist constitution d une societe anonyme",
+        "authority": "Agence de Promotion de l Industrie",
+        "source_tier": "administrative_checklist",
+        "year": 2026,
+        "domain": "creation_societe",
+    },
+    {
+        "filename": "SARL Tunisie.docx",
+        "doc_id": "guide_creation_sarl_tunisie",
+        "title": "Guide creation SARL Tunisie",
+        "authority": "Source explicative pratique tunisienne",
+        "source_tier": "secondary_legal_guide",
+        "year": 2021,
+        "domain": "creation_societe",
+    },
+    {
+        "filename": "La fermeture d.docx",
+        "doc_id": "guide_fermeture_entreprise_tunisie",
+        "title": "Guide fermeture d entreprise en Tunisie",
+        "authority": "Source explicative pratique tunisienne",
+        "source_tier": "secondary_legal_guide",
+        "year": 2026,
+        "domain": "dissolution_liquidation",
+    },
 ]
 
 DOC_ID_FILTER = {value.strip() for value in os.environ.get("DOC_IDS", "").split(",") if value.strip()}
@@ -225,10 +272,66 @@ def extract_page_text(page) -> str:
     return embedded
 
 
+def extract_docx_text(path: Path) -> str:
+    document = Document(path)
+    blocks: list[str] = []
+    for paragraph in document.paragraphs:
+        value = normalize_text(paragraph.text.strip())
+        if not value:
+            continue
+        style = (paragraph.style.name or "").lower() if paragraph.style else ""
+        if "heading" in style or "titre" in style or "title" in style:
+            blocks.append(f"[HEADING] {value}")
+        elif re.match(r"^(article|clause|section|chapitre)\s+", value, re.I):
+            blocks.append(f"[ARTICLE] {value}")
+        else:
+            blocks.append(value)
+
+    for table in document.tables:
+        rows = []
+        for row in table.rows:
+            cells = [normalize_text(cell.text.replace("\n", " ").strip().replace("|", "/")) for cell in row.cells]
+            if any(cells):
+                rows.append(cells)
+        if rows:
+            width = max(len(row) for row in rows)
+            rows = [row + [""] * (width - len(row)) for row in rows]
+            blocks.extend(
+                ["[TABLE]", "| " + " | ".join(rows[0]) + " |", "| " + " | ".join(["---"] * width) + " |"]
+                + ["| " + " | ".join(row) + " |" for row in rows[1:]]
+                + ["[/TABLE]"]
+            )
+    return "\n\n".join(blocks).strip()
+
+
 def build_records(meta: dict) -> list[dict]:
     path = DOWNLOADS / resolve_filename(meta)
-    doc = fitz.open(path)
     records: list[dict] = []
+    if path.suffix.lower() == ".docx":
+        text = extract_docx_text(path)
+        if not text:
+            return records
+        for local_index, (heading, chunk) in enumerate(chunk_text(text), start=1):
+            digest = hashlib.blake2b(
+                f"{meta['doc_id']}|1|{local_index}|{chunk[:200]}".encode("utf-8"),
+                digest_size=8,
+            ).hexdigest()
+            records.append({
+                "id": digest,
+                "doc_id": meta["doc_id"],
+                "title": meta["title"],
+                "filename": path.name,
+                "page": 1,
+                "heading": heading,
+                "text": chunk,
+                "authority": meta["authority"],
+                "source_tier": meta["source_tier"],
+                "year": meta["year"],
+                "domain": meta["domain"],
+            })
+        return records
+
+    doc = fitz.open(path)
     start_index = max(0, START_PAGE - 1)
     end_index = doc.page_count
     if END_PAGE:
