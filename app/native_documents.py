@@ -334,6 +334,7 @@ def group_ocr_lines(data: dict, scale: float) -> list[dict]:
         key = (
             int(data.get("block_num", [0])[index]),
             int(data.get("par_num", [0])[index]),
+            int(data.get("line_num", [0])[index]),
         )
         grouped.setdefault(key, []).append(index)
 
@@ -470,6 +471,34 @@ def text_color_for_fill(fill: tuple[float, float, float]) -> tuple[float, float,
     r, g, b = fill
     luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
     return (1, 1, 1) if luminance < 0.42 else (0.04, 0.04, 0.04)
+
+
+def sampled_image_fill(image: Image.Image, box: dict, page_width: float, page_height: float) -> tuple[float, float, float]:
+    width, height = image.size
+    sx = width / max(page_width, 1)
+    sy = height / max(page_height, 1)
+    left = float(box["left"]) * sx
+    right = float(box["right"]) * sx
+    top = float(box["top"]) * sy
+    bottom = float(box["bottom"]) * sy
+    margin = max(3, int(min(width, height) * 0.006))
+    points = [
+        (left - margin, top - margin),
+        (right + margin, top - margin),
+        (left - margin, bottom + margin),
+        (right + margin, bottom + margin),
+        (left - margin, (top + bottom) / 2),
+        (right + margin, (top + bottom) / 2),
+        ((left + right) / 2, top - margin),
+        ((left + right) / 2, bottom + margin),
+    ]
+    colors = []
+    for x_raw, y_raw in points:
+        x = max(0, min(width - 1, int(x_raw)))
+        y = max(0, min(height - 1, int(y_raw)))
+        colors.append(image.getpixel((x, y)))
+    channels = list(zip(*colors))
+    return tuple(sorted(channel)[len(channel) // 2] / 255 for channel in channels)
 
 
 def insert_replacement_text(page, rect: fitz.Rect, text: str, font_name: str, fill: tuple[float, float, float]) -> None:
@@ -609,6 +638,7 @@ def render_pdf_visual_overlay(pages: list[dict]) -> bytes:
         if page_index:
             pdf.setPageSize((page["width"], page["height"]))
         pdf.drawImage(ImageReader(io.BytesIO(page["image"])), 0, 0, width=page["width"], height=page["height"])
+        image = Image.open(io.BytesIO(page["image"])).convert("RGB")
         for line in page["lines"]:
             translated_line = (line.get("translated") or "").strip()
             if not translated_line:
@@ -617,9 +647,10 @@ def render_pdf_visual_overlay(pages: list[dict]) -> bytes:
             y = page["height"] - line["bottom"]
             w = max(1, line["right"] - line["left"])
             h = max(1, line["bottom"] - line["top"])
-            pdf.setFillColorRGB(1, 1, 1)
+            fill = sampled_image_fill(image, line, page["width"], page["height"])
+            pdf.setFillColorRGB(*fill)
             pdf.rect(x - 1, y - 1, w + 2, h + 3, stroke=0, fill=1)
-            pdf.setFillColorRGB(0.05, 0.05, 0.05)
+            pdf.setFillColorRGB(*text_color_for_fill(fill))
             draw_wrapped_overlay(pdf, translated_line, line, page["height"], font_name)
         pdf.showPage()
     pdf.save()
