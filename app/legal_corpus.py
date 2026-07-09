@@ -17,7 +17,9 @@ SOURCE_TIER_WEIGHTS = {
     "professional_text_collection": 0.93,
     "professional_circular": 0.86,
     "professional_guide": 0.78,
+    "administrative_checklist": 0.66,
     "form_template": 0.60,
+    "secondary_legal_guide": 0.46,
     "institutional_report": 0.50,
 }
 
@@ -137,6 +139,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "formulaire_radiation_2026": r"radiation|demande de radiation|شطب نهائي|مطلب شطب",
         "demande_attestation_inscription_2026": r"attestation d[' ]?inscription|attestation inscription|شهادة ترسيم|مطلب في الحصول على شهادة ترسيم",
         "formulaire_suspension_2026": r"suspension|demande de suspension|تعليق عضوية|مطلب تعليق",
+        "tribunaux_premiere_instance_guide": r"tribunal de premiere instance|tribunaux de premiere instance|competence territoriale|competence d'attribution|juge cantonal|cour d'appel",
+        "cour_cassation_guide": r"cour de cassation|pourvoi en cassation|recours en cassation|reglement de juges|renvoi d'un tribunal",
+        "checklist_constitution_sa_api": r"societe anonyme|société anonyme|\bsa\b|constitution d'une sa|constitution d une sa|appel public a l'epargne|appel public à l'épargne|agc|conseil d'administration",
+        "guide_creation_sarl_tunisie": r"\bsarl\b|societe a responsabilite limitee|société à responsabilité limitée|creation d'une sarl|creation d une sarl|immatriculation sarl|parts sociales|capital social minimal",
+        "guide_fermeture_entreprise_tunisie": r"fermeture d[' ]une entreprise|fermeture d'entreprise|fermeture d entreprise|fermeture entreprise|dissolution anticipee|dissolution anticipée|liquidation de la societe|liquidation de la société|cessation d'activite|cessation d'activité|radiation personne morale",
         "rapport_moral_2023": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
         "rapport_moral_2024": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
         "rapport_moral_2025": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
@@ -189,6 +196,18 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             re.I,
         ):
             score *= 0.38
+        if record.get("source_tier") == "administrative_checklist" and not re.search(
+            r"societe anonyme|société anonyme|\bsa\b|constitution|immatriculation|registre national des entreprises|appel public a l'epargne|appel public à l'épargne",
+            query_text,
+            re.I,
+        ):
+            score *= 0.32
+        if record.get("source_tier") == "secondary_legal_guide" and not re.search(
+            r"tribunal|cassation|sarl|societe anonyme|société anonyme|\bsa\b|creation d'entreprise|création d'entreprise|fermeture d'entreprise|dissolution|liquidation",
+            query_text,
+            re.I,
+        ):
+            score *= 0.22
 
         if "subvention" in query_text or "aide publique" in query_text or "aides publiques" in query_text:
             if record.get("doc_id") == "nc_12_subventions_publiques":
@@ -286,14 +305,37 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         if ("commerce" in query_text or "commercant" in query_text or "commerçant" in query_text or "fonds de commerce" in query_text):
             if record.get("doc_id") == "code_commerce_2014":
                 score *= 4.0
+        if ("tribunal de premiere instance" in query_text or "tribunaux de premiere instance" in query_text or "compétence territoriale" in query_text or "competence territoriale" in query_text):
+            if record.get("doc_id") == "tribunaux_premiere_instance_guide":
+                score *= 5.0
+        if ("cour de cassation" in query_text or "pourvoi en cassation" in query_text or "recours en cassation" in query_text):
+            if record.get("doc_id") == "cour_cassation_guide":
+                score *= 5.0
         if ("coc" in query_text or "obligations et contrats" in query_text or "responsabilite civile" in query_text or "responsabilité civile" in query_text):
             if record.get("doc_id") == "code_obligations_contrats_2015":
                 score *= 4.0
+        if ("societe anonyme" in query_text or "société anonyme" in query_text or re.search(r"\bsa\b", query_text, re.I)):
+            if record.get("doc_id") == "checklist_constitution_sa_api":
+                score *= 4.8
         if ("societe" in query_text or "société" in query_text or "sarl" in query_text or "societes commerciales" in query_text or "sociétés commerciales" in query_text):
             if record.get("doc_id") == "code_societes_commerciales_2022":
                 score *= 3.8
             if record.get("doc_id") == "guide_inscription_personnes_morales_2026" and ("inscription" in query_text or "guide" in query_text):
                 score *= 5.0
+        if ("sarl" in query_text or "societe a responsabilite limitee" in query_text or "société à responsabilité limitée" in query_text):
+            if record.get("doc_id") == "guide_creation_sarl_tunisie":
+                score *= 4.4
+        if (
+            re.search(r"fermeture d[' ]une entreprise|fermeture d'entreprise|fermeture d entreprise|fermeture entreprise", query_text, re.I)
+            or "dissolution" in query_text
+            or "liquidation" in query_text
+            or "cessation d'activite" in query_text
+            or "cessation d'activité" in query_text
+        ):
+            if record.get("doc_id") == "guide_fermeture_entreprise_tunisie":
+                score *= 4.2
+            elif record.get("doc_id") == "formulaire_radiation_2026" and ("societe" in query_text or "entreprise" in query_text or "personne morale" in query_text):
+                score *= 0.22
         if ("personne physique" in query_text or "personnes physiques" in query_text) and ("inscription" in query_text or "terssim" in query_text or "ترسيم" in query_text):
             if record.get("doc_id") == "guide_inscription_personnes_physiques_2026":
                 score *= 5.0
