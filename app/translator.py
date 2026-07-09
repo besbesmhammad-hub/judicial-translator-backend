@@ -71,7 +71,7 @@ def gemini_endpoint(model: str) -> str:
 
 def translation_routes() -> list[dict]:
     routes: list[dict] = []
-    if config.GEMINI_API_KEY:
+    if config.GEMINI_API_KEY_READY:
         routes.extend(
             {
                 "provider": "gemini",
