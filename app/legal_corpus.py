@@ -87,6 +87,14 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "nc_13_charges_emprunt": r"\bnc 13\b|charges d'emprunt|charges d’emprunt|cout d'emprunt|coût d'emprunt|interets intercalaires|intérêts intercalaires",
         "nc_14_eventualites_post_cloture": r"\bnc 14\b|eventualites|éventualités|evenements posterieurs|événements postérieurs|date de cloture|date de clôture|passif eventuel|passif éventuel",
         "nc_15_monnaies_etrangeres": r"\bnc 15\b|monnaies etrangeres|monnaies étrangères|ecart de change|écart de change|difference de change|différence de change|taux de change|devise",
+        "nc_16_opcvm_etats_financiers": r"\bnc 16\b|opcvm|sicav|fcp|presentation des etats financiers des opcvm|présentation des états financiers des opcvm|valeur liquidative",
+        "nc_17_opcvm_portefeuille_titres": r"\bnc 17\b|portefeuille-titres|portefeuille titres|operations des opcvm|opérations des opcvm|cours boursier|seuil de reservation|seuil de réservation",
+        "nc_18_opcvm_controle_interne": r"\bnc 18\b|controle interne des opcvm|contrôle interne des opcvm|organisation comptable des opcvm|sicav|gerant du fcp|gérant du fcp",
+        "nc_19_etats_financiers_intermediaires": r"\bnc 19\b|etats financiers intermediaires|états financiers intermédiaires|information intermediaire|information intermédiaire|periode intermediaire|période intermédiaire",
+        "nc_20_recherche_developpement": r"\bnc 20\b|recherche et developpement|recherche et développement|frais de recherche|frais de developpement|frais de développement",
+        "nc_21_bancaire_etats_financiers": r"\bnc 21\b|etats financiers des etablissements bancaires|états financiers des établissements bancaires|bilan bancaire|produit bancaire|etablissement bancaire|établissement bancaire",
+        "nc_22_bancaire_controle_interne": r"\bnc 22\b|controle interne bancaire|contrôle interne bancaire|organisation comptable bancaire|etablissement bancaire|établissement bancaire|conformite bancaire|conformité bancaire",
+        "nc_23_bancaire_devises": r"\bnc 23\b|operations en devises|opérations en devises|comptabilite multi-devises|comptabilité multi-devises|cours de change interbancaire|banque centrale de tunisie",
     }
 
     scored = []
@@ -112,6 +120,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 4.0
             elif record.get("doc_id") == "tva_droit_consommation" and "tva" not in query_text:
                 score *= 0.35
+        if "opcvm" in query_text and ("controle interne" in query_text or "contrôle interne" in query_text):
+            if record.get("doc_id") == "nc_18_opcvm_controle_interne":
+                score *= 4.0
+            elif record.get("doc_id") == "nc_16_opcvm_etats_financiers":
+                score *= 0.45
         if record.get("heading") and re.search(r"article|art\.|chapitre|section|titre", record["heading"], re.I):
             score *= 1.1
         if score:
