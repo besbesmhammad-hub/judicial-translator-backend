@@ -200,6 +200,8 @@ async def health() -> dict:
         "backend_revision": config.APP_REVISION,
         "model": config.LLM_MODEL,
         "llm_configured": bool(config.LLM_API_KEY),
+        "gemini_configured": bool(config.GEMINI_API_KEY),
+        "gemini_models": config.GEMINI_MODELS if config.GEMINI_API_KEY else [],
         "native_formats": ["pdf", "docx", "pptx", "xlsx", "html", "txt"],
         "ocr_available": bool(shutil.which("tesseract")),
         "ocr_languages": ["ara", "fra", "eng"],
