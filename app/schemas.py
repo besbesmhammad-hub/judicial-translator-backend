@@ -14,6 +14,7 @@ class AccountingChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
     context: str | None = None
     language: str = "francais"
+    history: list[dict[str, str]] = Field(default_factory=list)
 
 
 class RetrievedTerm(BaseModel):
