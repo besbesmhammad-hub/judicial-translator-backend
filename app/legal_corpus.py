@@ -72,6 +72,12 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "loi_comptable": r"loi comptable|systeme comptable|système comptable|normes comptables|etats financiers|états financiers",
         "cadre_conceptuel_comptable": r"cadre conceptuel|qualitative|hypothese sous-jacente|hypothèse sous-jacente|information financiere|information financière",
         "droits_taxes_hors_codes": r"taxes non incorporees|taxes non incorporées|circulation|voyage|assurance|telecommunication|télécommunication|hotel|hôtel",
+        "nc_01_norme_generale": r"\bnc 01\b|norme comptable generale|norme comptable générale|presentation des etats financiers|présentation des états financiers|organisation comptable",
+        "nc_02_capitaux_propres": r"\bnc 02\b|capitaux propres|reserve|réserve|dividende|resultat reporte|résultat reporté",
+        "nc_03_revenus": r"\bnc 03\b|revenus|produits|prestations de services|vente de biens|interets|intérêts|redevances",
+        "nc_04_stocks": r"\bnc 04\b|stocks|cout d'acquisition|coût d'acquisition|cout de production|coût de production|depreciation des stocks|dépréciation des stocks",
+        "nc_05_immobilisations_corporelles": r"\bnc 05\b|immobilisations corporelles|amortissement|valeur residuelle|valeur résiduelle|depreciation|dépréciation",
+        "nc_06_immobilisations_incorporelles": r"\bnc 06\b|immobilisations incorporelles|actifs incorporels|logiciel|fonds commercial|recherche et developpement|recherche et développement",
     }
 
     scored = []
