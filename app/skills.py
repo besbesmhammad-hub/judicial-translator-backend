@@ -6,6 +6,7 @@ ACTIVE_SKILLS = [
     "adaptive-routing",
     "layout-aware-parsing",
     "legal-rag",
+    "tunisian-legal-corpus-rag",
     "judicial-translation-prompt",
     "long-document-chunking",
     "tunisian-finance-law",

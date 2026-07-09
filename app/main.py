@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
 from . import config
+from .legal_corpus import corpus_status, retrieve_legal_context
 from .native_documents import translate_docx_native, translate_pdf_visual_native, translate_pptx_native, translate_xlsx_native
 from .parser import detect_file_format, parse_document
 from .renderer import render_document
@@ -224,6 +225,7 @@ async def health() -> dict:
         "keyless_fallbacks_enabled": config.ENABLE_KEYLESS_FALLBACKS,
         "keyless_fallback_providers": ["pollinations", "kilo"] if config.ENABLE_KEYLESS_FALLBACKS else [],
         "active_skills": ACTIVE_SKILLS,
+        "legal_corpus": corpus_status(),
     }
 
 
@@ -263,6 +265,14 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     context = (request.context or "").strip()
     language = request.language or "francais"
     context_block = context[:18000]
+    legal_sources = retrieve_legal_context(f"{message}\n{context_block}", limit=5)
+    legal_context = "\n\n".join(
+        "\n".join([
+            f"Source: {source['title']} | page {source['page']} | {source.get('heading') or 'extrait'}",
+            source["excerpt"],
+        ])
+        for source in legal_sources
+    )
     history_messages = []
     for item in request.history[-10:]:
         role = "assistant" if item.get("role") == "assistant" else "user"
@@ -277,6 +287,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Tu verifies les montants, dates, taxes, debits/credits, tiers, periodes et hypotheses avant de conclure.",
         "Si une information manque, dis exactement ce qu'il faut demander au client.",
         "Pour les lois, ne pretend jamais qu'une regle est certaine ou a jour sans source/date. Donne la position probable, les reserves et ce qu'il faut verifier dans le texte officiel.",
+        "Si des sources internes sont fournies, utilise-les avant ta connaissance generale et cite le titre/page dans la reponse quand c'est pertinent.",
         "Pour la Tunisie, prefere la terminologie locale: TVA, IRPP, IS, retenue a la source, droit de timbre, CNSS, matricule fiscal, regime reel/forfaitaire, liasse fiscale.",
         "Ne reponds pas comme un traducteur sauf si l'utilisateur demande une traduction. Par defaut, agis comme un assistant IA expert-comptable.",
         "Style: professionnel, sans emoji, sans formule marketing, avec des etapes nettes et directement exploitables.",
@@ -284,6 +295,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     ])
     user_prompt = "\n\n".join([
         f"Langue de reponse: {language}",
+        legal_context and f"Sources internes recuperees dans le corpus fiscal/comptable tunisien:\n{legal_context}",
         context_block and f"Contexte/document fourni:\n{context_block}",
         f"Question du cabinet:\n{message}",
     ]).strip()
@@ -326,6 +338,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     "assumptions": [clean_translation_output(str(item)) for item in assumptions],
                     "next_steps": [clean_translation_output(str(item)) for item in next_steps],
                     "warnings": [clean_translation_output(str(item)) for item in warnings],
+                    "sources": legal_sources,
                     "model": f"{route['provider']}/{route['model']}",
                 }
             except Exception as error:
