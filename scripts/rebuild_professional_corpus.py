@@ -79,6 +79,8 @@ DOCS = [
 
 DOC_ID_FILTER = {value.strip() for value in os.environ.get("DOC_IDS", "").split(",") if value.strip()}
 MAX_PAGES_PER_DOC = int(os.environ.get("MAX_PAGES_PER_DOC", "0") or "0")
+START_PAGE = int(os.environ.get("START_PAGE", "1") or "1")
+END_PAGE = int(os.environ.get("END_PAGE", "0") or "0")
 
 
 HEADING_RE = re.compile(
@@ -146,8 +148,13 @@ def build_records(meta: dict) -> list[dict]:
     path = DOWNLOADS / resolve_filename(meta)
     doc = fitz.open(path)
     records: list[dict] = []
-    page_count = min(doc.page_count, MAX_PAGES_PER_DOC) if MAX_PAGES_PER_DOC else doc.page_count
-    for page_index in range(page_count):
+    start_index = max(0, START_PAGE - 1)
+    end_index = doc.page_count
+    if END_PAGE:
+        end_index = min(doc.page_count, END_PAGE)
+    elif MAX_PAGES_PER_DOC:
+        end_index = min(doc.page_count, start_index + MAX_PAGES_PER_DOC)
+    for page_index in range(start_index, end_index):
         page_text = extract_page_text(doc.load_page(page_index))
         if not page_text:
             continue
@@ -181,7 +188,18 @@ def main() -> None:
                 existing.append(json.loads(line))
 
     target_ids = {meta["doc_id"] for meta in selected_docs}
-    kept = [row for row in existing if row.get("doc_id") not in target_ids]
+    page_range_mode = bool(END_PAGE or START_PAGE > 1 or MAX_PAGES_PER_DOC)
+
+    if page_range_mode:
+        def keep_row(row: dict) -> bool:
+            if row.get("doc_id") not in target_ids:
+                return True
+            page = int(row.get("page") or 0)
+            range_end = END_PAGE if END_PAGE else START_PAGE + MAX_PAGES_PER_DOC - 1 if MAX_PAGES_PER_DOC else 10**9
+            return not (START_PAGE <= page <= range_end)
+        kept = [row for row in existing if keep_row(row)]
+    else:
+        kept = [row for row in existing if row.get("doc_id") not in target_ids]
     rebuilt: list[dict] = []
     for meta in selected_docs:
         rebuilt.extend(build_records(meta))
