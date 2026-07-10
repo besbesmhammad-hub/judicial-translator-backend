@@ -94,6 +94,13 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "fiscalite_locale": r"fiscalite locale|taxe sur les immeubles|tcl|collectivite|commune|municipal",
         "loi_comptable": r"loi comptable|systeme comptable|normes comptables|etats financiers",
         "cadre_conceptuel_comptable": r"cadre conceptuel|qualitative|hypothese sous-jacente|information financiere",
+        "ifrs_cadre_conceptuel_information_financiere": r"cadre conceptuel|ifrs|iasb|information financiere|caracteristiques qualitatives|image fidele|pertinence|representation fidele",
+        "ifrs_1_premiere_application": r"\bifrs 1\b|premiere application des normes internationales d'information financiere|premiere application des normes internationales d information financiere|premiere adoption des ifrs|first-time adoption|bilan d'ouverture ifrs",
+        "ifrs_2_paiement_fonde_sur_actions": r"\bifrs 2\b|paiement fonde sur des actions|stock-options|actions gratuites|transactions reglees en instruments de capitaux propres|share-based payment",
+        "ifrs_3_regroupements_entreprises": r"\bifrs 3\b|regroupements d'entreprises|business combinations|goodwill|ecart d'acquisition|contrepartie eventuelle",
+        "ifrs_4_contrats_assurance": r"\bifrs 4\b|contrats d'assurance|insurance contracts|assureur|reassurance|passif d'assurance",
+        "ifrs_5_actifs_non_courants_vente": r"\bifrs 5\b|actifs non courants detenus en vue de la vente|activites abandonnees|actifs detenus en vue de la vente|discontinued operations",
+        "ifrs_6_ressources_minieres": r"\bifrs 6\b|prospection et evaluation de ressources minerales|ressources minieres|minieres|actifs de prospection|exploration and evaluation",
         "droits_taxes_hors_codes": r"taxes non incorporees|circulation|voyage|assurance|telecommunication|hotel",
         "nc_01_norme_generale": r"\bnc 01\b|norme comptable generale|presentation des etats financiers|organisation comptable",
         "nc_02_capitaux_propres": r"\bnc 02\b|capitaux propres|reserve|dividende|resultat reporte",
@@ -326,6 +333,12 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             re.I,
         ):
             score *= 0.12
+        if record.get("doc_id", "").startswith("ifrs_") and not re.search(
+            r"\bifrs\b|iasb|normes internationales d'information financiere|normes internationales d information financiere|cadre conceptuel|goodwill|ecart d'acquisition|paiement fonde sur des actions|stock-options|regroupements d'entreprises|contrats d'assurance|actifs non courants detenus en vue de la vente|activites abandonnees|ressources minieres|bilan d'ouverture ifrs|first-time adoption",
+            query_text,
+            re.I,
+        ):
+            score *= 0.52
 
         if "subvention" in query_text or "aide publique" in query_text or "aides publiques" in query_text:
             if record.get("doc_id") == "nc_12_subventions_publiques":
@@ -373,6 +386,35 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 3.5
             elif record.get("doc_id") == "droits_taxes_hors_codes":
                 score *= 0.2
+        if ("ifrs 3" in query_text or "regroupements d'entreprises" in query_text or "goodwill" in query_text or "ecart d'acquisition" in query_text):
+            if record.get("doc_id") == "ifrs_3_regroupements_entreprises":
+                score *= 4.4
+            elif record.get("doc_id") == "nc_38_regroupements_entreprises":
+                score *= 2.4
+        if ("ifrs 2" in query_text or "paiement fonde sur des actions" in query_text or "stock-options" in query_text or "share-based payment" in query_text):
+            if record.get("doc_id") == "ifrs_2_paiement_fonde_sur_actions":
+                score *= 4.4
+        if ("ifrs 1" in query_text or "premiere application des normes internationales d'information financiere" in query_text or "premiere application des normes internationales d information financiere" in query_text or "first-time adoption" in query_text or "bilan d'ouverture ifrs" in query_text):
+            if record.get("doc_id") == "ifrs_1_premiere_application":
+                score *= 4.4
+            elif record.get("doc_id") == "ifrs_cadre_conceptuel_information_financiere":
+                score *= 1.6
+        if ("ifrs 4" in query_text or "contrats d'assurance" in query_text or "insurance contracts" in query_text):
+            if record.get("doc_id") == "ifrs_4_contrats_assurance":
+                score *= 4.4
+            elif record.get("doc_id") in {"nc_27_assurance_controle_interne", "nc_28_assurance_revenus", "nc_29_assurance_provisions_techniques", "nc_30_assurance_charges_techniques", "nc_31_assurance_placements"}:
+                score *= 1.8
+        if ("ifrs 5" in query_text or "actifs non courants detenus en vue de la vente" in query_text or "activites abandonnees" in query_text or "discontinued operations" in query_text):
+            if record.get("doc_id") == "ifrs_5_actifs_non_courants_vente":
+                score *= 4.4
+        if ("ifrs 6" in query_text or "prospection et evaluation de ressources minerales" in query_text or "ressources minieres" in query_text or "exploration and evaluation" in query_text):
+            if record.get("doc_id") == "ifrs_6_ressources_minieres":
+                score *= 4.4
+        if ("cadre conceptuel" in query_text or "caracteristiques qualitatives" in query_text or "representation fidele" in query_text or "pertinence" in query_text) and ("ifrs" in query_text or "iasb" in query_text or "information financiere" in query_text):
+            if record.get("doc_id") == "ifrs_cadre_conceptuel_information_financiere":
+                score *= 4.0
+            elif record.get("doc_id") == "cadre_conceptuel_comptable":
+                score *= 2.2
         if "entreprise assoc" in query_text or "influence notable" in query_text:
             if record.get("doc_id") == "nc_36_associees":
                 score *= 4.0
