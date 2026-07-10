@@ -133,9 +133,12 @@ def split_list_block(value: str) -> list[str]:
 
 def normalize_chat_payload(parsed: dict) -> tuple[str, list[str], list[str], list[str]]:
     answer = clean_translation_output(str(parsed.get("answer") or parsed.get("translation") or "")).strip()
-    assumptions = parsed.get("assumptions") if isinstance(parsed.get("assumptions"), list) else []
-    next_steps = parsed.get("next_steps") if isinstance(parsed.get("next_steps"), list) else []
-    warnings = parsed.get("warnings") if isinstance(parsed.get("warnings"), list) else []
+    assumptions_raw = parsed.get("assumptions")
+    next_steps_raw = parsed.get("next_steps")
+    warnings_raw = parsed.get("warnings")
+    assumptions = assumptions_raw if isinstance(assumptions_raw, list) else split_list_block(str(assumptions_raw or ""))
+    next_steps = next_steps_raw if isinstance(next_steps_raw, list) else split_list_block(str(next_steps_raw or ""))
+    warnings = warnings_raw if isinstance(warnings_raw, list) else split_list_block(str(warnings_raw or ""))
 
     if answer and (not assumptions or not next_steps or not warnings):
         parts = SECTION_SPLIT_RE.split(answer)
@@ -162,6 +165,24 @@ def normalize_chat_payload(parsed: dict) -> tuple[str, list[str], list[str], lis
         [clean_translation_output(str(item)).strip() for item in next_steps if str(item).strip()],
         [clean_translation_output(str(item)).strip() for item in warnings if str(item).strip()],
     )
+
+
+def fiscal_answer_needs_repair(answer: str, legal_domain: str) -> bool:
+    if legal_domain != "fiscalite":
+        return False
+    answer_text = (answer or "").lower()
+    forbidden_patterns = [
+        r"code general des impots",
+        r"code général des impôts",
+        r"\bcgi\b",
+        r"livre i\s*:\s*imp[oô]t sur le revenu",
+        r"livre ii\s*:\s*imp[oô]t sur les soci",
+        r"livre iii\s*:\s*taxe sur la valeur ajout",
+        r"livre iv\s*:\s*droits d'enregistrement",
+        r"livre v\s*:\s*imp[oô]ts locaux",
+        r"livre vi\s*:\s*taxes sp[eé]cifiques",
+    ]
+    return any(re.search(pattern, answer_text, re.I) for pattern in forbidden_patterns)
 
 
 def job_path(job_id: str, suffix: str) -> Path:
@@ -350,6 +371,8 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Pour une reponse client finale, signale qu'il faut verifier les lois de finances, normes modificatives, interpretations ulterieures, circulaires, et textes sectoriels applicables, notamment en matiere bancaire, OPCVM, assurance, reassurance, takaful, micro-credit, OSBL, consolidation et reglementation professionnelle.",
         "Si des sources internes sont fournies, utilise-les avant ta connaissance generale et cite le titre/page dans la reponse quand c'est pertinent.",
         "Pour la Tunisie, prefere la terminologie locale: TVA, IRPP, IS, retenue a la source, droit de timbre, CNSS, matricule fiscal, regime reel/forfaitaire, liasse fiscale.",
+        "Interdiction stricte supplementaire pour la fiscalite tunisienne: n'invente jamais un 'Code general des impots (CGI)' tunisien ni une structure fictive en Livres I/II/III/IV/V/VI si cette structure n'apparait pas explicitement dans les sources internes recuperees.",
+        "Si l'utilisateur demande les principales lois fiscales tunisiennes, cite sobrement les textes recuperes tels qu'ils existent dans les sources: Code de l IRPP et de l IS, Code TVA, Code des droits et procedures fiscaux, Code des droits d enregistrement et du timbre, Code de la fiscalite locale, loi de finances, et notes generales si elles sont pertinentes.",
         "Ne reponds pas comme un traducteur sauf si l'utilisateur demande une traduction. Par defaut, agis comme un assistant IA expert-comptable.",
         "Si l'utilisateur demande une presentation generale d'un sujet juridique ou fiscal, structure la reponse en deux niveaux: 1) ce que disent les sources internes recuperees, 2) ce qui doit etre verifie faute de source plus recente. Ne melange pas les deux.",
         "Style: professionnel, sans emoji, sans formule marketing, avec des etapes nettes et directement exploitables.",
@@ -393,6 +416,39 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                 answer, assumptions, next_steps, warnings = normalize_chat_payload(parsed)
                 if not answer:
                     raise RuntimeError("Model returned an empty accounting answer.")
+                if fiscal_answer_needs_repair(answer, legal_domain):
+                    repair_messages = [
+                        *messages,
+                        {
+                            "role": "user",
+                            "content": (
+                                "Reecris ta reponse en corrigeant une erreur juridique: "
+                                "n'invente pas de 'Code general des impots (CGI)' tunisien, "
+                                "n'invente pas une structure en Livres I/II/III/IV/V/VI, "
+                                "et cite uniquement les textes tunisiens effectivement recuperes dans les sources internes."
+                            ),
+                        },
+                    ]
+                    repair_body = provider_body(route, repair_messages, min(config.LLM_MAX_TOKENS, 2200), json_mode=True)
+                    repair_response = await client.post(
+                        route["endpoint"],
+                        headers=route["headers"],
+                        json=repair_body,
+                        timeout=provider_timeout(route, message, "expert-comptable assistant chat"),
+                    )
+                    if repair_response.status_code == 400 and route.get("api_style") != "gemini":
+                        repair_body.pop("response_format", None)
+                        repair_response = await client.post(
+                            route["endpoint"],
+                            headers=route["headers"],
+                            json=repair_body,
+                            timeout=provider_timeout(route, message, "expert-comptable assistant chat"),
+                        )
+                    repair_response.raise_for_status()
+                    repair_parsed = extract_json(provider_content(route, repair_response.json()))
+                    answer, assumptions, next_steps, warnings = normalize_chat_payload(repair_parsed)
+                    if not answer or fiscal_answer_needs_repair(answer, legal_domain):
+                        raise RuntimeError("Accounting answer failed fiscal legal validation.")
                 return {
                     "success": True,
                     "answer": answer,
