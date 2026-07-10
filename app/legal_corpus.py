@@ -150,6 +150,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "cassation_acte_commerce_accessoire_2019": r"acte de commerce par accessoire|commercialite par accessoire|commercialité par accessoire|chambre commerciale|article 40 cpcc|article 2 du code de commerce",
         "cassation_sequestre_societe_anonyme_2018": r"sequestre de la societe|séquestre de la société|societe anonyme cotee|société anonyme cotée|mise sous sequestre|mise sous séquestre|loi n°71-1997",
         "cassation_arbitrage_interne_2018": r"arbitrage interne|sentence arbitrale|recours en annulation|article 42 du code de l'arbitrage|article 44 du code de l'arbitrage",
+        "cassation_dissolution_sarl_affectio_2018": r"dissolution de la sarl|dissolution judiciaire de la société|affectio societatis|mésintelligence grave entre associés|mesintelligence grave entre associes|article 26 du csc|article 1323 du coc",
+        "cassation_reglement_judiciaire_cotisations_2017": r"reglement judiciaire|règlement judiciaire|cotisations complementaires de retraite|cotisations complémentaires de retraite|loi n°2016-36|redressement des entreprises en difficulte|entreprises en difficulté",
+        "cassation_terrorisme_participation_groupe_2017": r"participation a un groupe terroriste|participation à un groupe terroriste|element materiel|élément matériel|element moral|élément moral|articles 162/168/199 cpp|syrie|entraînement militaire",
+        "cassation_accident_route_baremes_2017": r"accident de la voie publique|barèmes de responsabilité|baremes de responsabilite|article 123 du code des assurances|préjudice économique|préjudic e economique|conducteur victime",
+        "cassation_clause_compromissoire_2017": r"clause compromissoire|promesse de vente|procuration|arbitrage interne|validité du contrat|validite du contrat|article 119 du cpcc",
         "analyse_amnistie_reconciliation_administrative": r"amnistie|réconciliation nationale|reconciliation nationale|loi du 24 octobre 2017|loi n° 02 du 24/10/2017|profit personnel|fonctionnaire public",
         "rapport_moral_2023": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
         "rapport_moral_2024": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
@@ -216,7 +221,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         ):
             score *= 0.22
         if record.get("source_tier") == "case_law" and not re.search(
-            r"cassation|pourvoi|jurisprudence|arbitrage|terrorisme|competence juridictionnelle|compétence juridictionnelle|acte de commerce|sequestre|séquestre",
+            r"cassation|pourvoi|jurisprudence|arbitrage|terrorisme|competence juridictionnelle|compétence juridictionnelle|acte de commerce|sequestre|séquestre|dissolution|affectio societatis|reglement judiciaire|règlement judiciaire|cotisations|accident de la voie publique|barèmes de responsabilité|clause compromissoire",
             query_text,
             re.I,
         ):
@@ -344,6 +349,21 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 5.0
         if ("arbitrage interne" in query_text or "sentence arbitrale" in query_text or "recours en annulation" in query_text):
             if record.get("doc_id") == "cassation_arbitrage_interne_2018":
+                score *= 5.0
+        if ("dissolution" in query_text or "affectio societatis" in query_text or "mésintelligence grave entre associés" in query_text or "mesintelligence grave entre associes" in query_text):
+            if record.get("doc_id") == "cassation_dissolution_sarl_affectio_2018":
+                score *= 5.0
+        if ("reglement judiciaire" in query_text or "règlement judiciaire" in query_text or "cotisations complementaires de retraite" in query_text or "cotisations complémentaires de retraite" in query_text):
+            if record.get("doc_id") == "cassation_reglement_judiciaire_cotisations_2017":
+                score *= 5.0
+        if ("participation a un groupe terroriste" in query_text or "participation à un groupe terroriste" in query_text or "element materiel" in query_text or "élément matériel" in query_text or "element moral" in query_text or "élément moral" in query_text):
+            if record.get("doc_id") == "cassation_terrorisme_participation_groupe_2017":
+                score *= 5.0
+        if ("accident de la voie publique" in query_text or "barèmes de responsabilité" in query_text or "baremes de responsabilite" in query_text or "article 123 du code des assurances" in query_text):
+            if record.get("doc_id") == "cassation_accident_route_baremes_2017":
+                score *= 5.0
+        if ("clause compromissoire" in query_text or "promesse de vente" in query_text or "procuration" in query_text):
+            if record.get("doc_id") == "cassation_clause_compromissoire_2017":
                 score *= 5.0
         if ("societe anonyme" in query_text or "société anonyme" in query_text or re.search(r"\bsa\b", query_text, re.I)):
             if record.get("doc_id") == "checklist_constitution_sa_api":
