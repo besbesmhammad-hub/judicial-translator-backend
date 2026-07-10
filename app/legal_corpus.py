@@ -17,6 +17,7 @@ SOURCE_TIER_WEIGHTS = {
     "professional_text_collection": 0.93,
     "professional_circular": 0.86,
     "professional_guide": 0.78,
+    "professional_guidance": 0.82,
     "case_law": 0.72,
     "audit_report": 0.69,
     "regulatory_bulletin": 0.74,
@@ -175,6 +176,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "rapport_cac_ote_2014": r"rapport general du commissaire aux comptes|ote|opinion du commissaire aux comptes|exercice clos le 31/12/2014|certification",
         "rapport_cac_cefa_tunisie_2020": r"cefa tunisie|rapport du commissaire aux comptes|exercice clos le 31 decembre 2020|exercice clos le 31 décembre 2020|audit|certification des comptes",
         "rapport_cac_act_2021": r"association for cooperation in tunisia|act|rapport cac|commissaire aux comptes|association|financial statements|opinion",
+        "rapport_cac_irc_2017": r"irc tunisie|international rescue committee|rapport d'audit|rapport d’audit|commissaire aux comptes|exercice clos le 31 decembre 2017|exercice clos le 31 décembre 2017",
+        "note_orientation_bct_2012_02": r"circulaire bct 2012-02|note d'orientation|note d’orientation|provisions collectives|etablissement de credit|établissement de crédit|rapport special|rapport spécial|niveau d'assurance|niveau d’assurance",
+        "rapport_reviseur_legal_smls_2017": r"rapport reviseur legal|rapport réviseur légal|etats financiers|états financiers|societe de metro leger de sfax|société de métro léger de sfax|exercice clos au 31 decembre 2017|exercice clos au 31 décembre 2017",
+        "rapport_general_cac_2017": r"rapport general des commissaires aux comptes|rapport général des commissaires aux comptes|rapport general|rapport général|commissaires aux comptes",
+        "rapport_audit_nebras_2023": r"rapport du commissaire aux comptes|nebras|institut tunisien de rehabilitation des survivants de la torture|institut tunisien de réhabilitation des survivants de la torture|etats financiers arretes|états financiers arrêtés|31 decembre 2023|31 décembre 2023",
         "analyse_amnistie_reconciliation_administrative": r"amnistie|réconciliation nationale|reconciliation nationale|loi du 24 octobre 2017|loi n° 02 du 24/10/2017|profit personnel|fonctionnaire public",
         "rapport_moral_2023": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
         "rapport_moral_2024": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
@@ -228,6 +234,12 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             re.I,
         ):
             score *= 0.38
+        if record.get("source_tier") == "professional_guidance" and not re.search(
+            r"note d'orientation|note d’orientation|circulaire bct|provisions collectives|rapport special|rapport spécial|commissaire aux comptes|etablissement de credit|établissement de crédit",
+            query_text,
+            re.I,
+        ):
+            score *= 0.24
         if record.get("source_tier") == "audit_report" and not re.search(
             r"commissaire aux comptes|reviseur des comptes|réviseur des comptes|rapport general|rapport général|rapport special|rapport spécial|certification des comptes|opinion|reserves|réserves|etats financiers|états financiers|conventions reglementees|conventions réglementées",
             query_text,
@@ -430,6 +442,9 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         if ("cmf" in query_text or "conseil du marche financier" in query_text or "conseil du marché financier" in query_text or "bulletin officiel" in query_text):
             if record.get("doc_id") == "cmf_bulletin_officiel_2017_04_11":
                 score *= 5.0
+        if ("circulaire bct 2012-02" in query_text or "note d'orientation" in query_text or "note d’orientation" in query_text or "provisions collectives" in query_text):
+            if record.get("doc_id") == "note_orientation_bct_2012_02":
+                score *= 4.8
         if ("commissaire aux comptes" in query_text or "reviseur des comptes" in query_text or "réviseur des comptes" in query_text or "rapport general" in query_text or "rapport général" in query_text or "rapport special" in query_text or "rapport spécial" in query_text or "certification des comptes" in query_text):
             if record.get("doc_id") in {
                 "rapport_cac_ance_2016",
@@ -438,8 +453,22 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 "rapport_cac_ote_2014",
                 "rapport_cac_cefa_tunisie_2020",
                 "rapport_cac_act_2021",
+                "rapport_cac_irc_2017",
+                "rapport_reviseur_legal_smls_2017",
+                "rapport_general_cac_2017",
+                "rapport_audit_nebras_2023",
             }:
                 score *= 4.6
+        if ("association" in query_text or "ong" in query_text or "audit 2023" in query_text or "nebras" in query_text) and ("rapport" in query_text or "audit" in query_text or "commissaire aux comptes" in query_text):
+            if record.get("doc_id") == "rapport_audit_nebras_2023":
+                score *= 6.2
+            elif record.get("doc_id") == "rapport_cac_act_2021":
+                score *= 2.8
+        if ("association" in query_text or "ong" in query_text) and "2023" in query_text:
+            if record.get("doc_id") == "rapport_audit_nebras_2023":
+                score *= 7.0
+            elif record.get("source_tier") == "audit_report" and record.get("year") != 2023:
+                score *= 0.35
         if ("etablissement de paiement" in query_text or "établissement de paiement" in query_text or "agrement" in query_text or "agrément" in query_text):
             if record.get("doc_id") == "guide_agrement_etablissement_paiement_tunisie":
                 score *= 4.8
