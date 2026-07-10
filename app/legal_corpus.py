@@ -13,11 +13,13 @@ STOPWORDS = {
 }
 SOURCE_TIER_WEIGHTS = {
     "primary_law": 1.12,
+    "implementing_regulation": 1.02,
     "accounting_standard": 1.08,
     "professional_text_collection": 0.93,
     "professional_circular": 0.86,
     "professional_guide": 0.78,
     "professional_guidance": 0.82,
+    "professional_article": 0.44,
     "case_law": 0.72,
     "audit_report": 0.69,
     "regulatory_bulletin": 0.74,
@@ -181,6 +183,12 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "rapport_reviseur_legal_smls_2017": r"rapport reviseur legal|rapport réviseur légal|etats financiers|états financiers|societe de metro leger de sfax|société de métro léger de sfax|exercice clos au 31 decembre 2017|exercice clos au 31 décembre 2017",
         "rapport_general_cac_2017": r"rapport general des commissaires aux comptes|rapport général des commissaires aux comptes|rapport general|rapport général|commissaires aux comptes",
         "rapport_audit_nebras_2023": r"rapport du commissaire aux comptes|nebras|institut tunisien de rehabilitation des survivants de la torture|institut tunisien de réhabilitation des survivants de la torture|etats financiers arretes|états financiers arrêtés|31 decembre 2023|31 décembre 2023",
+        "loi_experts_judiciaires_1993": r"experts judiciaires|expert judiciaire|loi n° 93-61|loi 93-61|liste des experts judiciaires|commission regionale|conseil de discipline",
+        "arrete_composition_commission_experts_1993": r"composition de la commission regionale|commission régionale|demandes d'inscription des experts judiciaires|article 5 de la loi n° 93-61",
+        "arrete_delais_inscription_experts_1993": r"delais de presentation des demandes d'inscription|délais de présentation des demandes d'inscription|premiere liste des experts judiciaires|première liste des experts judiciaires",
+        "arrete_manuel_procedures_expert_judiciaire_2000": r"manuel de procedures de l'expert judiciaire|manuel de procédures de l'expert judiciaire|approbation du manuel de procedures|3 juin 2000",
+        "loi_modification_experts_judiciaires_2010": r"experts judiciaires|article 4 nouveau|personne morale dans la liste des experts|conditions d'inscription|loi 2010|resident en tunisie",
+        "article_revue_expertise_comptable_2011": r"revue comptable et financiere|reforme du cursus|réforme du cursus|examen national|revision comptable|révision comptable|expertise comptable",
         "analyse_amnistie_reconciliation_administrative": r"amnistie|réconciliation nationale|reconciliation nationale|loi du 24 octobre 2017|loi n° 02 du 24/10/2017|profit personnel|fonctionnaire public",
         "rapport_moral_2023": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
         "rapport_moral_2024": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
@@ -234,12 +242,24 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             re.I,
         ):
             score *= 0.38
+        if record.get("source_tier") == "implementing_regulation" and not re.search(
+            r"experts judiciaires|expert judiciaire|arrete|arrêté|commission regionale|commission régionale|inscription|manuel de procedures|manuel de procédures",
+            query_text,
+            re.I,
+        ):
+            score *= 0.24
         if record.get("source_tier") == "professional_guidance" and not re.search(
             r"note d'orientation|note d’orientation|circulaire bct|provisions collectives|rapport special|rapport spécial|commissaire aux comptes|etablissement de credit|établissement de crédit",
             query_text,
             re.I,
         ):
             score *= 0.24
+        if record.get("source_tier") == "professional_article" and not re.search(
+            r"expertise comptable|examen national|revision comptable|révision comptable|reforme du cursus|réforme du cursus|revue comptable et financiere",
+            query_text,
+            re.I,
+        ):
+            score *= 0.16
         if record.get("source_tier") == "audit_report" and not re.search(
             r"commissaire aux comptes|reviseur des comptes|réviseur des comptes|rapport general|rapport général|rapport special|rapport spécial|certification des comptes|opinion|reserves|réserves|etats financiers|états financiers|conventions reglementees|conventions réglementées",
             query_text,
@@ -442,6 +462,34 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         if ("cmf" in query_text or "conseil du marche financier" in query_text or "conseil du marché financier" in query_text or "bulletin officiel" in query_text):
             if record.get("doc_id") == "cmf_bulletin_officiel_2017_04_11":
                 score *= 5.0
+        if ("experts judiciaires" in query_text or "expert judiciaire" in query_text):
+            if record.get("doc_id") in {
+                "loi_experts_judiciaires_1993",
+                "arrete_composition_commission_experts_1993",
+                "arrete_delais_inscription_experts_1993",
+                "arrete_manuel_procedures_expert_judiciaire_2000",
+                "loi_modification_experts_judiciaires_2010",
+            }:
+                score *= 4.8
+        if ("commission regionale" in query_text or "commission régionale" in query_text):
+            if record.get("doc_id") == "arrete_composition_commission_experts_1993":
+                score *= 5.0
+        if ("premiere liste des experts judiciaires" in query_text or "première liste des experts judiciaires" in query_text or "delais d'inscription" in query_text or "délais d'inscription" in query_text):
+            if record.get("doc_id") == "arrete_delais_inscription_experts_1993":
+                score *= 5.0
+        if ("manuel de procedures de l'expert judiciaire" in query_text or "manuel de procédures de l'expert judiciaire" in query_text or ("manuel" in query_text and "procedures" in query_text and "expert judiciaire" in query_text) or ("manuel" in query_text and "procédures" in query_text and "expert judiciaire" in query_text)):
+            if record.get("doc_id") == "arrete_manuel_procedures_expert_judiciaire_2000":
+                score *= 8.5
+            elif record.get("doc_id") == "loi_experts_judiciaires_1993":
+                score *= 0.18
+        if ("personne morale" in query_text or "personnes morales" in query_text) and ("experts judiciaires" in query_text or "inscription" in query_text):
+            if record.get("doc_id") == "loi_modification_experts_judiciaires_2010":
+                score *= 6.2
+            elif record.get("doc_id") == "arrete_delais_inscription_experts_1993":
+                score *= 0.3
+        if ("reforme du cursus" in query_text or "réforme du cursus" in query_text or "examen national de revision comptable" in query_text or "examen national de révision comptable" in query_text):
+            if record.get("doc_id") == "article_revue_expertise_comptable_2011":
+                score *= 4.2
         if ("circulaire bct 2012-02" in query_text or "note d'orientation" in query_text or "note d’orientation" in query_text or "provisions collectives" in query_text):
             if record.get("doc_id") == "note_orientation_bct_2012_02":
                 score *= 4.8
