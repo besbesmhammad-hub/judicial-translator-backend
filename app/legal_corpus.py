@@ -17,9 +17,11 @@ SOURCE_TIER_WEIGHTS = {
     "professional_text_collection": 0.93,
     "professional_circular": 0.86,
     "professional_guide": 0.78,
+    "case_law": 0.72,
     "administrative_checklist": 0.66,
     "form_template": 0.60,
     "secondary_legal_guide": 0.46,
+    "jurisprudence_analysis": 0.42,
     "institutional_report": 0.50,
 }
 
@@ -144,6 +146,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "checklist_constitution_sa_api": r"societe anonyme|société anonyme|\bsa\b|constitution d'une sa|constitution d une sa|appel public a l'epargne|appel public à l'épargne|agc|conseil d'administration",
         "guide_creation_sarl_tunisie": r"\bsarl\b|societe a responsabilite limitee|société à responsabilité limitée|creation d'une sarl|creation d une sarl|immatriculation sarl|parts sociales|capital social minimal",
         "guide_fermeture_entreprise_tunisie": r"fermeture d[' ]une entreprise|fermeture d'entreprise|fermeture d entreprise|fermeture entreprise|dissolution anticipee|dissolution anticipée|liquidation de la societe|liquidation de la société|cessation d'activite|cessation d'activité|radiation personne morale",
+        "cassation_chambres_reunies_terrorisme_2019": r"chambres reunies|chambres réunies|terrorisme|pôle judiciaire de lutte contre le terrorisme|juge d'instruction militaire|article 273 du cpp|qualification juridique correcte",
+        "cassation_acte_commerce_accessoire_2019": r"acte de commerce par accessoire|commercialite par accessoire|commercialité par accessoire|chambre commerciale|article 40 cpcc|article 2 du code de commerce",
+        "cassation_sequestre_societe_anonyme_2018": r"sequestre de la societe|séquestre de la société|societe anonyme cotee|société anonyme cotée|mise sous sequestre|mise sous séquestre|loi n°71-1997",
+        "cassation_arbitrage_interne_2018": r"arbitrage interne|sentence arbitrale|recours en annulation|article 42 du code de l'arbitrage|article 44 du code de l'arbitrage",
+        "analyse_amnistie_reconciliation_administrative": r"amnistie|réconciliation nationale|reconciliation nationale|loi du 24 octobre 2017|loi n° 02 du 24/10/2017|profit personnel|fonctionnaire public",
         "rapport_moral_2023": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
         "rapport_moral_2024": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
         "rapport_moral_2025": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
@@ -208,6 +215,18 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             re.I,
         ):
             score *= 0.22
+        if record.get("source_tier") == "case_law" and not re.search(
+            r"cassation|pourvoi|jurisprudence|arbitrage|terrorisme|competence juridictionnelle|compétence juridictionnelle|acte de commerce|sequestre|séquestre",
+            query_text,
+            re.I,
+        ):
+            score *= 0.26
+        if record.get("source_tier") == "jurisprudence_analysis" and not re.search(
+            r"amnistie|réconciliation nationale|reconciliation nationale|fonctionnaire public|profit personnel|poursuites judiciaires",
+            query_text,
+            re.I,
+        ):
+            score *= 0.18
 
         if "subvention" in query_text or "aide publique" in query_text or "aides publiques" in query_text:
             if record.get("doc_id") == "nc_12_subventions_publiques":
@@ -311,9 +330,21 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         if ("cour de cassation" in query_text or "pourvoi en cassation" in query_text or "recours en cassation" in query_text):
             if record.get("doc_id") == "cour_cassation_guide":
                 score *= 5.0
+        if ("chambres reunies" in query_text or "chambres réunies" in query_text or "terrorisme" in query_text or "juge d'instruction militaire" in query_text):
+            if record.get("doc_id") == "cassation_chambres_reunies_terrorisme_2019":
+                score *= 5.0
+        if ("acte de commerce par accessoire" in query_text or "commercialite par accessoire" in query_text or "commercialité par accessoire" in query_text):
+            if record.get("doc_id") == "cassation_acte_commerce_accessoire_2019":
+                score *= 5.0
         if ("coc" in query_text or "obligations et contrats" in query_text or "responsabilite civile" in query_text or "responsabilité civile" in query_text):
             if record.get("doc_id") == "code_obligations_contrats_2015":
                 score *= 4.0
+        if ("sequestre" in query_text or "séquestre" in query_text) and ("societe anonyme" in query_text or "société anonyme" in query_text or "actionnaires" in query_text):
+            if record.get("doc_id") == "cassation_sequestre_societe_anonyme_2018":
+                score *= 5.0
+        if ("arbitrage interne" in query_text or "sentence arbitrale" in query_text or "recours en annulation" in query_text):
+            if record.get("doc_id") == "cassation_arbitrage_interne_2018":
+                score *= 5.0
         if ("societe anonyme" in query_text or "société anonyme" in query_text or re.search(r"\bsa\b", query_text, re.I)):
             if record.get("doc_id") == "checklist_constitution_sa_api":
                 score *= 4.8
@@ -336,6 +367,9 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 4.2
             elif record.get("doc_id") == "formulaire_radiation_2026" and ("societe" in query_text or "entreprise" in query_text or "personne morale" in query_text):
                 score *= 0.22
+        if ("amnistie" in query_text or "réconciliation nationale" in query_text or "reconciliation nationale" in query_text):
+            if record.get("doc_id") == "analyse_amnistie_reconciliation_administrative":
+                score *= 4.6
         if ("personne physique" in query_text or "personnes physiques" in query_text) and ("inscription" in query_text or "terssim" in query_text or "ترسيم" in query_text):
             if record.get("doc_id") == "guide_inscription_personnes_physiques_2026":
                 score *= 5.0
