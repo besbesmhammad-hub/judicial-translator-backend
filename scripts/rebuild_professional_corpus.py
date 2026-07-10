@@ -293,6 +293,76 @@ DOCS = [
         "year": 2017,
         "domain": "arbitrage_jurisprudence",
     },
+    {
+        "filename": "bo170411.pdf",
+        "doc_id": "cmf_bulletin_officiel_2017_04_11",
+        "title": "Bulletin Officiel du Conseil du Marche Financier 11 avril 2017",
+        "authority": "Conseil du Marche Financier",
+        "source_tier": "regulatory_bulletin",
+        "year": 2017,
+        "domain": "marche_financier_reglementation",
+        "max_pages": 70,
+    },
+    {
+        "filename": "1700485732.pdf",
+        "doc_id": "guide_agrement_etablissement_paiement_tunisie",
+        "title": "Guide d agrement pour la creation d un etablissement de paiement en Tunisie",
+        "authority": "Guide reglementaire tunisien",
+        "source_tier": "regulatory_guidance",
+        "year": 2023,
+        "domain": "paiement_reglementation",
+        "max_pages": 56,
+    },
+    {
+        "filename": "e155fd21-5b8f-47cb-b8e9-14e1cf16939b_1772008340_51eb70b554dd29c7446b070ae1fa5167.pdf",
+        "doc_id": "appel_offres_assurance_tunisie_autoroutes_2026",
+        "title": "Appel d offres assurance Tunisie Autoroutes 2026",
+        "authority": "Societe Tunisie Autoroutes / Ministere de l Equipement et de l Habitat",
+        "source_tier": "public_procurement_tender",
+        "year": 2026,
+        "domain": "commande_publique_assurance",
+        "max_pages": 70,
+    },
+    {
+        "filename": "xabyt-prospectus-06-01-2012.pdf",
+        "doc_id": "prospectus_hexabyte_2011_2012",
+        "title": "Prospectus Hexabyte introduction au marche alternatif",
+        "authority": "Conseil du Marche Financier",
+        "source_tier": "market_prospectus",
+        "year": 2011,
+        "domain": "marche_financier_prospectus",
+        "max_pages": 80,
+    },
+    {
+        "filename": "Prospectus_fusion_tunisie_Leasing.pdf",
+        "doc_id": "prospectus_fusion_tunisie_leasing",
+        "title": "Prospectus fusion Tunisie Leasing",
+        "authority": "Conseil du Marche Financier",
+        "source_tier": "market_prospectus",
+        "year": 2011,
+        "domain": "marche_financier_prospectus",
+        "max_pages": 110,
+    },
+    {
+        "filename": "Strategie-Habitat-Tunisie_20150427_final.pdf",
+        "doc_id": "strategie_habitat_tunisie_2015",
+        "title": "Vers une nouvelle strategie de l habitat en Tunisie",
+        "authority": "Ministere de l Equipement, de l Amenagement du Territoire et du Developpement Durable",
+        "source_tier": "policy_strategy",
+        "year": 2015,
+        "domain": "politique_publique_habitat",
+        "max_pages": 60,
+    },
+    {
+        "filename": "multi-page.pdf",
+        "doc_id": "banque_mondiale_strategie_transports_tunisie",
+        "title": "Banque mondiale etude sur la strategie des transports Tunisie",
+        "authority": "Banque mondiale",
+        "source_tier": "external_report",
+        "year": 0,
+        "domain": "transport_politique_publique",
+        "max_pages": 60,
+    },
 ]
 
 DOC_ID_FILTER = {value.strip() for value in os.environ.get("DOC_IDS", "").split(",") if value.strip()}
@@ -424,10 +494,13 @@ def build_records(meta: dict) -> list[dict]:
     doc = fitz.open(path)
     start_index = max(0, START_PAGE - 1)
     end_index = doc.page_count
+    doc_page_cap = int(meta.get("max_pages", 0) or 0)
     if END_PAGE:
         end_index = min(doc.page_count, END_PAGE)
     elif MAX_PAGES_PER_DOC:
         end_index = min(doc.page_count, start_index + MAX_PAGES_PER_DOC)
+    elif doc_page_cap:
+        end_index = min(doc.page_count, start_index + doc_page_cap)
     for page_index in range(start_index, end_index):
         page_text = extract_page_text(doc.load_page(page_index))
         if not page_text:
