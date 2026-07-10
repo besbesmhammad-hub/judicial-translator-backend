@@ -118,6 +118,13 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "ias_10_evenements_post_cloture": r"\bias 10\b|evenements posterieurs a la date de cloture|événements postérieurs à la date de clôture|dividendes declares apres la date de cloture|ajustement post cloture",
         "ias_11_contrats_construction": r"\bias 11\b|contrats de construction|pourcentage d'avancement|pourcentage d’avancement|produits et couts des contrats de construction|produits et coûts des contrats de construction",
         "ias_12_impots_resultat": r"\bias 12\b|impots sur le resultat|impôts sur le résultat|differences temporelles|différences temporelles|impot differe|impôt différé|actif d'impot differe|passif d'impot differe",
+        "ias_16_immobilisations_corporelles": r"\bias 16\b|immobilisations corporelles|composants significatifs|amortissement|valeur residuelle|coût initial|cout initial|modele du cout|modèle du coût|modele de reevaluation|modèle de réévaluation",
+        "ias_17_contrats_location": r"\bias 17\b|contrats de location|location-financement|location financement|location simple|credit-bail|preneur|bailleur",
+        "ias_18_produits_activites_ordinaires": r"\bias 18\b|produits des activites ordinaires|produits des activités ordinaires|vente de biens|prestations de services|interets redevances dividendes|intérêts redevances dividendes",
+        "ias_19_avantages_personnel": r"\bias 19\b|avantages du personnel|indemnites de fin de carriere|indemnités de fin de carrière|regimes a prestations definies|régimes à prestations définies|regimes a cotisations definies|régimes à cotisations définies|ecarts actuariels|écarts actuariels",
+        "ias_20_subventions_publiques_aide_publique": r"\bias 20\b|subventions publiques|aide publique|aides publiques|comptabilisation des subventions publiques|informations a fournir sur l'aide publique|informations à fournir sur l'aide publique",
+        "ias_21_variations_cours_monnaies_etrangeres": r"\bias 21\b|variations des cours des monnaies etrangeres|variations des cours des monnaies étrangères|ecarts de change|écarts de change|monnaie fonctionnelle|conversion des etats financiers|conversion des états financiers",
+        "ias_23_couts_emprunt": r"\bias 23\b|couts d'emprunt|coûts d'emprunt|actif qualifie|actif qualifié|capitalisation des couts d'emprunt|capitalisation des coûts d'emprunt",
         "droits_taxes_hors_codes": r"taxes non incorporees|circulation|voyage|assurance|telecommunication|hotel",
         "nc_01_norme_generale": r"\bnc 01\b|norme comptable generale|presentation des etats financiers|organisation comptable",
         "nc_02_capitaux_propres": r"\bnc 02\b|capitaux propres|reserve|dividende|resultat reporte",
@@ -357,7 +364,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         ):
             score *= 0.52
         if record.get("doc_id", "").startswith("ias_") and not re.search(
-            r"\bias\b|norme comptable internationale|normes comptables internationales|presentation des etats financiers|stocks|flux de tresorerie|flux de trésorerie|methodes comptables|méthodes comptables|estimations comptables|evenements posterieurs|événements postérieurs|contrats de construction|impots sur le resultat|impôts sur le résultat|impot differe|impôt différé",
+            r"\bias\b|norme comptable internationale|normes comptables internationales|presentation des etats financiers|stocks|flux de tresorerie|flux de trésorerie|methodes comptables|méthodes comptables|estimations comptables|evenements posterieurs|événements postérieurs|contrats de construction|impots sur le resultat|impôts sur le résultat|impot differe|impôt différé|immobilisations corporelles|location-financement|location financement|credit-bail|avantages du personnel|subventions publiques|aide publique|ecarts de change|écarts de change|monnaie fonctionnelle|couts d'emprunt|coûts d'emprunt",
             query_text,
             re.I,
         ):
@@ -510,6 +517,44 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         if ("ias 12" in query_text or "impots sur le resultat" in query_text or "impôts sur le résultat" in query_text or "impot differe" in query_text or "impôt différé" in query_text or "differences temporelles" in query_text or "différences temporelles" in query_text):
             if record.get("doc_id") == "ias_12_impots_resultat":
                 score *= 4.6
+        if ("ias 16" in query_text or "immobilisations corporelles" in query_text or "modele de reevaluation" in query_text or "modèle de réévaluation" in query_text or "valeur residuelle" in query_text):
+            if record.get("doc_id") == "ias_16_immobilisations_corporelles":
+                score *= 4.4
+            elif record.get("doc_id") == "nc_05_immobilisations_corporelles":
+                score *= 1.8
+        if ("ias 17" in query_text or "location-financement" in query_text or "location financement" in query_text or "credit-bail" in query_text):
+            if record.get("doc_id") == "ias_17_contrats_location":
+                score *= 4.3
+            elif record.get("doc_id") in {"nc_41_contrats_location", "ifrs_16_contrats_location"}:
+                score *= 1.7
+        if ("ias 18" in query_text or "produits des activites ordinaires" in query_text or "produits des activités ordinaires" in query_text or "vente de biens" in query_text or "prestations de services" in query_text):
+            if record.get("doc_id") == "ias_18_produits_activites_ordinaires":
+                score *= 4.3
+            elif record.get("doc_id") in {"nc_03_revenus", "ifrs_15_produits_contrats_clients"}:
+                score *= 1.7
+        if ("ias 19" in query_text or "avantages du personnel" in query_text or "regimes a prestations definies" in query_text or "régimes à prestations définies" in query_text or "ecarts actuariels" in query_text or "écarts actuariels" in query_text):
+            if record.get("doc_id") == "ias_19_avantages_personnel":
+                score *= 4.4
+        if ("ias 20" in query_text or "subventions publiques" in query_text or "aide publique" in query_text or "aides publiques" in query_text):
+            if record.get("doc_id") == "ias_20_subventions_publiques_aide_publique":
+                score *= 4.8
+            elif record.get("doc_id") == "nc_12_subventions_publiques":
+                score *= 1.9
+        if "ias 20" in query_text:
+            if record.get("doc_id") == "ias_20_subventions_publiques_aide_publique":
+                score *= 1.6
+            elif record.get("doc_id") == "nc_12_subventions_publiques":
+                score *= 0.72
+        if ("ias 21" in query_text or "ecarts de change" in query_text or "écarts de change" in query_text or "monnaie fonctionnelle" in query_text or "conversion des etats financiers" in query_text or "conversion des états financiers" in query_text):
+            if record.get("doc_id") == "ias_21_variations_cours_monnaies_etrangeres":
+                score *= 4.4
+            elif record.get("doc_id") == "nc_15_monnaies_etrangeres":
+                score *= 1.9
+        if ("ias 23" in query_text or "couts d'emprunt" in query_text or "coûts d'emprunt" in query_text or "actif qualifie" in query_text or "actif qualifié" in query_text):
+            if record.get("doc_id") == "ias_23_couts_emprunt":
+                score *= 4.4
+            elif record.get("doc_id") == "nc_13_charges_emprunt":
+                score *= 1.9
         if ("cadre conceptuel" in query_text or "caracteristiques qualitatives" in query_text or "representation fidele" in query_text or "pertinence" in query_text) and ("ifrs" in query_text or "iasb" in query_text or "information financiere" in query_text):
             if record.get("doc_id") == "ifrs_cadre_conceptuel_information_financiere":
                 score *= 4.0
