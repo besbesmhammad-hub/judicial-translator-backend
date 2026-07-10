@@ -97,6 +97,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "fiscalite_locale": r"fiscalite locale|taxe sur les immeubles|tcl|collectivite|commune|municipal",
         "loi_finances_2026": r"loi de finances|finance 2026|budget 2026|mesures fiscales 2026|mesure fiscale|dispositions fiscales nouvelles",
         "note_generale_contribution_solidarite_2026": r"contribution sociale solidaire|contribution sociale solidarite|mcss|cotisation sociale solidaire|contribution exceptionnelle",
+        "note_generale_facturation_electronique_2026": r"facturation electronique|facture electronique|e-facturation|e facture|e-facture|plateforme facture|operations de services|obligation de facturation",
+        "note_generale_non_residents_services_administratifs_2026": r"tunisien non resident|tunisiens non residents|non resident|services administratifs|article 109|certificat d'immatriculation|depot des declarations fiscales|dépôt des déclarations fiscales",
+        "note_generale_regularisation_dettes_fiscales_2026": r"regularisation des dettes fiscales|régularisation des dettes fiscales|dettes fiscales|dettes fiscales admin|penalites fiscales|pénalités fiscales|remise des penalites|remise des pénalités|echeancier fiscal|échéancier fiscal|roznam|roseman|30 juin 2026",
+        "note_generale_taxe_environnement_2026": r"mecenvironnement|taxe environnementale|taxe pour la protection de l'environnement|mpp|mou3allim lil mouhafadha 3ala al b2ia|produits manufactures localement|produits importes|produits importés|protection de l environnement",
+        "note_generale_fiscalite_vehicules_hybrides_2026": r"batteries lithium|vehicules hybrides|véhicules hybrides|hybrides rechargeables|voitures hybrides|bornes de recharge|appareils de charge|moteur electrique|moteur électrique|taxation automobile",
         "loi_comptable": r"loi comptable|systeme comptable|normes comptables|etats financiers",
         "cadre_conceptuel_comptable": r"cadre conceptuel|qualitative|hypothese sous-jacente|information financiere",
         "ifrs_cadre_conceptuel_information_financiere": r"cadre conceptuel|ifrs|iasb|information financiere|caracteristiques qualitatives|image fidele|pertinence|representation fidele",
@@ -953,6 +958,37 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 1.35
             elif record.get("doc_id") == "note_generale_contribution_solidarite_2026":
                 score *= 0.82
+        if re.search(r"facturation electronique|facture electronique|e-facturation|e facture|e-facture|fou?tur", query_text, re.I):
+            if record.get("doc_id") == "note_generale_facturation_electronique_2026":
+                score = (score * 5.2) + 28.0
+            elif record.get("doc_id") == "tva_droit_consommation":
+                score *= 2.0
+        if re.search(r"regularisation des dettes fiscales|régularisation des dettes fiscales|dettes fiscales|penalites fiscales|pénalités fiscales|echeancier fiscal|échéancier fiscal|remise des penalites|remise des pénalités", query_text, re.I):
+            if record.get("doc_id") == "note_generale_regularisation_dettes_fiscales_2026":
+                score = (score * 5.0) + 28.0
+            elif record.get("doc_id") == "procedures_fiscales_2026":
+                score *= 2.2
+            elif record.get("doc_id", "").startswith(("nc_", "ias_", "ifrs_", "nct_")):
+                score *= 0.08
+        if re.search(r"vehicules hybrides|véhicules hybrides|hybrides rechargeables|voitures hybrides|batteries lithium|bornes de recharge|appareils de charge", query_text, re.I):
+            if record.get("doc_id") == "note_generale_fiscalite_vehicules_hybrides_2026":
+                score = (score * 7.0) + 54.0
+            elif record.get("doc_id") == "droits_taxes_hors_codes":
+                score *= 0.52
+            elif record.get("doc_id") == "tva_droit_consommation":
+                score *= 1.4
+        if re.search(r"tunisiens non residents|non residents|non-résidents|non residents.*services administratifs|article 109|services administratifs fiscaux", query_text, re.I):
+            if record.get("doc_id") == "note_generale_non_residents_services_administratifs_2026":
+                score = (score * 5.0) + 26.0
+            elif record.get("doc_id") == "procedures_fiscales_2026":
+                score *= 2.0
+        if re.search(r"taxe environnementale|protection de l'environnement|protection de l environnement|produits manufactures localement|produits importes|produits importés|mecenvironnement", query_text, re.I):
+            if record.get("doc_id") == "note_generale_taxe_environnement_2026":
+                score = (score * 8.0) + 96.0
+            elif record.get("doc_id") == "droits_taxes_hors_codes":
+                score *= 0.55
+            elif record.get("doc_id") == "fiscalite_locale":
+                score *= 0.35
 
         if record.get("heading") and re.search(r"article|art\.|chapitre|section|titre|الفصل|باب", record["heading"], re.I):
             score *= 1.1
