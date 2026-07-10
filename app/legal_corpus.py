@@ -20,6 +20,7 @@ SOURCE_TIER_WEIGHTS = {
     "professional_guide": 0.78,
     "professional_guidance": 0.82,
     "professional_article": 0.44,
+    "audit_course": 0.57,
     "case_law": 0.72,
     "audit_report": 0.69,
     "regulatory_bulletin": 0.74,
@@ -138,6 +139,14 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "ias_39_instruments_financiers_comptabilisation_evaluation": r"\bias 39\b|instruments financiers comptabilisation et evaluation|instruments financiers : comptabilisation et évaluation|derive incorpore|dérivé incorporé|actif financier disponible a la vente|actif financier disponible à la vente|comptabilite de couverture|comptabilité de couverture",
         "ias_40_immeubles_placement": r"\bias 40\b|immeubles de placement|juste valeur des immeubles de placement|modele de la juste valeur|modèle de la juste valeur|modele du cout|modèle du coût",
         "ias_41_agriculture": r"\bias 41\b|agriculture|actifs biologiques|production agricole|recolte|récolte|juste valeur diminuee des couts de vente|juste valeur diminuée des coûts de vente",
+        "audit_resume_gaida_normes_missions": r"isa|isre|isrs|isqc|ifac|missions connexes|assurance|normes d'audit|normes d’audit",
+        "audit_resume_maaloul_audit_financier": r"audit financier|risque d'audit|risque d’audit|planification|seuil de signification|controle interne|contrôle interne",
+        "audit_resume_acceptation_controle_qualite": r"acceptation de la mission|maintien des relations client|controle qualite|contrôle qualité|isqc 1|isa 220",
+        "audit_resume_chakroun_scan": r"resume d'audit|isa|isre|isqc|ifac",
+        "audit_pratique_moez_chaabeen": r"dossier permanent|dossier annuel|mission d'audit|mission d’audit|organisation d'une mission d'audit|programme de travail",
+        "audit_controle_qualite_imed_ennouri": r"controle de qualite|contrôle de qualité|chapitre 3|isa 220|isqc 1",
+        "cours_audit_chiheb_ghanmi": r"cours d'audit|cours d’audit|audit financier|chiheb ghanmi|revision comptable|révision comptable",
+        "cours_audit_imed_ennouri": r"cours d'audit financier|cours d’audit financier|imed ennouri|revsion comptable|révision comptable|audit financier",
         "droits_taxes_hors_codes": r"taxes non incorporees|circulation|voyage|assurance|telecommunication|hotel",
         "nc_01_norme_generale": r"\bnc 01\b|norme comptable generale|presentation des etats financiers|organisation comptable",
         "nc_02_capitaux_propres": r"\bnc 02\b|capitaux propres|reserve|dividende|resultat reporte",
@@ -304,6 +313,12 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             re.I,
         ):
             score *= 0.16
+        if record.get("source_tier") == "audit_course" and not re.search(
+            r"\baudit\b|commissaire aux comptes|isa|isre|isrs|isqc|ifac|controle qualite|contrôle qualité|acceptation de la mission|planification|risque d'audit|risque d’audit|controle interne|contrôle interne|dossier permanent|dossier annuel|seuil de signification|programme de travail|revision comptable|révision comptable",
+            query_text,
+            re.I,
+        ):
+            score *= 0.18
         if record.get("source_tier") == "audit_report" and not re.search(
             r"commissaire aux comptes|reviseur des comptes|réviseur des comptes|rapport general|rapport général|rapport special|rapport spécial|certification des comptes|opinion|reserves|réserves|etats financiers|états financiers|conventions reglementees|conventions réglementées",
             query_text,
@@ -791,6 +806,29 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 7.0
             elif record.get("source_tier") == "audit_report" and record.get("year") != 2023:
                 score *= 0.35
+        if ("audit" in query_text or "isa" in query_text or "commissaire aux comptes" in query_text or "controle qualite" in query_text or "contrôle qualité" in query_text):
+            if record.get("doc_id") in {
+                "audit_resume_gaida_normes_missions",
+                "audit_resume_maaloul_audit_financier",
+                "audit_resume_acceptation_controle_qualite",
+                "audit_resume_chakroun_scan",
+                "audit_pratique_moez_chaabeen",
+                "audit_controle_qualite_imed_ennouri",
+                "cours_audit_chiheb_ghanmi",
+                "cours_audit_imed_ennouri",
+            }:
+                score *= 3.8
+        if ("acceptation de la mission" in query_text or "maintien des relations client" in query_text or "isa 220" in query_text or "isqc 1" in query_text):
+            if record.get("doc_id") == "audit_resume_acceptation_controle_qualite":
+                score *= 4.8
+            elif record.get("doc_id") == "audit_controle_qualite_imed_ennouri":
+                score *= 3.8
+        if ("dossier permanent" in query_text or "dossier annuel" in query_text or "programme de travail" in query_text):
+            if record.get("doc_id") == "audit_pratique_moez_chaabeen":
+                score *= 4.6
+        if ("isa" in query_text or "isre" in query_text or "isrs" in query_text or "ifac" in query_text):
+            if record.get("doc_id") == "audit_resume_gaida_normes_missions":
+                score *= 4.6
         if ("etablissement de paiement" in query_text or "établissement de paiement" in query_text or "agrement" in query_text or "agrément" in query_text):
             if record.get("doc_id") == "guide_agrement_etablissement_paiement_tunisie":
                 score *= 4.8
