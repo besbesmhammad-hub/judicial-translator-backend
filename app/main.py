@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
 from . import config
-from .legal_corpus import corpus_status, retrieve_legal_context
+from .legal_corpus import corpus_status, infer_query_domain, retrieve_legal_context
 from .native_documents import translate_docx_native, translate_pdf_visual_native, translate_pptx_native, translate_xlsx_native
 from .parser import detect_file_format, parse_document
 from .renderer import render_document
@@ -315,7 +315,9 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     context = (request.context or "").strip()
     language = request.language or "francais"
     context_block = context[:18000]
-    legal_sources = retrieve_legal_context(f"{message}\n{context_block}", limit=5)
+    legal_query = f"{message}\n{context_block}"
+    legal_domain = infer_query_domain(legal_query)
+    legal_sources = retrieve_legal_context(legal_query, limit=5)
     legal_context = "\n\n".join(
         "\n".join([
             " | ".join([
@@ -356,6 +358,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     ])
     user_prompt = "\n\n".join([
         f"Langue de reponse: {language}",
+        f"Domaine detecte cote retrieval: {legal_domain}",
         legal_context and f"Sources internes recuperees dans le corpus fiscal/comptable tunisien:\n{legal_context}",
         context_block and f"Contexte/document fourni:\n{context_block}",
         f"Question du cabinet:\n{message}",
