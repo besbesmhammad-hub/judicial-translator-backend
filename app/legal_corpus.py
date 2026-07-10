@@ -111,6 +111,13 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "ifrs_14_comptes_report_reglementaires": r"\bifrs 14\b|comptes de report reglementaires|regulatory deferral accounts|soldes de report reglementaire|activites a tarifs reglementes|activites à tarifs réglementés",
         "ifrs_15_produits_contrats_clients": r"\bifrs 15\b|produits des activites ordinaires tires de contrats conclus avec des clients|reconnaissance du revenu|obligations de prestation|prix de transaction|contrat conclu avec un client|revenue from contracts with customers",
         "ifrs_16_contrats_location": r"\bifrs 16\b|contrats de location|leasing|droit d'utilisation|right-of-use|actif au titre du droit d'utilisation|passif locatif|preneur|bailleur",
+        "ias_1_presentation_etats_financiers": r"\bias 1\b|presentation des etats financiers|présentation des états financiers|classement courant non courant|going concern|continuité d'exploitation|etat de la situation financiere|état de la situation financière",
+        "ias_2_stocks": r"\bias 2\b|stocks|cout net de realisation|coût net de réalisation|cout des stocks|formules de cout|formules de coût",
+        "ias_7_tableau_flux_tresorerie": r"\bias 7\b|tableau des flux de tresorerie|tableau des flux de trésorerie|flux de tresorerie|flux de trésorerie|activites operationnelles|activités opérationnelles|activites d'investissement|activités d'investissement",
+        "ias_8_methodes_comptables_estimations_erreurs": r"\bias 8\b|methodes comptables|méthodes comptables|changements d'estimations comptables|changements d’estimations comptables|erreurs|application retrospective|application rétrospective",
+        "ias_10_evenements_post_cloture": r"\bias 10\b|evenements posterieurs a la date de cloture|événements postérieurs à la date de clôture|dividendes declares apres la date de cloture|ajustement post cloture",
+        "ias_11_contrats_construction": r"\bias 11\b|contrats de construction|pourcentage d'avancement|pourcentage d’avancement|produits et couts des contrats de construction|produits et coûts des contrats de construction",
+        "ias_12_impots_resultat": r"\bias 12\b|impots sur le resultat|impôts sur le résultat|differences temporelles|différences temporelles|impot differe|impôt différé|actif d'impot differe|passif d'impot differe",
         "droits_taxes_hors_codes": r"taxes non incorporees|circulation|voyage|assurance|telecommunication|hotel",
         "nc_01_norme_generale": r"\bnc 01\b|norme comptable generale|presentation des etats financiers|organisation comptable",
         "nc_02_capitaux_propres": r"\bnc 02\b|capitaux propres|reserve|dividende|resultat reporte",
@@ -349,6 +356,12 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             re.I,
         ):
             score *= 0.52
+        if record.get("doc_id", "").startswith("ias_") and not re.search(
+            r"\bias\b|norme comptable internationale|normes comptables internationales|presentation des etats financiers|stocks|flux de tresorerie|flux de trésorerie|methodes comptables|méthodes comptables|estimations comptables|evenements posterieurs|événements postérieurs|contrats de construction|impots sur le resultat|impôts sur le résultat|impot differe|impôt différé",
+            query_text,
+            re.I,
+        ):
+            score *= 0.58
 
         if "subvention" in query_text or "aide publique" in query_text or "aides publiques" in query_text:
             if record.get("doc_id") == "nc_12_subventions_publiques":
@@ -466,6 +479,37 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 4.6
             elif record.get("doc_id") == "nc_41_contrats_location":
                 score *= 1.9
+        if ("ias 1" in query_text or "presentation des etats financiers" in query_text or "présentation des états financiers" in query_text or "classement courant non courant" in query_text or "continuité d'exploitation" in query_text or "continuite d'exploitation" in query_text):
+            if record.get("doc_id") == "ias_1_presentation_etats_financiers":
+                score *= 4.6
+            elif record.get("doc_id") in {"nc_01_norme_generale", "loi_comptable"}:
+                score *= 1.8
+        if ("ias 2" in query_text or "cout net de realisation" in query_text or "coût net de réalisation" in query_text or ("stocks" in query_text and "ias" in query_text)):
+            if record.get("doc_id") == "ias_2_stocks":
+                score *= 4.4
+            elif record.get("doc_id") == "nc_04_stocks":
+                score *= 1.8
+        if ("ias 7" in query_text or "tableau des flux de tresorerie" in query_text or "tableau des flux de trésorerie" in query_text or "flux de tresorerie" in query_text or "flux de trésorerie" in query_text):
+            if record.get("doc_id") == "ias_7_tableau_flux_tresorerie":
+                score *= 4.4
+        if ("ias 8" in query_text or "methodes comptables" in query_text or "méthodes comptables" in query_text or "changements d'estimations comptables" in query_text or "changements d’estimations comptables" in query_text or "application retrospective" in query_text or "application rétrospective" in query_text):
+            if record.get("doc_id") == "ias_8_methodes_comptables_estimations_erreurs":
+                score *= 4.4
+            elif record.get("doc_id") == "nc_11_modifications_comptables":
+                score *= 1.8
+        if ("ias 10" in query_text or "evenements posterieurs a la date de cloture" in query_text or "événements postérieurs à la date de clôture" in query_text or "post cloture" in query_text):
+            if record.get("doc_id") == "ias_10_evenements_post_cloture":
+                score *= 4.4
+            elif record.get("doc_id") == "nc_14_eventualites_post_cloture":
+                score *= 1.8
+        if ("ias 11" in query_text or "contrats de construction" in query_text or "pourcentage d'avancement" in query_text or "pourcentage d’avancement" in query_text):
+            if record.get("doc_id") == "ias_11_contrats_construction":
+                score *= 4.2
+            elif record.get("doc_id") == "nc_09_contrats_construction":
+                score *= 1.9
+        if ("ias 12" in query_text or "impots sur le resultat" in query_text or "impôts sur le résultat" in query_text or "impot differe" in query_text or "impôt différé" in query_text or "differences temporelles" in query_text or "différences temporelles" in query_text):
+            if record.get("doc_id") == "ias_12_impots_resultat":
+                score *= 4.6
         if ("cadre conceptuel" in query_text or "caracteristiques qualitatives" in query_text or "representation fidele" in query_text or "pertinence" in query_text) and ("ifrs" in query_text or "iasb" in query_text or "information financiere" in query_text):
             if record.get("doc_id") == "ifrs_cadre_conceptuel_information_financiere":
                 score *= 4.0
