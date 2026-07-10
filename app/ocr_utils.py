@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import re
+from pathlib import Path
 
 import fitz
 import pytesseract
@@ -10,6 +11,24 @@ from PIL import Image, ImageFilter, ImageOps
 
 CONTROL_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 MEANINGFUL_RE = re.compile(r"[A-Za-zÀ-ÿ0-9]+|[\u0600-\u06FF]+")
+
+
+def _configure_tesseract() -> None:
+    current = getattr(pytesseract.pytesseract, "tesseract_cmd", "") or ""
+    if current and Path(current).exists():
+        return
+    candidates = [
+        Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
+        Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
+        Path.home() / "AppData" / "Local" / "Programs" / "Tesseract-OCR" / "tesseract.exe",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            pytesseract.pytesseract.tesseract_cmd = str(candidate)
+            return
+
+
+_configure_tesseract()
 
 
 def normalize_text(value: str) -> str:

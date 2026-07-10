@@ -18,6 +18,7 @@ SOURCE_TIER_WEIGHTS = {
     "professional_circular": 0.86,
     "professional_guide": 0.78,
     "case_law": 0.72,
+    "audit_report": 0.69,
     "regulatory_bulletin": 0.74,
     "regulatory_guidance": 0.70,
     "administrative_checklist": 0.66,
@@ -168,6 +169,12 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "prospectus_fusion_tunisie_leasing": r"tunisie leasing|fusion|prospectus de fusion|amen bank|fitch ratings|encours financiers|creances classees|créances classées",
         "strategie_habitat_tunisie_2015": r"strategie de l'habitat|stratégie de l'habitat|politique de l'habitat|logement|ministere de l'equipement|ministère de l'équipement",
         "banque_mondiale_strategie_transports_tunisie": r"banque mondiale|strategie des transports|stratégie des transports|transport|moyen-orient et afrique du nord",
+        "rapport_cac_ance_2016": r"rapport du reviseur des comptes|rapport de revision des comptes|commissaire aux comptes|certification des comptes|opinion|avec reserves|sans reserves|ance|agence nationale de certification electronique",
+        "rapport_cac_innorpi_2021": r"rapport du reviseur des comptes|rapport special du reviseur des comptes|innorpi|etats financiers|notes relatives aux etats financiers|commissaire aux comptes|certification des comptes",
+        "rapport_cac_bna_2018": r"rapport general et special|rapport général et spécial|banque nationale agricole|bna|conventions reglementees|conventions réglementées|commissaire aux comptes|etats financiers",
+        "rapport_cac_ote_2014": r"rapport general du commissaire aux comptes|ote|opinion du commissaire aux comptes|exercice clos le 31/12/2014|certification",
+        "rapport_cac_cefa_tunisie_2020": r"cefa tunisie|rapport du commissaire aux comptes|exercice clos le 31 decembre 2020|exercice clos le 31 décembre 2020|audit|certification des comptes",
+        "rapport_cac_act_2021": r"association for cooperation in tunisia|act|rapport cac|commissaire aux comptes|association|financial statements|opinion",
         "analyse_amnistie_reconciliation_administrative": r"amnistie|réconciliation nationale|reconciliation nationale|loi du 24 octobre 2017|loi n° 02 du 24/10/2017|profit personnel|fonctionnaire public",
         "rapport_moral_2023": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
         "rapport_moral_2024": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
@@ -221,6 +228,12 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             re.I,
         ):
             score *= 0.38
+        if record.get("source_tier") == "audit_report" and not re.search(
+            r"commissaire aux comptes|reviseur des comptes|réviseur des comptes|rapport general|rapport général|rapport special|rapport spécial|certification des comptes|opinion|reserves|réserves|etats financiers|états financiers|conventions reglementees|conventions réglementées",
+            query_text,
+            re.I,
+        ):
+            score *= 0.26
         if record.get("source_tier") == "regulatory_bulletin" and not re.search(
             r"cmf|conseil du marche financier|conseil du marché financier|bulletin officiel|appel public a l'epargne|appel public à l'épargne|assemblee generale|assemblée générale|cote de la bourse",
             query_text,
@@ -417,6 +430,16 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         if ("cmf" in query_text or "conseil du marche financier" in query_text or "conseil du marché financier" in query_text or "bulletin officiel" in query_text):
             if record.get("doc_id") == "cmf_bulletin_officiel_2017_04_11":
                 score *= 5.0
+        if ("commissaire aux comptes" in query_text or "reviseur des comptes" in query_text or "réviseur des comptes" in query_text or "rapport general" in query_text or "rapport général" in query_text or "rapport special" in query_text or "rapport spécial" in query_text or "certification des comptes" in query_text):
+            if record.get("doc_id") in {
+                "rapport_cac_ance_2016",
+                "rapport_cac_innorpi_2021",
+                "rapport_cac_bna_2018",
+                "rapport_cac_ote_2014",
+                "rapport_cac_cefa_tunisie_2020",
+                "rapport_cac_act_2021",
+            }:
+                score *= 4.6
         if ("etablissement de paiement" in query_text or "établissement de paiement" in query_text or "agrement" in query_text or "agrément" in query_text):
             if record.get("doc_id") == "guide_agrement_etablissement_paiement_tunisie":
                 score *= 4.8
