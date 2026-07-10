@@ -18,10 +18,16 @@ SOURCE_TIER_WEIGHTS = {
     "professional_circular": 0.86,
     "professional_guide": 0.78,
     "case_law": 0.72,
+    "regulatory_bulletin": 0.74,
+    "regulatory_guidance": 0.70,
     "administrative_checklist": 0.66,
+    "market_prospectus": 0.58,
+    "public_procurement_tender": 0.54,
     "form_template": 0.60,
     "secondary_legal_guide": 0.46,
     "jurisprudence_analysis": 0.42,
+    "policy_strategy": 0.34,
+    "external_report": 0.26,
     "institutional_report": 0.50,
 }
 
@@ -155,6 +161,13 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "cassation_terrorisme_participation_groupe_2017": r"participation a un groupe terroriste|participation à un groupe terroriste|element materiel|élément matériel|element moral|élément moral|articles 162/168/199 cpp|syrie|entraînement militaire",
         "cassation_accident_route_baremes_2017": r"accident de la voie publique|barèmes de responsabilité|baremes de responsabilite|article 123 du code des assurances|préjudice économique|préjudic e economique|conducteur victime",
         "cassation_clause_compromissoire_2017": r"clause compromissoire|promesse de vente|procuration|arbitrage interne|validité du contrat|validite du contrat|article 119 du cpcc",
+        "cmf_bulletin_officiel_2017_04_11": r"bulletin officiel du conseil du marche financier|bulletin officiel du cmf|appel public a l'epargne|appel public à l'épargne|assemblees generales|assemblées générales|societes admises a la cote|sociétés admises à la cote",
+        "guide_agrement_etablissement_paiement_tunisie": r"etablissement de paiement|établissement de paiement|dossier d'agrement|dossier d’agrément|agrément de principe|agrément définitif|business model canvas|banque centrale",
+        "appel_offres_assurance_tunisie_autoroutes_2026": r"appel d'offres|appel d’offres|tunisie autoroutes|contrats d'assurance|contrats d’assurances|ccap|cctp|cahier des charges|souscription des contrats d'assurance",
+        "prospectus_hexabyte_2011_2012": r"hexabyte|marche alternatif|marché alternatif|augmentation de capital|offre a prix ferme|offre à prix ferme|listing sponsor|visa du conseil du marche financier",
+        "prospectus_fusion_tunisie_leasing": r"tunisie leasing|fusion|prospectus de fusion|amen bank|fitch ratings|encours financiers|creances classees|créances classées",
+        "strategie_habitat_tunisie_2015": r"strategie de l'habitat|stratégie de l'habitat|politique de l'habitat|logement|ministere de l'equipement|ministère de l'équipement",
+        "banque_mondiale_strategie_transports_tunisie": r"banque mondiale|strategie des transports|stratégie des transports|transport|moyen-orient et afrique du nord",
         "analyse_amnistie_reconciliation_administrative": r"amnistie|réconciliation nationale|reconciliation nationale|loi du 24 octobre 2017|loi n° 02 du 24/10/2017|profit personnel|fonctionnaire public",
         "rapport_moral_2023": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
         "rapport_moral_2024": r"rapport moral|rapport d'activite|conseil national|compagnie des comptables",
@@ -208,12 +221,36 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             re.I,
         ):
             score *= 0.38
+        if record.get("source_tier") == "regulatory_bulletin" and not re.search(
+            r"cmf|conseil du marche financier|conseil du marché financier|bulletin officiel|appel public a l'epargne|appel public à l'épargne|assemblee generale|assemblée générale|cote de la bourse",
+            query_text,
+            re.I,
+        ):
+            score *= 0.28
+        if record.get("source_tier") == "regulatory_guidance" and not re.search(
+            r"etablissement de paiement|établissement de paiement|agrement|agrément|banque centrale|dossier d'agrement|dossier d’agrément|business plan",
+            query_text,
+            re.I,
+        ):
+            score *= 0.24
         if record.get("source_tier") == "administrative_checklist" and not re.search(
             r"societe anonyme|société anonyme|\bsa\b|constitution|immatriculation|registre national des entreprises|appel public a l'epargne|appel public à l'épargne",
             query_text,
             re.I,
         ):
             score *= 0.32
+        if record.get("source_tier") == "market_prospectus" and not re.search(
+            r"prospectus|introduction en bourse|introduction en bourse|augmentation de capital|fusion|cmf|conseil du marche financier|marché alternatif|marche alternatif|listing sponsor|tunisie leasing|hexabyte",
+            query_text,
+            re.I,
+        ):
+            score *= 0.22
+        if record.get("source_tier") == "public_procurement_tender" and not re.search(
+            r"appel d'offres|appel d’offres|cahier des charges|ccap|cctp|tunisie autoroutes|contrats d'assurance|contrats d’assurances|marche public|marché public",
+            query_text,
+            re.I,
+        ):
+            score *= 0.20
         if record.get("source_tier") == "secondary_legal_guide" and not re.search(
             r"tribunal|cassation|sarl|societe anonyme|société anonyme|\bsa\b|creation d'entreprise|création d'entreprise|fermeture d'entreprise|dissolution|liquidation",
             query_text,
@@ -232,6 +269,18 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             re.I,
         ):
             score *= 0.18
+        if record.get("source_tier") == "policy_strategy" and not re.search(
+            r"strategie|stratégie|habitat|logement|politique publique|ministere de l'equipement|ministère de l'équipement",
+            query_text,
+            re.I,
+        ):
+            score *= 0.16
+        if record.get("source_tier") == "external_report" and not re.search(
+            r"banque mondiale|strategie des transports|stratégie des transports|transport|etude|étude",
+            query_text,
+            re.I,
+        ):
+            score *= 0.12
 
         if "subvention" in query_text or "aide publique" in query_text or "aides publiques" in query_text:
             if record.get("doc_id") == "nc_12_subventions_publiques":
@@ -365,6 +414,27 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         if ("clause compromissoire" in query_text or "promesse de vente" in query_text or "procuration" in query_text):
             if record.get("doc_id") == "cassation_clause_compromissoire_2017":
                 score *= 5.0
+        if ("cmf" in query_text or "conseil du marche financier" in query_text or "conseil du marché financier" in query_text or "bulletin officiel" in query_text):
+            if record.get("doc_id") == "cmf_bulletin_officiel_2017_04_11":
+                score *= 5.0
+        if ("etablissement de paiement" in query_text or "établissement de paiement" in query_text or "agrement" in query_text or "agrément" in query_text):
+            if record.get("doc_id") == "guide_agrement_etablissement_paiement_tunisie":
+                score *= 4.8
+        if ("appel d'offres" in query_text or "appel d’offres" in query_text or "tunisie autoroutes" in query_text or "cahier des charges" in query_text):
+            if record.get("doc_id") == "appel_offres_assurance_tunisie_autoroutes_2026":
+                score *= 4.8
+        if ("hexabyte" in query_text or "marche alternatif" in query_text or "marché alternatif" in query_text):
+            if record.get("doc_id") == "prospectus_hexabyte_2011_2012":
+                score *= 4.8
+        if ("tunisie leasing" in query_text or "prospectus de fusion" in query_text or ("fusion" in query_text and "leasing" in query_text)):
+            if record.get("doc_id") == "prospectus_fusion_tunisie_leasing":
+                score *= 4.8
+        if ("strategie de l'habitat" in query_text or "stratégie de l'habitat" in query_text or "habitat" in query_text or "logement" in query_text):
+            if record.get("doc_id") == "strategie_habitat_tunisie_2015":
+                score *= 4.2
+        if ("banque mondiale" in query_text or "strategie des transports" in query_text or "stratégie des transports" in query_text):
+            if record.get("doc_id") == "banque_mondiale_strategie_transports_tunisie":
+                score *= 4.0
         if ("societe anonyme" in query_text or "société anonyme" in query_text or re.search(r"\bsa\b", query_text, re.I)):
             if record.get("doc_id") == "checklist_constitution_sa_api":
                 score *= 4.8
