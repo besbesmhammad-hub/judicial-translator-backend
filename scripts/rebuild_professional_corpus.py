@@ -301,7 +301,7 @@ DOCS = [
         "source_tier": "regulatory_bulletin",
         "year": 2017,
         "domain": "marche_financier_reglementation",
-        "max_pages": 30,
+        "max_pages": 8,
     },
     {
         "filename": "1700485732.pdf",
@@ -311,7 +311,7 @@ DOCS = [
         "source_tier": "regulatory_guidance",
         "year": 2023,
         "domain": "paiement_reglementation",
-        "max_pages": 24,
+        "max_pages": 8,
     },
     {
         "filename": "e155fd21-5b8f-47cb-b8e9-14e1cf16939b_1772008340_51eb70b554dd29c7446b070ae1fa5167.pdf",
@@ -321,7 +321,7 @@ DOCS = [
         "source_tier": "public_procurement_tender",
         "year": 2026,
         "domain": "commande_publique_assurance",
-        "max_pages": 20,
+        "max_pages": 6,
     },
     {
         "filename": "xabyt-prospectus-06-01-2012.pdf",
@@ -331,7 +331,7 @@ DOCS = [
         "source_tier": "market_prospectus",
         "year": 2011,
         "domain": "marche_financier_prospectus",
-        "max_pages": 20,
+        "max_pages": 6,
     },
     {
         "filename": "Prospectus_fusion_tunisie_Leasing.pdf",
@@ -341,7 +341,7 @@ DOCS = [
         "source_tier": "market_prospectus",
         "year": 2011,
         "domain": "marche_financier_prospectus",
-        "max_pages": 24,
+        "max_pages": 6,
     },
     {
         "filename": "Strategie-Habitat-Tunisie_20150427_final.pdf",
@@ -351,7 +351,7 @@ DOCS = [
         "source_tier": "policy_strategy",
         "year": 2015,
         "domain": "politique_publique_habitat",
-        "max_pages": 18,
+        "max_pages": 4,
     },
     {
         "filename": "multi-page.pdf",
@@ -361,7 +361,7 @@ DOCS = [
         "source_tier": "external_report",
         "year": 0,
         "domain": "transport_politique_publique",
-        "max_pages": 18,
+        "max_pages": 4,
     },
     {
         "filename": "BILAN 2016.pdf",
@@ -371,7 +371,7 @@ DOCS = [
         "source_tier": "audit_report",
         "year": 2016,
         "domain": "audit_comptable",
-        "max_pages": 14,
+        "max_pages": 8,
     },
     {
         "filename": "INNORPI RAPPORTS CAC 2021.pdf",
@@ -381,7 +381,7 @@ DOCS = [
         "source_tier": "audit_report",
         "year": 2021,
         "domain": "audit_comptable",
-        "max_pages": 14,
+        "max_pages": 8,
     },
     {
         "filename": "Rapport-general-et-special-2018-2.pdf",
@@ -401,7 +401,7 @@ DOCS = [
         "source_tier": "audit_report",
         "year": 2014,
         "domain": "audit_comptable",
-        "max_pages": 10,
+        "max_pages": 6,
     },
     {
         "filename": "RAPPORT-CAC-Cefa-Tunisie-exercice-2020.pdf",
@@ -411,7 +411,7 @@ DOCS = [
         "source_tier": "audit_report",
         "year": 2020,
         "domain": "audit_comptable",
-        "max_pages": 12,
+        "max_pages": 6,
     },
     {
         "filename": "cac-rapport-act-2021.pdf",
@@ -421,7 +421,7 @@ DOCS = [
         "source_tier": "audit_report",
         "year": 2021,
         "domain": "audit_association",
-        "max_pages": 10,
+        "max_pages": 2,
     },
     {
         "filename": "IRC - Rapport CAC 2017.pdf",
@@ -431,7 +431,8 @@ DOCS = [
         "source_tier": "audit_report",
         "year": 2017,
         "domain": "audit_association",
-        "max_pages": 12,
+        "max_pages": 4,
+        "chunk_limit": 2600,
     },
     {
         "filename": "note_d_orientation_circulaire_bct_2012_02.pdf",
@@ -441,7 +442,7 @@ DOCS = [
         "source_tier": "professional_guidance",
         "year": 2012,
         "domain": "audit_bancaire_guidance",
-        "max_pages": 14,
+        "max_pages": 12,
     },
     {
         "filename": "Rapport réviseur légal_EF_2017.pdf",
@@ -531,7 +532,7 @@ DOCS = [
         "source_tier": "professional_article",
         "year": 2011,
         "domain": "profession_expertise_comptable",
-        "max_pages": 8,
+        "max_pages": 6,
     },
     {
         "filename": "cadre-conceptuel-de-l_information-financic3a8re.pdf",
@@ -551,7 +552,7 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2009,
         "domain": "ifrs_premiere_application",
-        "max_pages": 16,
+        "max_pages": 12,
     },
     {
         "filename": "ifrs-2-paiement-fondc3a9-sur-des-actions.pdf",
@@ -561,7 +562,7 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2004,
         "domain": "ifrs_paiement_actions",
-        "max_pages": 16,
+        "max_pages": 8,
     },
     {
         "filename": "ifrs-3-regroupements-d_entreprises.pdf",
@@ -581,7 +582,7 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2004,
         "domain": "ifrs_assurance",
-        "max_pages": 14,
+        "max_pages": 2,
     },
     {
         "filename": "ifrs-5-actifs-non-courants-dc3a9tenus-en-vue-de-la-vente-et-activitc3a9s-abandonnc3a9es.pdf",
@@ -611,7 +612,7 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2005,
         "domain": "ifrs_information_instruments_financiers",
-        "max_pages": 16,
+        "max_pages": 10,
     },
     {
         "filename": "ifrs-8-secteurs-opc3a9rationnels.pdf",
@@ -651,7 +652,7 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2011,
         "domain": "ifrs_partenariats",
-        "max_pages": 14,
+        "max_pages": 6,
     },
     {
         "filename": "ifrs-12-informations-c3a0-fournir-sur-les-intc3a9rc3aats-dc3a9tenus-dans-d_autres-entitc3a9s.pdf",
@@ -671,7 +672,7 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2011,
         "domain": "ifrs_juste_valeur",
-        "max_pages": 16,
+        "max_pages": 6,
     },
     {
         "filename": "ifrs14.pdf",
@@ -681,7 +682,7 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2014,
         "domain": "ifrs_report_reglementaire",
-        "max_pages": 10,
+        "max_pages": 8,
     },
     {
         "filename": "ifrs15.pdf",
@@ -711,7 +712,7 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2007,
         "domain": "ias_presentation_etats_financiers",
-        "max_pages": 14,
+        "max_pages": 6,
     },
     {
         "filename": "ias-2-stocks.pdf",
@@ -771,7 +772,8 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 1998,
         "domain": "ias_impots_resultat",
-        "max_pages": 14,
+        "max_pages": 8,
+        "chunk_limit": 2800,
     },
     {
         "filename": "ias-16-immobilisations-corporelles.pdf",
@@ -781,7 +783,7 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2003,
         "domain": "ias_immobilisations_corporelles",
-        "max_pages": 10,
+        "max_pages": 6,
     },
     {
         "filename": "ias-17-contrats-de-location.pdf",
@@ -901,7 +903,7 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2004,
         "domain": "ias_resultat_par_action",
-        "max_pages": 10,
+        "max_pages": 4,
     },
     {
         "filename": "ias-34-information-financic3a8re-intermc3a9diaire.pdf",
@@ -921,7 +923,60 @@ DOCS = [
         "source_tier": "accounting_standard",
         "year": 2004,
         "domain": "ias_depreciation_actifs",
-        "max_pages": 16,
+        "max_pages": 6,
+    },
+    {
+        "filename": "ias-37-provisions-passifs-c3a9ventuels-et-actifs-c3a9ventuels.pdf",
+        "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+        "title": "IAS 37 Provisions passifs eventuels et actifs eventuels",
+        "authority": "IFRS Foundation / IASB",
+        "source_tier": "accounting_standard",
+        "year": 1998,
+        "domain": "ias_provisions_eventualites",
+        "max_pages": 4,
+    },
+    {
+        "filename": "ias-38-immobilisations-incorporelles.pdf",
+        "doc_id": "ias_38_immobilisations_incorporelles",
+        "title": "IAS 38 Immobilisations incorporelles",
+        "authority": "IFRS Foundation / IASB",
+        "source_tier": "accounting_standard",
+        "year": 2004,
+        "domain": "ias_immobilisations_incorporelles",
+        "max_pages": 14,
+    },
+    {
+        "filename": "ias-39-instruments-financiers-comptbilisation-et-c3a9valuation.pdf",
+        "doc_id": "ias_39_instruments_financiers_comptabilisation_evaluation",
+        "title": "IAS 39 Instruments financiers Comptabilisation et evaluation",
+        "authority": "IFRS Foundation / IASB",
+        "source_tier": "accounting_standard",
+        "year": 2003,
+        "domain": "ias_instruments_financiers_evaluation",
+        "max_pages": 8,
+        "chunk_limit": 3200,
+    },
+    {
+        "filename": "ias-40-immeubles-de-placement.pdf",
+        "doc_id": "ias_40_immeubles_placement",
+        "title": "IAS 40 Immeubles de placement",
+        "authority": "IFRS Foundation / IASB",
+        "source_tier": "accounting_standard",
+        "year": 2003,
+        "domain": "ias_immeubles_placement",
+        "max_pages": 2,
+        "chunk_limit": 2600,
+    },
+    {
+        "filename": "ias-41-agriculture.pdf",
+        "doc_id": "ias_41_agriculture",
+        "title": "IAS 41 Agriculture",
+        "authority": "IFRS Foundation / IASB",
+        "source_tier": "accounting_standard",
+        "year": 2001,
+        "domain": "ias_agriculture",
+        "max_pages": 5,
+        "chunk_limit": 2600,
     },
 ]
 
@@ -1065,7 +1120,8 @@ def build_records(meta: dict) -> list[dict]:
         page_text = extract_page_text(doc.load_page(page_index))
         if not page_text:
             continue
-        for local_index, (heading, chunk) in enumerate(chunk_text(page_text), start=1):
+        chunk_limit = int(meta.get("chunk_limit", 1800) or 1800)
+        for local_index, (heading, chunk) in enumerate(chunk_text(page_text, limit=chunk_limit), start=1):
             digest = hashlib.blake2b(
                 f"{meta['doc_id']}|{page_index + 1}|{local_index}|{chunk[:200]}".encode("utf-8"),
                 digest_size=8,
