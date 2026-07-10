@@ -101,6 +101,12 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "ifrs_4_contrats_assurance": r"\bifrs 4\b|contrats d'assurance|insurance contracts|assureur|reassurance|passif d'assurance",
         "ifrs_5_actifs_non_courants_vente": r"\bifrs 5\b|actifs non courants detenus en vue de la vente|activites abandonnees|actifs detenus en vue de la vente|discontinued operations",
         "ifrs_6_ressources_minieres": r"\bifrs 6\b|prospection et evaluation de ressources minerales|ressources minieres|minieres|actifs de prospection|exploration and evaluation",
+        "ifrs_7_instruments_financiers_informations": r"\bifrs 7\b|instruments financiers\s*:?\s*informations a fournir|risque de credit|risque de liquidite|risque de marche|juste valeur|informations a fournir sur les instruments financiers",
+        "ifrs_8_secteurs_operationnels": r"\bifrs 8\b|secteurs operationnels|operating segments|principal decideur operationnel|information sectorielle|segmentation operationnelle",
+        "ifrs_9_instruments_financiers": r"\bifrs 9\b|instruments financiers|classement et evaluation des actifs financiers|pertes de credit attendues|expected credit loss|ecl|depreciation des actifs financiers|comptabilite de couverture|hedge accounting",
+        "ifrs_10_etats_financiers_consolides": r"\bifrs 10\b|etats financiers consolides|controle d'une entite|pouvoir sur l'entite|rendements variables|consolidation|controle exclusif",
+        "ifrs_11_partenariats": r"\bifrs 11\b|partenariats|joint arrangements|coentreprise|entreprise commune|activite conjointe|joint venture|joint operation",
+        "ifrs_12_interets_autres_entites": r"\bifrs 12\b|interets detenus dans d'autres entites|informations a fournir sur les interets detenus dans d'autres entites|filiales|entites structurees|structured entities|participations dans d'autres entites",
         "droits_taxes_hors_codes": r"taxes non incorporees|circulation|voyage|assurance|telecommunication|hotel",
         "nc_01_norme_generale": r"\bnc 01\b|norme comptable generale|presentation des etats financiers|organisation comptable",
         "nc_02_capitaux_propres": r"\bnc 02\b|capitaux propres|reserve|dividende|resultat reporte",
@@ -334,7 +340,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         ):
             score *= 0.12
         if record.get("doc_id", "").startswith("ifrs_") and not re.search(
-            r"\bifrs\b|iasb|normes internationales d'information financiere|normes internationales d information financiere|cadre conceptuel|goodwill|ecart d'acquisition|paiement fonde sur des actions|stock-options|regroupements d'entreprises|contrats d'assurance|actifs non courants detenus en vue de la vente|activites abandonnees|ressources minieres|bilan d'ouverture ifrs|first-time adoption",
+            r"\bifrs\b|iasb|normes internationales d'information financiere|normes internationales d information financiere|cadre conceptuel|goodwill|ecart d'acquisition|paiement fonde sur des actions|stock-options|regroupements d'entreprises|contrats d'assurance|actifs non courants detenus en vue de la vente|activites abandonnees|ressources minieres|bilan d'ouverture ifrs|first-time adoption|instruments financiers|pertes de credit attendues|expected credit loss|comptabilite de couverture|hedge accounting|secteurs operationnels|consolidation|etats financiers consolides|partenariats|coentreprise|activite conjointe|filiales|entites structurees",
             query_text,
             re.I,
         ):
@@ -410,6 +416,34 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         if ("ifrs 6" in query_text or "prospection et evaluation de ressources minerales" in query_text or "ressources minieres" in query_text or "exploration and evaluation" in query_text):
             if record.get("doc_id") == "ifrs_6_ressources_minieres":
                 score *= 4.4
+        if ("ifrs 7" in query_text or "informations a fournir sur les instruments financiers" in query_text or "risque de credit" in query_text or "risque de liquidite" in query_text or "risque de marche" in query_text):
+            if record.get("doc_id") == "ifrs_7_instruments_financiers_informations":
+                score *= 4.4
+            elif record.get("doc_id") == "ifrs_9_instruments_financiers":
+                score *= 1.7
+        if ("ifrs 8" in query_text or "secteurs operationnels" in query_text or "operating segments" in query_text or "principal decideur operationnel" in query_text):
+            if record.get("doc_id") == "ifrs_8_secteurs_operationnels":
+                score *= 4.4
+        if ("ifrs 9" in query_text or "pertes de credit attendues" in query_text or "expected credit loss" in query_text or "comptabilite de couverture" in query_text or "hedge accounting" in query_text or "classement et evaluation des actifs financiers" in query_text):
+            if record.get("doc_id") == "ifrs_9_instruments_financiers":
+                score *= 4.6
+            elif record.get("doc_id") == "ifrs_7_instruments_financiers_informations":
+                score *= 1.8
+        if ("ifrs 10" in query_text or "etats financiers consolides" in query_text or "états financiers consolidés" in query_text or "controle d'une entite" in query_text or "contrôle d'une entité" in query_text):
+            if record.get("doc_id") == "ifrs_10_etats_financiers_consolides":
+                score *= 4.4
+            elif record.get("doc_id") in {"nc_35_consolidation", "nc_36_associees", "nc_37_coentreprises"}:
+                score *= 1.8
+        if ("ifrs 11" in query_text or "partenariats" in query_text or "joint arrangements" in query_text or "coentreprise" in query_text or "activite conjointe" in query_text or "activité conjointe" in query_text):
+            if record.get("doc_id") == "ifrs_11_partenariats":
+                score *= 4.4
+            elif record.get("doc_id") in {"nc_37_coentreprises", "nc_36_associees"}:
+                score *= 1.7
+        if ("ifrs 12" in query_text or "interets detenus dans d'autres entites" in query_text or "intérêts détenus dans d'autres entités" in query_text or "entites structurees" in query_text or "entités structurées" in query_text or "filiales" in query_text):
+            if record.get("doc_id") == "ifrs_12_interets_autres_entites":
+                score *= 4.4
+            elif record.get("doc_id") == "ifrs_10_etats_financiers_consolides":
+                score *= 1.7
         if ("cadre conceptuel" in query_text or "caracteristiques qualitatives" in query_text or "representation fidele" in query_text or "pertinence" in query_text) and ("ifrs" in query_text or "iasb" in query_text or "information financiere" in query_text):
             if record.get("doc_id") == "ifrs_cadre_conceptuel_information_financiere":
                 score *= 4.0
