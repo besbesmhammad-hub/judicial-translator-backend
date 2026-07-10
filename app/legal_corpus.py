@@ -72,6 +72,120 @@ def corpus_status() -> dict:
     }
 
 
+DOMAIN_ROUTE_PATTERNS = {
+    "fiscalite": re.compile(
+        r"\bfiscal(?:ite)?\b|fiscalit[eé]|\btva\b|irpp|\bis\b|impot|impôt|retenue a la source|retenue à la source|"
+        r"procedure fiscale|procédure fiscale|procedures fiscales|procédures fiscales|loi de finances|"
+        r"enregistrement|timbre|matricule fiscal|facturation electronique|facture electronique|"
+        r"e-facturation|dette fiscale|dettes fiscales|redressement|controle fiscal|contrôle fiscal|"
+        r"taxe environnementale|vehicules hybrides|véhicules hybrides|non residents|non-résidents",
+        re.I,
+    ),
+    "audit": re.compile(
+        r"\baudit\b|commissaire aux comptes|isa|isre|isrs|isqc|ifac|controle interne|contrôle interne|"
+        r"rapport general|rapport général|rapport special|rapport spécial|certification des comptes|"
+        r"seuil de signification|dossier permanent|dossier annuel|planification d'audit",
+        re.I,
+    ),
+    "comptabilite": re.compile(
+        r"\bcompta|\bcomptable\b|comptabilite|comptabilité|loi comptable|norme comptable|normes comptables|"
+        r"\bnc\b|\bias\b|\bifrs\b|etat financier|état financier|etats financiers|états financiers|"
+        r"bilan|grand livre|journal comptable|consolidation|parties liees|parties liées|"
+        r"immobilisations|stocks|tableau des flux|resultat fiscal|résultat fiscal",
+        re.I,
+    ),
+    "droit_affaires": re.compile(
+        r"code de commerce|code des obligations|coc\b|code des societes|code des sociétés|"
+        r"sarl|societe anonyme|société anonyme|constitution de societe|constitution de société|"
+        r"dissolution|liquidation|registre du commerce|fonds de commerce|cassation|tribunal",
+        re.I,
+    ),
+    "social": re.compile(
+        r"\bcnss\b|paie|salaire|charges sociales|bulletin de paie|code du travail|travailleur|"
+        r"cotisations sociales|convention collective|rh\b|ressources humaines",
+        re.I,
+    ),
+}
+
+
+def infer_query_domain(query: str) -> str:
+    query_text = (query or "").lower()
+    for route in ("fiscalite", "audit", "comptabilite", "droit_affaires", "social"):
+        if DOMAIN_ROUTE_PATTERNS[route].search(query_text):
+            return route
+    return "general"
+
+
+def record_matches_domain(record: dict, route: str) -> bool:
+    if route == "general":
+        return True
+    doc_id = record.get("doc_id", "")
+    domain = record.get("domain", "")
+    source_tier = record.get("source_tier", "")
+
+    if route == "fiscalite":
+        return (
+            doc_id in {
+                "code_irpp_is_2011",
+                "tva_droit_consommation",
+                "procedures_fiscales_2026",
+                "enregistrement_timbre",
+                "fiscalite_locale",
+                "droits_taxes_hors_codes",
+                "loi_finances_2026",
+                "note_generale_contribution_solidarite_2026",
+                "note_generale_facturation_electronique_2026",
+                "note_generale_non_residents_services_administratifs_2026",
+                "note_generale_regularisation_dettes_fiscales_2026",
+                "note_generale_taxe_environnement_2026",
+                "note_generale_fiscalite_vehicules_hybrides_2026",
+            }
+            or domain.startswith((
+                "fiscalite_",
+                "tva_",
+                "enregistrement_",
+                "procedures_",
+                "taxe_",
+                "facturation_",
+                "regularisation_",
+                "contribution_",
+                "services_administratifs_",
+                "loi_finances_",
+            ))
+        )
+    if route == "comptabilite":
+        return (
+            source_tier == "accounting_standard"
+            or doc_id in {"loi_comptable", "cadre_conceptuel_comptable", "ifrs_cadre_conceptuel_information_financiere"}
+            or doc_id.startswith(("nc_", "ias_", "ifrs_", "nct_"))
+            or domain.startswith(("comptabilite", "ias_", "ifrs_", "nc_", "nct_"))
+        )
+    if route == "audit":
+        return (
+            source_tier in {"audit_course", "audit_report", "professional_guidance"}
+            or doc_id.startswith(("audit_", "rapport_cac_", "rapport_audit_", "rapport_reviseur_", "rapport_general_cac"))
+            or doc_id in {"note_orientation_bct_2012_02"}
+            or domain.startswith("audit_")
+        )
+    if route == "droit_affaires":
+        return (
+            doc_id in {
+                "code_commerce_2014",
+                "code_obligations_contrats_2015",
+                "code_societes_commerciales_2022",
+                "guide_creation_sarl_tunisie",
+                "guide_fermeture_entreprise_tunisie",
+                "tribunaux_premiere_instance_guide",
+                "cour_cassation_guide",
+            }
+            or doc_id.startswith("cassation_")
+            or domain.startswith(("droit_", "organisation_judiciaire", "dissolution_"))
+        )
+    if route == "social":
+        return domain.startswith(("social_", "paie_", "cnss_", "travail_"))
+    return True
+
+
 def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
     query_tokens = tokenize(query)
     if not query_tokens:
@@ -79,6 +193,10 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
     corpus = load_corpus()
     if not corpus:
         return []
+    route = infer_query_domain(query)
+    candidate_corpus = [record for record in corpus if record_matches_domain(record, route)]
+    if len({record.get("doc_id") for record in candidate_corpus}) >= 3:
+        corpus = candidate_corpus
 
     query_counts: dict[str, int] = {}
     for token in query_tokens:
