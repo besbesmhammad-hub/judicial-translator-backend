@@ -125,6 +125,14 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "ias_20_subventions_publiques_aide_publique": r"\bias 20\b|subventions publiques|aide publique|aides publiques|comptabilisation des subventions publiques|informations a fournir sur l'aide publique|informations à fournir sur l'aide publique",
         "ias_21_variations_cours_monnaies_etrangeres": r"\bias 21\b|variations des cours des monnaies etrangeres|variations des cours des monnaies étrangères|ecarts de change|écarts de change|monnaie fonctionnelle|conversion des etats financiers|conversion des états financiers",
         "ias_23_couts_emprunt": r"\bias 23\b|couts d'emprunt|coûts d'emprunt|actif qualifie|actif qualifié|capitalisation des couts d'emprunt|capitalisation des coûts d'emprunt",
+        "ias_24_parties_liees": r"\bias 24\b|parties liees|parties liées|transactions entre parties liees|transactions entre parties liées|personnel cle de la direction|key management personnel",
+        "ias_26_regimes_retraite": r"\bias 26\b|regimes de retraite|régimes de retraite|rapports financiers des regimes de retraite|fonds de pension|plans de retraite",
+        "ias_27_etats_financiers_individuels": r"\bias 27\b|etats financiers individuels|états financiers individuels|filiales dans les etats financiers individuels|participations comptabilisees au cout|méthode du coût",
+        "ias_28_associees_coentreprises": r"\bias 28\b|entreprises associees|entreprises associées|coentreprises|mise en equivalence|mise en équivalence|influence notable",
+        "ias_32_instruments_financiers_presentation": r"\bias 32\b|instruments financiers presentation|instruments financiers : presentation|classement passif ou capitaux propres|compensation d'actifs financiers|compensation de passifs financiers|instrument compose",
+        "ias_33_resultat_par_action": r"\bias 33\b|resultat par action|résultat par action|eps de base|eps dilue|eps dilué|actions ordinaires potentielles",
+        "ias_34_information_financiere_intermediaire": r"\bias 34\b|information financiere intermediaire|information financière intermédiaire|rapport financier intermediaire|rapport financier intermédiaire|periode intermediaire|période intermédiaire",
+        "ias_36_depreciation_actifs": r"\bias 36\b|depreciation d'actifs|dépréciation d'actifs|perte de valeur|valeur recouvrable|unite generatrice de tresorerie|unité génératrice de trésorerie|ugt|impairment",
         "droits_taxes_hors_codes": r"taxes non incorporees|circulation|voyage|assurance|telecommunication|hotel",
         "nc_01_norme_generale": r"\bnc 01\b|norme comptable generale|presentation des etats financiers|organisation comptable",
         "nc_02_capitaux_propres": r"\bnc 02\b|capitaux propres|reserve|dividende|resultat reporte",
@@ -364,7 +372,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         ):
             score *= 0.52
         if record.get("doc_id", "").startswith("ias_") and not re.search(
-            r"\bias\b|norme comptable internationale|normes comptables internationales|presentation des etats financiers|stocks|flux de tresorerie|flux de trésorerie|methodes comptables|méthodes comptables|estimations comptables|evenements posterieurs|événements postérieurs|contrats de construction|impots sur le resultat|impôts sur le résultat|impot differe|impôt différé|immobilisations corporelles|location-financement|location financement|credit-bail|avantages du personnel|subventions publiques|aide publique|ecarts de change|écarts de change|monnaie fonctionnelle|couts d'emprunt|coûts d'emprunt",
+            r"\bias\b|norme comptable internationale|normes comptables internationales|presentation des etats financiers|stocks|flux de tresorerie|flux de trésorerie|methodes comptables|méthodes comptables|estimations comptables|evenements posterieurs|événements postérieurs|contrats de construction|impots sur le resultat|impôts sur le résultat|impot differe|impôt différé|immobilisations corporelles|location-financement|location financement|credit-bail|avantages du personnel|subventions publiques|aide publique|ecarts de change|écarts de change|monnaie fonctionnelle|couts d'emprunt|coûts d'emprunt|parties liees|parties liées|regimes de retraite|régimes de retraite|etats financiers individuels|états financiers individuels|mise en equivalence|mise en équivalence|resultat par action|résultat par action|information financiere intermediaire|information financière intermédiaire|depreciation d'actifs|dépréciation d'actifs|valeur recouvrable",
             query_text,
             re.I,
         ):
@@ -555,6 +563,47 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 4.4
             elif record.get("doc_id") == "nc_13_charges_emprunt":
                 score *= 1.9
+        if ("ias 24" in query_text or "parties liees" in query_text or "parties liées" in query_text or "transactions entre parties liees" in query_text or "transactions entre parties liées" in query_text):
+            if record.get("doc_id") == "ias_24_parties_liees":
+                score *= 4.4
+            elif record.get("doc_id") == "nc_39_parties_liees":
+                score *= 1.9
+        if ("ias 26" in query_text or "regimes de retraite" in query_text or "régimes de retraite" in query_text or "rapports financiers des regimes de retraite" in query_text):
+            if record.get("doc_id") == "ias_26_regimes_retraite":
+                score *= 4.3
+        if ("ias 27" in query_text or "etats financiers individuels" in query_text or "états financiers individuels" in query_text):
+            if record.get("doc_id") == "ias_27_etats_financiers_individuels":
+                score *= 4.3
+            elif record.get("doc_id") == "ifrs_10_etats_financiers_consolides":
+                score *= 0.85
+        if ("ias 28" in query_text or "mise en equivalence" in query_text or "mise en équivalence" in query_text or "entreprises associees" in query_text or "entreprises associées" in query_text):
+            if record.get("doc_id") == "ias_28_associees_coentreprises":
+                score *= 4.8
+            elif record.get("doc_id") in {"nc_36_associees", "nc_37_coentreprises"}:
+                score *= 1.9
+        if "ias 28" in query_text:
+            if record.get("doc_id") == "ias_28_associees_coentreprises":
+                score *= 1.45
+            elif record.get("doc_id") in {"nc_36_associees", "nc_37_coentreprises"}:
+                score *= 0.78
+        if ("ias 32" in query_text or "instruments financiers presentation" in query_text or "instruments financiers : presentation" in query_text or "capitaux propres" in query_text and "passif financier" in query_text):
+            if record.get("doc_id") == "ias_32_instruments_financiers_presentation":
+                score *= 4.4
+            elif record.get("doc_id") in {"ifrs_7_instruments_financiers_informations", "ifrs_9_instruments_financiers"}:
+                score *= 1.6
+        if ("ias 33" in query_text or "resultat par action" in query_text or "résultat par action" in query_text or "eps dilue" in query_text or "eps dilué" in query_text):
+            if record.get("doc_id") == "ias_33_resultat_par_action":
+                score *= 4.4
+        if ("ias 34" in query_text or "information financiere intermediaire" in query_text or "information financière intermédiaire" in query_text or "rapport financier intermediaire" in query_text):
+            if record.get("doc_id") == "ias_34_information_financiere_intermediaire":
+                score *= 4.4
+            elif record.get("doc_id") == "nc_19_etats_financiers_intermediaires":
+                score *= 1.9
+        if ("ias 36" in query_text or "depreciation d'actifs" in query_text or "dépréciation d'actifs" in query_text or "perte de valeur" in query_text or "valeur recouvrable" in query_text or "unite generatrice de tresorerie" in query_text or "unité génératrice de trésorerie" in query_text):
+            if record.get("doc_id") == "ias_36_depreciation_actifs":
+                score *= 4.6
+            elif record.get("doc_id") in {"nc_05_immobilisations_corporelles", "nc_06_immobilisations_incorporelles", "ifrs_13_juste_valeur"}:
+                score *= 1.5
         if ("cadre conceptuel" in query_text or "caracteristiques qualitatives" in query_text or "representation fidele" in query_text or "pertinence" in query_text) and ("ifrs" in query_text or "iasb" in query_text or "information financiere" in query_text):
             if record.get("doc_id") == "ifrs_cadre_conceptuel_information_financiere":
                 score *= 4.0
