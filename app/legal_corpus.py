@@ -107,6 +107,10 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "ifrs_10_etats_financiers_consolides": r"\bifrs 10\b|etats financiers consolides|controle d'une entite|pouvoir sur l'entite|rendements variables|consolidation|controle exclusif",
         "ifrs_11_partenariats": r"\bifrs 11\b|partenariats|joint arrangements|coentreprise|entreprise commune|activite conjointe|joint venture|joint operation",
         "ifrs_12_interets_autres_entites": r"\bifrs 12\b|interets detenus dans d'autres entites|informations a fournir sur les interets detenus dans d'autres entites|filiales|entites structurees|structured entities|participations dans d'autres entites",
+        "ifrs_13_juste_valeur": r"\bifrs 13\b|juste valeur|fair value|hiérarchie de la juste valeur|hierarchie de la juste valeur|niveau 1|niveau 2|niveau 3|techniques d'evaluation|prix de sortie",
+        "ifrs_14_comptes_report_reglementaires": r"\bifrs 14\b|comptes de report reglementaires|regulatory deferral accounts|soldes de report reglementaire|activites a tarifs reglementes|activites à tarifs réglementés",
+        "ifrs_15_produits_contrats_clients": r"\bifrs 15\b|produits des activites ordinaires tires de contrats conclus avec des clients|reconnaissance du revenu|obligations de prestation|prix de transaction|contrat conclu avec un client|revenue from contracts with customers",
+        "ifrs_16_contrats_location": r"\bifrs 16\b|contrats de location|leasing|droit d'utilisation|right-of-use|actif au titre du droit d'utilisation|passif locatif|preneur|bailleur",
         "droits_taxes_hors_codes": r"taxes non incorporees|circulation|voyage|assurance|telecommunication|hotel",
         "nc_01_norme_generale": r"\bnc 01\b|norme comptable generale|presentation des etats financiers|organisation comptable",
         "nc_02_capitaux_propres": r"\bnc 02\b|capitaux propres|reserve|dividende|resultat reporte",
@@ -340,7 +344,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         ):
             score *= 0.12
         if record.get("doc_id", "").startswith("ifrs_") and not re.search(
-            r"\bifrs\b|iasb|normes internationales d'information financiere|normes internationales d information financiere|cadre conceptuel|goodwill|ecart d'acquisition|paiement fonde sur des actions|stock-options|regroupements d'entreprises|contrats d'assurance|actifs non courants detenus en vue de la vente|activites abandonnees|ressources minieres|bilan d'ouverture ifrs|first-time adoption|instruments financiers|pertes de credit attendues|expected credit loss|comptabilite de couverture|hedge accounting|secteurs operationnels|consolidation|etats financiers consolides|partenariats|coentreprise|activite conjointe|filiales|entites structurees",
+            r"\bifrs\b|iasb|normes internationales d'information financiere|normes internationales d information financiere|cadre conceptuel|goodwill|ecart d'acquisition|paiement fonde sur des actions|stock-options|regroupements d'entreprises|contrats d'assurance|actifs non courants detenus en vue de la vente|activites abandonnees|ressources minieres|bilan d'ouverture ifrs|first-time adoption|instruments financiers|pertes de credit attendues|expected credit loss|comptabilite de couverture|hedge accounting|secteurs operationnels|consolidation|etats financiers consolides|partenariats|coentreprise|activite conjointe|filiales|entites structurees|juste valeur|fair value|reconnaissance du revenu|obligations de prestation|prix de transaction|contrats de location|droit d'utilisation|passif locatif|comptes de report reglementaires",
             query_text,
             re.I,
         ):
@@ -444,6 +448,24 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 4.4
             elif record.get("doc_id") == "ifrs_10_etats_financiers_consolides":
                 score *= 1.7
+        if ("ifrs 13" in query_text or "juste valeur" in query_text or "fair value" in query_text or "hierarchie de la juste valeur" in query_text or "hiérarchie de la juste valeur" in query_text):
+            if record.get("doc_id") == "ifrs_13_juste_valeur":
+                score *= 4.6
+            elif record.get("doc_id") == "ifrs_7_instruments_financiers_informations":
+                score *= 1.6
+        if ("ifrs 14" in query_text or "comptes de report reglementaires" in query_text or "regulatory deferral accounts" in query_text or "soldes de report reglementaire" in query_text):
+            if record.get("doc_id") == "ifrs_14_comptes_report_reglementaires":
+                score *= 4.4
+        if ("ifrs 15" in query_text or "produits des activites ordinaires tires de contrats conclus avec des clients" in query_text or "reconnaissance du revenu" in query_text or "obligations de prestation" in query_text or "prix de transaction" in query_text):
+            if record.get("doc_id") == "ifrs_15_produits_contrats_clients":
+                score *= 4.6
+            elif record.get("doc_id") in {"nc_03_revenus", "nc_09_contrats_construction"}:
+                score *= 1.7
+        if ("ifrs 16" in query_text or "contrats de location" in query_text or "leasing" in query_text or "droit d'utilisation" in query_text or "droit dutilisation" in query_text or "passif locatif" in query_text):
+            if record.get("doc_id") == "ifrs_16_contrats_location":
+                score *= 4.6
+            elif record.get("doc_id") == "nc_41_contrats_location":
+                score *= 1.9
         if ("cadre conceptuel" in query_text or "caracteristiques qualitatives" in query_text or "representation fidele" in query_text or "pertinence" in query_text) and ("ifrs" in query_text or "iasb" in query_text or "information financiere" in query_text):
             if record.get("doc_id") == "ifrs_cadre_conceptuel_information_financiere":
                 score *= 4.0
