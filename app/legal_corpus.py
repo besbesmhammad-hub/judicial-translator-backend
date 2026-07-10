@@ -90,9 +90,13 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
 
     query_text = query.lower()
     domain_boosts = {
+        "code_irpp_is_2011": r"\birpp\b|\bis\b|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés|benefice imposable|bénéfice imposable|retenue a la source|retenue à la source|plus-value|plus value",
         "tva_droit_consommation": r"\btva\b|taxe sur la valeur ajout|valeur ajoutee|droit de consommation|assujetti|deduction|deductions|exoner|restitution de la taxe",
+        "procedures_fiscales_2026": r"procedure fiscale|procédure fiscale|procedures fiscales|procédures fiscales|controle fiscal|contrôle fiscal|verification fiscale|vérification fiscale|contentieux fiscal|recouvrement|redressement fiscal|droit de reprise|taxation d'office|taxation d’office|reclamation fiscale|réclamation fiscale",
         "enregistrement_timbre": r"enregistrement|timbre|mutation|acte|donation|succession|bail|vente immobili",
         "fiscalite_locale": r"fiscalite locale|taxe sur les immeubles|tcl|collectivite|commune|municipal",
+        "loi_finances_2026": r"loi de finances|finance 2026|budget 2026|mesures fiscales 2026|mesure fiscale|dispositions fiscales nouvelles",
+        "note_generale_contribution_solidarite_2026": r"contribution sociale solidaire|contribution sociale solidarite|mcss|cotisation sociale solidaire|contribution exceptionnelle",
         "loi_comptable": r"loi comptable|systeme comptable|normes comptables|etats financiers",
         "cadre_conceptuel_comptable": r"cadre conceptuel|qualitative|hypothese sous-jacente|information financiere",
         "ifrs_cadre_conceptuel_information_financiere": r"cadre conceptuel|ifrs|iasb|information financiere|caracteristiques qualitatives|image fidele|pertinence|representation fidele",
@@ -906,6 +910,50 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             elif record.get("source_tier") == "form_template":
                 score *= 2.4
 
+        if re.search(
+            r"\bfiscal(?:ite)?\b|fiscalit[eé]|impot|impôt|taxe|taxes|\btva\b|irpp|impot sur les societes|impôt sur les sociétés|enregistrement|timbre|procedure fiscale|procédure fiscale|procedures fiscales|procédures fiscales|loi de finances|recouvrement|redressement",
+            query_text,
+            re.I,
+        ):
+            if record.get("doc_id") in {
+                "code_irpp_is_2011",
+                "tva_droit_consommation",
+                "procedures_fiscales_2026",
+                "enregistrement_timbre",
+                "fiscalite_locale",
+                "droits_taxes_hors_codes",
+                "loi_finances_2026",
+                "note_generale_contribution_solidarite_2026",
+            }:
+                score = (score * 4.6) + 12.0
+            elif record.get("doc_id") in {
+                "code_commerce_2014",
+                "code_obligations_contrats_2015",
+                "code_societes_commerciales_2022",
+            }:
+                score *= 0.03
+        if re.search(
+            r"\bfiscal(?:ite)?\b|fiscalit[eé]|impot|impôt|taxe|taxes|loi de finances",
+            query_text,
+            re.I,
+        ) and any(
+            token in query_text
+            for token in ["general", "général", "generalement", "généralement", "ensemble", "principales lois", "cadre fiscal"]
+        ):
+            if record.get("doc_id") in {
+                "code_irpp_is_2011",
+                "tva_droit_consommation",
+                "procedures_fiscales_2026",
+                "enregistrement_timbre",
+            }:
+                score += 60.0
+            elif record.get("doc_id") in {"fiscalite_locale", "droits_taxes_hors_codes"}:
+                score *= 0.4
+            if record.get("doc_id") == "loi_finances_2026":
+                score *= 1.35
+            elif record.get("doc_id") == "note_generale_contribution_solidarite_2026":
+                score *= 0.82
+
         if record.get("heading") and re.search(r"article|art\.|chapitre|section|titre|الفصل|باب", record["heading"], re.I):
             score *= 1.1
         if score:
@@ -913,7 +961,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
 
     scored.sort(key=lambda item: item[0], reverse=True)
     results = []
-    for score, record in scored[:limit]:
+    per_doc_counts: dict[str, int] = {}
+    for score, record in scored:
+        doc_id = record.get("doc_id") or record["id"]
+        if per_doc_counts.get(doc_id, 0) >= 2:
+            continue
         results.append({
             "id": record["id"],
             "title": record["title"],
@@ -926,4 +978,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             "year": record.get("year"),
             "score": round(score, 3),
         })
+        per_doc_counts[doc_id] = per_doc_counts.get(doc_id, 0) + 1
+        if len(results) >= limit:
+            break
     return results
