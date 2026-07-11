@@ -114,6 +114,31 @@ def summarize(results: list[dict]) -> dict:
     }
 
 
+def summarize_by_key(results: list[dict], key: str) -> dict[str, dict]:
+    buckets: dict[str, list[dict]] = {}
+    for row in results:
+        bucket = str(row.get(key) or "unknown")
+        buckets.setdefault(bucket, []).append(row)
+    summary: dict[str, dict] = {}
+    for bucket, rows in sorted(buckets.items()):
+        ok_rows = [row for row in rows if row.get("ok")]
+        summary[bucket] = {
+            "count": len(rows),
+            "ok_cases": len(ok_rows),
+            "failed_cases": len(rows) - len(ok_rows),
+            "intent_match_count": sum(1 for row in ok_rows if row.get("intent_match")),
+            "preferred_source_match_count": sum(1 for row in ok_rows if row.get("preferred_source_match")),
+            "response_style_match_count": sum(1 for row in ok_rows if row.get("response_style_match")),
+            "all_sections_present_count": sum(1 for row in ok_rows if row.get("all_sections_present")),
+            "avg_latency_ms": round(
+                sum(row["latency_ms"] for row in ok_rows if isinstance(row.get("latency_ms"), (int, float)))
+                / max(1, len([row for row in ok_rows if isinstance(row.get("latency_ms"), (int, float))])),
+                1,
+            ) if ok_rows else None,
+        }
+    return summary
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run a first benchmark pass against /v1/accounting-chat.")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000", help="Backend base URL")
@@ -132,6 +157,8 @@ def main() -> int:
         "dataset": str(dataset_path),
         "generated_at_unix": int(time.time()),
         "summary": summary,
+        "summary_by_expected_intent": summarize_by_key(results, "expected_intent"),
+        "summary_by_actual_intent": summarize_by_key(results, "actual_intent"),
         "results": results,
     }
     output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
