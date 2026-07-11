@@ -198,7 +198,7 @@ def should_use_financial_glossary(message: str) -> bool:
 
 
 def should_prefer_golden_kb(intent: str) -> bool:
-    return intent in {"definition", "audit", "company_law", "comparison"}
+    return intent in {"definition", "audit", "company_law", "comparison", "professional_formality"}
 
 
 def job_path(job_id: str, suffix: str) -> Path:

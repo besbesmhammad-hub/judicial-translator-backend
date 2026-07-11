@@ -57,6 +57,10 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         re.compile(r"sarl|sa\b|societe|société|registre du commerce|liquidation|dissolution|statuts|associe|associé", re.I),
     ),
     (
+        "professional_formality",
+        re.compile(r"inscription|attestation d[' ]inscription|radiation|suspension|stagiaire|ordre professionnel|compte rendu de stagiaire|demande d[' ]inscription", re.I),
+    ),
+    (
         "definition",
         re.compile(
             r"qu[' ]est ce que|qu[' ]est ce qu[' ]un|qu[' ]est ce qu[' ]une|c[' ]est quoi|defin|défin|signifie|veut dire|meaning|means|acronyme|abreviation|abr[eé]viation|equivalent|équivalent|explique|présentation de|presentation de",
