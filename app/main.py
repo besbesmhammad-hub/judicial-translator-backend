@@ -26,6 +26,7 @@ from .translator import (
     translate_text,
 )
 import asyncio
+import ast
 import io
 import json
 import os
@@ -48,6 +49,8 @@ SECTION_SPLIT_RE = re.compile(
     r"\*\*(Assumptions|Next steps|Warnings)\*\*\s*:\s*",
     re.I,
 )
+CONCEPT_BRIEF_SECTIONS = ["Definition", "Base legale", "Points de vigilance", "Sources utilisees"]
+PRACTICAL_ANALYSIS_SECTIONS = ["Reponse", "Application pratique", "Points de vigilance", "Sources utilisees"]
 JOB_DIR = Path(os.getenv("TRANSLATION_JOB_DIR", "/tmp/judicial_translator_jobs"))
 JOB_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -133,7 +136,177 @@ def split_list_block(value: str) -> list[str]:
     return items
 
 
-def normalize_chat_payload(parsed: dict) -> tuple[str, list[str], list[str], list[str]]:
+def parse_section_mapping(value: str) -> dict[str, str]:
+    text = clean_translation_output(value).strip()
+    if not text or not text.startswith("{"):
+        return {}
+    parsed = None
+    try:
+        parsed = json.loads(text)
+    except Exception:
+        try:
+            parsed = ast.literal_eval(text)
+        except Exception:
+            parsed = None
+    if not isinstance(parsed, dict):
+        return {}
+    return {
+        clean_translation_output(str(key)).strip(): clean_translation_output(str(val)).strip()
+        for key, val in parsed.items()
+        if str(val).strip()
+    }
+
+
+def section_aliases(style: str) -> dict[str, list[str]]:
+    if style == "concept_brief":
+        return {
+            "Definition": ["definition", "définition"],
+            "Base legale": ["base legale", "base légale", "fondement juridique", "base juridique"],
+            "Points de vigilance": ["points de vigilance", "vigilance", "attention", "points d attention", "points d'attention"],
+            "Sources utilisees": ["sources utilisees", "sources utilisées", "sources", "references", "références"],
+        }
+    if style == "practical_analysis":
+        return {
+            "Reponse": ["reponse", "réponse", "analyse", "conclusion"],
+            "Application pratique": ["application pratique", "application", "mise en pratique", "traitement pratique"],
+            "Points de vigilance": ["points de vigilance", "vigilance", "attention", "points d attention", "points d'attention"],
+            "Sources utilisees": ["sources utilisees", "sources utilisées", "sources", "references", "références"],
+        }
+    return {}
+
+
+def normalized_heading_answer(answer: str, style: str) -> str:
+    text = clean_translation_output(answer).strip()
+    if not text:
+        return text
+    aliases = section_aliases(style)
+    for canonical, variants in aliases.items():
+        pattern = r"(?im)^(?:##\s*|\*\*)?(?:" + "|".join(re.escape(item) for item in variants) + r")(?:\*\*)?\s*:?\s*$"
+        text = re.sub(pattern, f"## {canonical}", text)
+    return text
+
+
+def compose_structured_answer(style: str, section_values: dict[str, str]) -> str:
+    sections = CONCEPT_BRIEF_SECTIONS if style == "concept_brief" else PRACTICAL_ANALYSIS_SECTIONS
+    blocks: list[str] = []
+    for section in sections:
+        value = clean_translation_output(section_values.get(section, "")).strip()
+        if value:
+            blocks.append(f"## {section}\n{value}")
+    return "\n\n".join(blocks).strip()
+
+
+def ensure_answer_sections(answer: str, style: str) -> str:
+    text = normalized_heading_answer(answer, style)
+    if style not in {"concept_brief", "practical_analysis"}:
+        return text
+    if all(f"## {section}" in text for section in (CONCEPT_BRIEF_SECTIONS if style == "concept_brief" else PRACTICAL_ANALYSIS_SECTIONS)):
+        return text
+
+    mapping = parse_section_mapping(text)
+    if not mapping:
+        return text
+
+    aliases = section_aliases(style)
+    section_values: dict[str, str] = {}
+    for canonical, variants in aliases.items():
+        for key, value in mapping.items():
+            normalized_key = key.strip().lower()
+            if normalized_key == canonical.lower() or normalized_key in variants:
+                section_values[canonical] = value
+                break
+    rebuilt = compose_structured_answer(style, section_values)
+    return rebuilt or text
+
+
+def summarize_source_titles(sources: list[dict], limit: int = 3) -> str:
+    lines: list[str] = []
+    for source in sources[:limit]:
+        title = source.get("title") or "Source interne"
+        page = source.get("page")
+        heading = source.get("heading") or ""
+        suffix = f", page {page}" if page is not None else ""
+        if heading:
+            suffix += f" - {heading}"
+        lines.append(f"- {title}{suffix}")
+    return "\n".join(lines)
+
+
+def fallback_accounting_answer(
+    message: str,
+    intent: str,
+    answer_style: str,
+    legal_domain: str,
+    golden_kb_hits: list[dict],
+    legal_sources: list[dict],
+) -> dict | None:
+    if not golden_kb_hits and not legal_sources:
+        return None
+
+    if answer_style == "concept_brief":
+        top = golden_kb_hits[0] if golden_kb_hits else None
+        definition = top.get("canonical_definition") if top else "Les documents actuellement indexes permettent d'identifier la notion, mais une verification contextuelle reste utile."
+        legal_basis = ", ".join(top.get("legal_basis", [])) if top else (
+            ", ".join({source.get("title", "") for source in legal_sources[:2] if source.get("title")}) or "Documents internes indexes"
+        )
+        vigilance_items = top.get("common_mistakes", []) if top else []
+        vigilance = "\n".join(f"- {item}" for item in vigilance_items[:3]) or "- Verifier l'application concrete de la notion au dossier du client."
+        sources_used = summarize_source_titles(
+            [{"title": ref.get("title"), "page": None, "heading": ""} for ref in top.get("source_refs", [])] if top else legal_sources
+        )
+        answer = compose_structured_answer(
+            "concept_brief",
+            {
+                "Definition": definition,
+                "Base legale": legal_basis,
+                "Points de vigilance": vigilance,
+                "Sources utilisees": sources_used or "- Base documentaire interne",
+            },
+        )
+    else:
+        response = "Les sources actuellement recuperees permettent de donner une premiere reponse de cabinet, mais la formulation ci-dessous doit etre relue a la lumiere du texte officiel applicable."
+        if legal_sources:
+            response = f"Les sources internes recuperées orientent la réponse vers le cadre suivant: {legal_sources[0].get('title', 'source interne')}."
+        practical = "- Identifier le texte exact applicable au cas du client.\n- Verifier la date de la version du texte et les modifications ulterieures.\n- Contrôler les pieces, montants, periodes et hypotheses avant conclusion."
+        vigilance = "- Reponse de secours generee sans moteur conversationnel complet.\n- Confirmer le texte, la date et les seuils applicables avant usage client."
+        sources_used = summarize_source_titles(legal_sources) or summarize_source_titles(
+            [{"title": ref.get("title"), "page": None, "heading": ""} for hit in golden_kb_hits for ref in hit.get("source_refs", [])]
+        )
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": response,
+                "Application pratique": practical,
+                "Points de vigilance": vigilance,
+                "Sources utilisees": sources_used or "- Base documentaire interne",
+            },
+        )
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [
+            "Reponse de secours produite a partir du Golden KB et/ou du corpus interne, sans completion par un fournisseur conversationnel externe."
+        ],
+        "next_steps": [
+            "Relancer la question quand un fournisseur IA est disponible pour obtenir une reponse plus developpee si necessaire."
+        ],
+        "warnings": [
+            "Verifier les textes officiels en vigueur avant usage client, surtout pour les points fiscaux et proceduraux."
+        ],
+        "intent": intent,
+        "preferred_source": "golden_kb" if golden_kb_hits else "legal_corpus",
+        "response_style": answer_style,
+        "golden_kb_hits": golden_kb_hits,
+        "sources": legal_sources,
+        "model": "fallback/internal-knowledge",
+        "fallback_mode": True,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
+def normalize_chat_payload(parsed: dict, answer_style: str = "flexible_expert") -> tuple[str, list[str], list[str], list[str]]:
     answer = clean_translation_output(str(parsed.get("answer") or parsed.get("translation") or "")).strip()
     assumptions_raw = parsed.get("assumptions")
     next_steps_raw = parsed.get("next_steps")
@@ -160,6 +333,8 @@ def normalize_chat_payload(parsed: dict) -> tuple[str, list[str], list[str], lis
             assumptions = assumptions or extracted["assumptions"]
             next_steps = next_steps or extracted["next_steps"]
             warnings = warnings or extracted["warnings"]
+
+    answer = ensure_answer_sections(answer, answer_style)
 
     return (
         answer,
@@ -478,7 +653,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     )
                 response.raise_for_status()
                 parsed = extract_json(provider_content(route, response.json()))
-                answer, assumptions, next_steps, warnings = normalize_chat_payload(parsed)
+                answer, assumptions, next_steps, warnings = normalize_chat_payload(parsed, answer_style)
                 if not answer:
                     raise RuntimeError("Model returned an empty accounting answer.")
                 if fiscal_answer_needs_repair(answer, legal_domain):
@@ -511,7 +686,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                         )
                     repair_response.raise_for_status()
                     repair_parsed = extract_json(provider_content(route, repair_response.json()))
-                    answer, assumptions, next_steps, warnings = normalize_chat_payload(repair_parsed)
+                    answer, assumptions, next_steps, warnings = normalize_chat_payload(repair_parsed, answer_style)
                     if not answer or fiscal_answer_needs_repair(answer, legal_domain):
                         raise RuntimeError("Accounting answer failed fiscal legal validation.")
                 return {
@@ -530,6 +705,17 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
             except Exception as error:
                 last_error = error
                 continue
+    if is_rate_limit_error(last_error) or is_credit_error(last_error):
+        fallback = fallback_accounting_answer(
+            message=message,
+            intent=query_intent,
+            answer_style=answer_style,
+            legal_domain=legal_domain,
+            golden_kb_hits=golden_kb_hits,
+            legal_sources=legal_sources,
+        )
+        if fallback:
+            return fallback
     if is_rate_limit_error(last_error):
         raise provider_http_error(ProviderRateLimitError(friendly_provider_error(last_error)))
     if is_credit_error(last_error):

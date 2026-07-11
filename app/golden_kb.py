@@ -15,6 +15,16 @@ STOPWORDS = {
     "quoi", "quelle", "quelles", "meaning", "means", "dire",
 }
 
+DEFINITION_PATTERN = re.compile(
+    r"qu[' ]est ce que|qu[' ]est ce qu[' ]un|qu[' ]est ce qu[' ]une|c[' ]est quoi|defin|d[ée]fin|signifie|veut dire|meaning|means|acronyme|abreviation|abr[eé]viation|equivalent|[ée]quivalent|explique|pr[ée]sentation de|presentation de|quel est|quelle est",
+    re.I,
+)
+
+PROFESSIONAL_FORMALITY_PATTERN = re.compile(
+    r"inscription|attestation d[' ]inscription|radiation|suspension|stagiaire|ordre professionnel|compte rendu de stagiaire|demande d[' ]inscription",
+    re.I,
+)
+
 INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "document_analysis",
@@ -91,6 +101,22 @@ def contains_exact_phrase(haystack: str, needle: str) -> bool:
 
 def classify_query_intent(message: str, context: str = "") -> str:
     query = f"{message}\n{context}".strip()
+    priority_intents = {
+        "document_analysis",
+        "comparison",
+        "tax_calculation",
+        "legal_basis",
+        "accounting_treatment",
+        "audit",
+        "company_law",
+    }
+    for intent, pattern in INTENT_PATTERNS:
+        if intent in priority_intents and pattern.search(query):
+            return intent
+    if DEFINITION_PATTERN.search(query):
+        return "definition"
+    if PROFESSIONAL_FORMALITY_PATTERN.search(query):
+        return "professional_formality"
     for intent, pattern in INTENT_PATTERNS:
         if pattern.search(query):
             return intent
