@@ -390,6 +390,61 @@ def fastpath_concept_answer(
     }
 
 
+def fastpath_tva_overview_answer(
+    message: str,
+    intent: str,
+    legal_domain: str,
+    legal_sources: list[dict],
+) -> dict | None:
+    if not is_fiscal_overview_query(message, legal_domain, intent):
+        return None
+    if not legal_sources:
+        return None
+
+    source_lines = summarize_source_titles(legal_sources, limit=3) or "- Base documentaire interne"
+    key_titles: list[str] = []
+    seen: set[str] = set()
+    for source in legal_sources:
+        title = source.get("title") or "Source interne"
+        if title in seen:
+            continue
+        seen.add(title)
+        key_titles.append(title)
+    texts = "\n".join(f"- {title}" for title in key_titles[:4]) or "- Code TVA et droit de consommation 2026"
+
+    answer = "\n\n".join([
+        "## Réponse\n"
+        "Selon les documents actuellement indexes dans la base, la TVA en Tunisie repose d'abord sur les textes de reference suivants :\n"
+        f"{texts}\n\n"
+        "Sur cette base, la bonne reponse generale consiste a presenter d'abord le cadre normatif de la TVA "
+        "(code principal et textes d'application recuperes), puis a verifier separement les modalites pratiques "
+        "comme les taux, exemptions, periodicites declaratives, regimes sectoriels ou conditions de deduction dans les textes applicables a jour.",
+        "## Sources utilisees\n"
+        f"{source_lines}",
+        "## Reserve de verification\n"
+        "Les presentes informations sont fondees sur les documents actuellement indexes dans la base documentaire. "
+        "Pour une analyse exhaustive, il convient egalement de verifier les versions en vigueur des textes complementaires applicables "
+        "et les modifications issues des lois de finances ou textes d'application pertinents.",
+    ])
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": intent,
+        "preferred_source": "legal_corpus",
+        "response_style": "flexible_expert",
+        "golden_kb_hits": [],
+        "sources": legal_sources,
+        "model": "internal/tva-overview-fastpath",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
 def fallback_accounting_answer(
     message: str,
     intent: str,
@@ -474,6 +529,24 @@ def normalize_chat_payload(parsed: dict, answer_style: str = "flexible_expert") 
     assumptions = assumptions_raw if isinstance(assumptions_raw, list) else split_list_block(str(assumptions_raw or ""))
     next_steps = next_steps_raw if isinstance(next_steps_raw, list) else split_list_block(str(next_steps_raw or ""))
     warnings = warnings_raw if isinstance(warnings_raw, list) else split_list_block(str(warnings_raw or ""))
+
+    if answer.startswith("{") and '"answer"' in answer:
+        try:
+            nested = extract_json(answer)
+            nested_answer = clean_translation_output(str(nested.get("answer") or nested.get("translation") or "")).strip()
+            if nested_answer:
+                answer = nested_answer
+            if not assumptions:
+                assumptions_raw = nested.get("assumptions")
+                assumptions = assumptions_raw if isinstance(assumptions_raw, list) else split_list_block(str(assumptions_raw or ""))
+            if not next_steps:
+                next_steps_raw = nested.get("next_steps")
+                next_steps = next_steps_raw if isinstance(next_steps_raw, list) else split_list_block(str(next_steps_raw or ""))
+            if not warnings:
+                warnings_raw = nested.get("warnings")
+                warnings = warnings_raw if isinstance(warnings_raw, list) else split_list_block(str(warnings_raw or ""))
+        except Exception:
+            pass
 
     if answer and (not assumptions or not next_steps or not warnings):
         parts = SECTION_SPLIT_RE.split(answer)
@@ -785,6 +858,14 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         ]
         if formality_hits:
             golden_kb_hits = formality_hits[:3]
+    tva_overview_fastpath = fastpath_tva_overview_answer(
+        message=message,
+        intent=query_intent,
+        legal_domain=legal_domain,
+        legal_sources=legal_sources,
+    )
+    if tva_overview_fastpath:
+        return tva_overview_fastpath
     if answer_style == "concept_brief" and golden_kb_hits:
         fastpath = fastpath_concept_answer(
             message=message,
