@@ -16,12 +16,15 @@ STOPWORDS = {
 }
 
 DEFINITION_PATTERN = re.compile(
-    r"qu[' ]est ce que|qu[' ]est ce qu[' ]un|qu[' ]est ce qu[' ]une|c[' ]est quoi|defin|d[ée]fin|signifie|veut dire|meaning|means|acronyme|abreviation|abr[eé]viation|equivalent|[ée]quivalent|explique|pr[ée]sentation de|presentation de|quel est|quelle est",
+    r"qu[' ]est ce que|qu[' ]est ce qu[' ]un|qu[' ]est ce qu[' ]une|c[' ]est quoi|defin|d[ée]fin|"
+    r"signifie|veut dire|meaning|means|acronyme|abreviation|abr[ée]viation|equivalent|[ée]quivalent|"
+    r"explique|pr[ée]sentation de|presentation de",
     re.I,
 )
 
 PROFESSIONAL_FORMALITY_PATTERN = re.compile(
-    r"inscription|attestation d[' ]inscription|radiation|suspension|stagiaire|ordre professionnel|compte rendu de stagiaire|demande d[' ]inscription",
+    r"inscription|attestation d[' ]inscription|radiation|suspension|stagiaire|ordre professionnel|"
+    r"compte rendu de stagiaire|demande d[' ]inscription|s inscrire a l ordre|inscrire a l ordre",
     re.I,
 )
 
@@ -29,51 +32,77 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "document_analysis",
         re.compile(
-            r"piece jointe|document ci-joint|document joint|dans ce document|analyse ce document|selon ce document|uploaded document|attached document",
+            r"piece jointe|document ci-joint|document joint|dans ce document|analyse ce document|selon ce document|"
+            r"uploaded document|attached document|analyse ce dossier|analyse ce cas|analyse d[' ]audit|"
+            r"premiere analyse|controle interne|contr[ôo]le interne|risques comptables|risques fiscaux|"
+            r"risques techniques|risques de preuve|dossier paie incomplet|bulletins de paie|avantages en nature|"
+            r"regulariser ses dettes fiscales|remise de penalites|remise de p[ée]nalit[ée]s",
             re.I,
         ),
     ),
     (
         "comparison",
-        re.compile(r"\bdifference\b|\bdiff[ée]rence\b|\bcompar|versus|\bvs\b|par rapport a|par rapport à|oppose a|opposé à", re.I),
+        re.compile(
+            r"\bdifference\b|\bdiff[ée]rence\b|\bcompar|versus|\bvs\b|par rapport a|par rapport à|"
+            r"oppose a|opposé à",
+            re.I,
+        ),
     ),
     (
         "tax_calculation",
         re.compile(
-            r"\bcalcul\b|\bcalcule\b|comment calcul|base imposable|\btaux\b|\bbar[èe]me\b|\bliquider\b|montant de l[' ]impot|montant de l[' ]impôt|d[ée]termination de l[' ]impot",
+            r"\bcalcul\b|\bcalcule\b|comment calcul|base imposable|\btaux\b|\bbar[èe]me\b|\bliquider\b|"
+            r"montant de l[' ]impot|montant de l[' ]impôt|d[ée]termination de l[' ]impot|"
+            r"dividendes?.*retenues? a la source|retenues? a la source.*dividendes?|"
+            r"credit de tva|cr[ée]dit de tva|restitution|demarches|d[ée]marches|"
+            r"points de controle|points de contr[ôo]le",
             re.I,
         ),
     ),
     (
         "legal_basis",
         re.compile(
-            r"quelle loi|quelle regle|quelle règle|base legale|base légale|quel article|quels articles|fondement juridique|texte applicable",
+            r"quelle loi|quelle regle|quelle règle|base legale|base légale|quel article|quels articles|"
+            r"fondement juridique|texte applicable|quels textes|quel texte|regime tva|r[ée]gime tva|"
+            r"obligations de facturation [ée]lectronique|facturation [ée]lectronique|parite d[' ]echange|"
+            r"parit[ée] d[' ][ée]change|evaluation des actifs et passifs|[ée]valuation des actifs et passifs|"
+            r"prestataire non resident|prestataire non r[ée]sident|textes fiscaux",
             re.I,
         ),
     ),
     (
         "accounting_treatment",
         re.compile(
-            r"comment comptabil|traitement comptable|ecriture comptable|écriture comptable|passation|enregistrer comptablement|presentation dans les etats financiers|présentation dans les états financiers",
+            r"comment comptabil|traitement comptable|ecriture comptable|écriture comptable|passation|"
+            r"enregistrer comptablement|presentation dans les etats financiers|présentation dans les états financiers|"
+            r"traiter une provision|provision pour clients douteux|subvention d[' ]investissement|goodwill|"
+            r"amortir un goodwill|credit[ -]bail|cr[ée]dit[ -]bail|reconnaissance du revenu|ifrs ?15|ifrs ?16|"
+            r"contrat de location|avant comptabilisation|avant cloture|avant cl[ôo]ture",
             re.I,
         ),
-    ),
-    (
-        "audit",
-        re.compile(r"\baudit\b|commissaire aux comptes|cac\b|isa\b|rapport d[' ]audit|rapport du commissaire", re.I),
     ),
     (
         "company_law",
         re.compile(r"sarl|sa\b|societe|société|registre du commerce|liquidation|dissolution|statuts|associe|associé", re.I),
     ),
     (
+        "audit",
+        re.compile(r"\baudit\b|commissaire aux comptes|cac\b|isa\b|rapport d[' ]audit|rapport du commissaire", re.I),
+    ),
+    (
         "professional_formality",
-        re.compile(r"inscription|attestation d[' ]inscription|radiation|suspension|stagiaire|ordre professionnel|compte rendu de stagiaire|demande d[' ]inscription", re.I),
+        re.compile(
+            r"inscription|attestation d[' ]inscription|radiation|suspension|stagiaire|ordre professionnel|"
+            r"compte rendu de stagiaire|demande d[' ]inscription",
+            re.I,
+        ),
     ),
     (
         "definition",
         re.compile(
-            r"qu[' ]est ce que|qu[' ]est ce qu[' ]un|qu[' ]est ce qu[' ]une|c[' ]est quoi|defin|défin|signifie|veut dire|meaning|means|acronyme|abreviation|abr[eé]viation|equivalent|équivalent|explique|présentation de|presentation de",
+            r"qu[' ]est ce que|qu[' ]est ce qu[' ]un|qu[' ]est ce qu[' ]une|c[' ]est quoi|defin|d[ée]fin|"
+            r"signifie|veut dire|meaning|means|acronyme|abreviation|abr[ée]viation|equivalent|[ée]quivalent|"
+            r"explique|pr[ée]sentation de|presentation de",
             re.I,
         ),
     ),
@@ -101,22 +130,31 @@ def contains_exact_phrase(haystack: str, needle: str) -> bool:
 
 def classify_query_intent(message: str, context: str = "") -> str:
     query = f"{message}\n{context}".strip()
+    accounting_pattern = next(pattern for intent, pattern in INTENT_PATTERNS if intent == "accounting_treatment")
+    legal_pattern = next(pattern for intent, pattern in INTENT_PATTERNS if intent == "legal_basis")
+    if accounting_pattern.search(query) and legal_pattern.search(query):
+        return "accounting_treatment"
     priority_intents = {
         "document_analysis",
         "comparison",
         "tax_calculation",
-        "legal_basis",
         "accounting_treatment",
-        "audit",
+        "legal_basis",
         "company_law",
+        "audit",
     }
     for intent, pattern in INTENT_PATTERNS:
         if intent in priority_intents and pattern.search(query):
             return intent
-    if DEFINITION_PATTERN.search(query):
-        return "definition"
     if PROFESSIONAL_FORMALITY_PATTERN.search(query):
         return "professional_formality"
+    if DEFINITION_PATTERN.search(query) and not re.search(
+        r"dividendes?|credit de tva|cr[ée]dit de tva|restitution|regime tva|r[ée]gime tva|"
+        r"facturation [ée]lectronique|goodwill|ifrs ?15|ifrs ?16|contrat de location",
+        query,
+        re.I,
+    ):
+        return "definition"
     for intent, pattern in INTENT_PATTERNS:
         if pattern.search(query):
             return intent

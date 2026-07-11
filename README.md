@@ -49,3 +49,31 @@ Required environment variables:
 - `ALLOWED_ORIGINS`, optional, comma-separated
 
 After deployment, set `BACKEND_API_URL` in Netlify to the backend URL.
+
+## Benchmarking
+
+The backend includes two evaluation datasets for the expert-comptable assistant:
+
+- `app/data/accounting_benchmark_v1.jsonl`: first-pass sanity benchmark
+- `app/data/accounting_benchmark_v2.jsonl`: harder cabinet-style benchmark with fiscal, accounting, audit, company-law and document-analysis questions
+
+Run a benchmark against a live or local backend:
+
+```powershell
+python scripts/run_accounting_benchmark.py --base-url https://your-backend.example
+python scripts/run_accounting_benchmark.py --base-url https://your-backend.example --dataset app/data/accounting_benchmark_v2.jsonl --output benchmark_results_v2.json
+```
+
+The JSON report now includes:
+
+- global summary
+- summary by expected intent
+- summary by actual intent
+- per-case previews for debugging weak answers
+
+Recommended workflow:
+
+1. Add hard real-world cabinet questions to `accounting_benchmark_v2.jsonl`
+2. Run the benchmark
+3. Turn every production failure into a permanent benchmark case
+4. Fix routing, retrieval or formatting until the case stays green
