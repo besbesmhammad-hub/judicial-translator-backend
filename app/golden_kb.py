@@ -30,7 +30,7 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "tax_calculation",
         re.compile(
-            r"calcul|calcule|comment calcul|base imposable|taux|bar[èe]me|liquider|montant de l[' ]impot|montant de l[' ]impôt|d[ée]termination de l[' ]impot",
+            r"\bcalcul\b|\bcalcule\b|comment calcul|base imposable|\btaux\b|\bbar[èe]me\b|\bliquider\b|montant de l[' ]impot|montant de l[' ]impôt|d[ée]termination de l[' ]impot",
             re.I,
         ),
     ),
@@ -59,7 +59,7 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "definition",
         re.compile(
-            r"qu[' ]est ce que|c[' ]est quoi|defin|défin|signifie|veut dire|meaning|means|acronyme|abreviation|abr[eé]viation|equivalent|équivalent|explique|présentation de|presentation de",
+            r"qu[' ]est ce que|qu[' ]est ce qu[' ]un|qu[' ]est ce qu[' ]une|c[' ]est quoi|defin|défin|signifie|veut dire|meaning|means|acronyme|abreviation|abr[eé]viation|equivalent|équivalent|explique|présentation de|presentation de",
             re.I,
         ),
     ),
