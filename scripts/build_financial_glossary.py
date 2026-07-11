@@ -53,6 +53,19 @@ def valid_english_term(value: str) -> bool:
     return bool(re.search(r"[A-Za-z]", value))
 
 
+def latin_quality(value: str) -> float:
+    text = (value or "").strip()
+    if not text:
+        return 0.0
+    letters = len(re.findall(r"[A-Za-zÀ-ÿ]", text))
+    weird = len(re.findall(r"[^A-Za-zÀ-ÿ0-9'()\-.,/& ]", text))
+    vowels = len(re.findall(r"[AEIOUYaeiouyÀ-ÿ]", text))
+    ratio = letters / max(len(text), 1)
+    vowel_ratio = vowels / max(letters, 1)
+    score = ratio * 0.6 + min(vowel_ratio, 0.55) * 0.8 - weird * 0.08
+    return max(0.0, min(score, 1.0))
+
+
 def parse_page_entries(text: str, page_num: int) -> list[dict]:
     entries: list[dict] = []
     for raw_line in text.splitlines():
@@ -77,6 +90,8 @@ def parse_page_entries(text: str, page_num: int) -> list[dict]:
                 "fr_norm": normalize_text(fr),
                 "en_norm": normalize_text(en),
                 "ar_norm": normalize_text(ar),
+                "fr_quality": round(latin_quality(fr), 4),
+                "en_quality": round(latin_quality(en), 4),
                 "page": page_num,
             }
         )
