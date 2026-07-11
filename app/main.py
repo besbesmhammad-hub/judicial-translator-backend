@@ -604,6 +604,15 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     legal_domain = infer_query_domain(legal_query)
     legal_sources = retrieve_legal_context(legal_query, limit=3 if prefer_golden_kb else 5)
     golden_kb_hits = retrieve_golden_kb(message, limit=3) if prefer_golden_kb else retrieve_golden_kb(message, limit=2)
+    if query_intent == "professional_formality":
+        seeded_formality_query = f"{message} inscription personne physique ordre professionnel attestation radiation suspension stagiaire"
+        formality_hits = [
+            row
+            for row in retrieve_golden_kb(seeded_formality_query, limit=5)
+            if row.get("domain") == "reglementation_professionnelle"
+        ]
+        if formality_hits:
+            golden_kb_hits = formality_hits[:3]
     glossary_hits = []
     if should_use_financial_glossary(message):
         glossary_hits = [row for row in search_financial_glossary(message, limit=5) if row.get("score", 0) >= 25]
