@@ -8,17 +8,20 @@ from pathlib import Path
 
 GOLDEN_KB_PATH = Path(__file__).with_name("data") / "golden_kb.jsonl"
 STOPWORDS = {
-    "avec", "aux", "ces", "dans", "des", "donne", "donner", "du", "elle", "elles", "est",
-    "etre", "explique", "expliquez", "les", "leur", "leurs", "par", "pas", "pour", "que",
-    "qui", "sur", "une", "vous", "what", "which", "the", "and", "for", "from", "that",
-    "this", "def", "definition", "definition", "signifie", "cest", "quoi", "quelle",
-    "quelles", "meaning", "means", "dire",
+    "avec", "aux", "ces", "dans", "de", "des", "donne", "donner", "du", "elle", "elles",
+    "en", "est", "etre", "explique", "expliquez", "la", "le", "les", "leur", "leurs",
+    "par", "pas", "pour", "que", "qui", "sur", "une", "vous", "what", "which", "the",
+    "and", "for", "from", "that", "this", "def", "definition", "signifie", "cest",
+    "quoi", "quelle", "quelles", "meaning", "means", "dire",
 }
 
 INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "document_analysis",
-        re.compile(r"piece jointe|document ci-joint|document joint|dans ce document|analyse ce document|selon ce document|uploaded document|attached document", re.I),
+        re.compile(
+            r"piece jointe|document ci-joint|document joint|dans ce document|analyse ce document|selon ce document|uploaded document|attached document",
+            re.I,
+        ),
     ),
     (
         "comparison",
@@ -26,15 +29,24 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ),
     (
         "tax_calculation",
-        re.compile(r"calcul|calcule|comment calcul|base imposable|taux|bar[èe]me|liquider|montant de l[' ]impot|montant de l[' ]impôt|d[ée]termination de l[' ]impot", re.I),
+        re.compile(
+            r"calcul|calcule|comment calcul|base imposable|taux|bar[èe]me|liquider|montant de l[' ]impot|montant de l[' ]impôt|d[ée]termination de l[' ]impot",
+            re.I,
+        ),
     ),
     (
         "legal_basis",
-        re.compile(r"quelle loi|quelle regle|quelle règle|base legale|base légale|quel article|quels articles|fondement juridique|texte applicable", re.I),
+        re.compile(
+            r"quelle loi|quelle regle|quelle règle|base legale|base légale|quel article|quels articles|fondement juridique|texte applicable",
+            re.I,
+        ),
     ),
     (
         "accounting_treatment",
-        re.compile(r"comment comptabil|traitement comptable|ecriture comptable|écriture comptable|passation|enregistrer comptablement|presentation dans les etats financiers|présentation dans les états financiers", re.I),
+        re.compile(
+            r"comment comptabil|traitement comptable|ecriture comptable|écriture comptable|passation|enregistrer comptablement|presentation dans les etats financiers|présentation dans les états financiers",
+            re.I,
+        ),
     ),
     (
         "audit",
@@ -46,7 +58,10 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ),
     (
         "definition",
-        re.compile(r"qu[' ]est ce que|c[' ]est quoi|defin|défin|signifie|veut dire|meaning|means|acronyme|abreviation|abr[eé]viation|equivalent|équivalent", re.I),
+        re.compile(
+            r"qu[' ]est ce que|c[' ]est quoi|defin|défin|signifie|veut dire|meaning|means|acronyme|abreviation|abr[eé]viation|equivalent|équivalent|explique|présentation de|presentation de",
+            re.I,
+        ),
     ),
 ]
 
@@ -54,6 +69,20 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 def tokenize(value: str) -> list[str]:
     tokens = re.findall(r"[0-9A-Za-zÀ-ÿ']{2,}|[\u0600-\u06FF]{2,}", (value or "").lower())
     return [token.strip("'") for token in tokens if token not in STOPWORDS]
+
+
+def normalize_lookup_text(value: str) -> str:
+    text = (value or "").lower()
+    text = re.sub(r"[^0-9a-zà-ÿ\u0600-\u06ff]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def contains_exact_phrase(haystack: str, needle: str) -> bool:
+    hay = f" {normalize_lookup_text(haystack)} "
+    ned = normalize_lookup_text(needle)
+    if not ned:
+        return False
+    return f" {ned} " in hay
 
 
 def classify_query_intent(message: str, context: str = "") -> str:
@@ -104,7 +133,7 @@ def retrieve_golden_kb(query: str, limit: int = 3) -> list[dict]:
     query_tokens = tokenize(query)
     if not query_tokens:
         return []
-    query_text = (query or "").lower()
+
     scored: list[tuple[float, dict]] = []
     exact_rows: list[tuple[float, dict]] = []
     for row in kb:
@@ -112,25 +141,30 @@ def retrieve_golden_kb(query: str, limit: int = 3) -> list[dict]:
         overlap = sum(1 for token in query_tokens if token in token_set)
         if not overlap:
             continue
+
         score = overlap * 4.0
-        concept = (row.get("concept") or "").lower()
-        aliases = [alias.lower() for alias in row.get("aliases", [])]
+        concept = row.get("concept") or ""
+        aliases = row.get("aliases", [])
         exact_match = False
-        if concept and concept in query_text:
+
+        if concept and contains_exact_phrase(query, concept):
             score += 18.0
             exact_match = True
-        if any(alias and alias in query_text for alias in aliases):
+        if any(alias and contains_exact_phrase(query, alias) for alias in aliases):
             score += 15.0
             exact_match = True
-        if len(query_tokens) >= 2 and overlap < 2 and concept not in query_text:
+        if len(query_tokens) >= 2 and overlap < 2 and not contains_exact_phrase(query, concept):
             continue
+
         score += float(row.get("confidence_score", 0.7)) * 10.0
         payload = (score, row)
         scored.append(payload)
         if exact_match:
             exact_rows.append(payload)
+
     if exact_rows:
         scored = exact_rows
+
     scored.sort(key=lambda item: item[0], reverse=True)
     results: list[dict] = []
     seen: set[str] = set()
