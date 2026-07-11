@@ -293,6 +293,54 @@ def summarize_source_titles(sources: list[dict], limit: int = 3) -> str:
     return "\n".join(lines)
 
 
+def legal_source_limit(intent: str, prefer_golden_kb: bool) -> int:
+    if prefer_golden_kb:
+        return 2
+    if intent == "legal_basis":
+        return 3
+    if intent in {"tax_calculation", "accounting_treatment", "document_analysis"}:
+        return 4
+    return 3
+
+
+def compact_excerpt(text: str, max_chars: int) -> str:
+    value = clean_translation_output(text or "").strip()
+    if len(value) <= max_chars:
+        return value
+    shortened = value[:max_chars]
+    cut = max(shortened.rfind(". "), shortened.rfind("; "), shortened.rfind("\n"))
+    if cut >= max_chars * 0.6:
+        shortened = shortened[:cut + 1]
+    return shortened.rstrip() + " [...]"
+
+
+def legal_context_excerpt_budget(intent: str, answer_style: str) -> int:
+    if answer_style == "concept_brief":
+        return 420
+    if intent == "legal_basis":
+        return 650
+    if intent in {"tax_calculation", "accounting_treatment", "document_analysis"}:
+        return 520
+    return 480
+
+
+def build_legal_context_block(sources: list[dict], intent: str, answer_style: str) -> str:
+    excerpt_budget = legal_context_excerpt_budget(intent, answer_style)
+    blocks: list[str] = []
+    for source in sources:
+        header = " | ".join(
+            [
+                f"Source: {source.get('title', 'Source interne')}",
+                f"page {source.get('page')}",
+                source.get("heading") or "extrait",
+                source.get("authority") or "autorite non precisee",
+                source.get("source_tier") or "niveau non precise",
+            ]
+        )
+        blocks.append("\n".join([header, compact_excerpt(source.get("excerpt", ""), excerpt_budget)]))
+    return "\n\n".join(blocks)
+
+
 def fastpath_concept_answer(
     message: str,
     intent: str,
@@ -691,7 +739,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     answer_style = preferred_answer_style(query_intent, prefer_golden_kb)
     legal_query = f"{message}\n{context_block}"
     legal_domain = infer_query_domain(legal_query)
-    legal_sources = retrieve_legal_context(legal_query, limit=2 if prefer_golden_kb else 4)
+    legal_sources = retrieve_legal_context(legal_query, limit=legal_source_limit(query_intent, prefer_golden_kb))
     golden_kb_hits = retrieve_golden_kb(message, limit=3) if prefer_golden_kb else retrieve_golden_kb(message, limit=2)
     if query_intent == "professional_formality":
         seeded_formality_query = f"{message} inscription personne physique ordre professionnel attestation radiation suspension stagiaire"
@@ -715,19 +763,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     glossary_hits = []
     if should_use_financial_glossary(message):
         glossary_hits = [row for row in search_financial_glossary(message, limit=5) if row.get("score", 0) >= 25]
-    legal_context = "\n\n".join(
-        "\n".join([
-            " | ".join([
-                f"Source: {source['title']}",
-                f"page {source['page']}",
-                source.get("heading") or "extrait",
-                source.get("authority") or "autorite non precisee",
-                source.get("source_tier") or "niveau non precise",
-            ]),
-            source["excerpt"],
-        ])
-        for source in legal_sources
-    )
+    legal_context = build_legal_context_block(legal_sources, query_intent, answer_style)
     glossary_context = "\n".join(
         f"- FR: {row['fr']} | EN: {row['en']} | AR: {row['ar']} | page {row['page']}"
         for row in glossary_hits
