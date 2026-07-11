@@ -447,6 +447,44 @@ def preferred_answer_style(intent: str, prefer_golden_kb: bool) -> str:
     return "flexible_expert"
 
 
+def accounting_chat_max_tokens(answer_style: str, intent: str) -> int:
+    if answer_style == "concept_brief":
+        return 700
+    if answer_style == "practical_analysis":
+        return 1200 if intent in {"legal_basis", "tax_calculation"} else 1000
+    return 1100
+
+
+def prioritize_accounting_chat_routes(routes: list[dict], answer_style: str) -> list[dict]:
+    def provider_rank(route: dict) -> tuple[int, str]:
+        provider = route.get("provider", "")
+        model = str(route.get("model", ""))
+        if answer_style == "concept_brief":
+            rank = {
+                "pollinations": 0,
+                "kilo": 1,
+                "gemini": 2,
+                "openrouter": 3,
+            }.get(provider, 9)
+        elif answer_style == "practical_analysis":
+            rank = {
+                "kilo": 0,
+                "pollinations": 1,
+                "gemini": 2,
+                "openrouter": 3,
+            }.get(provider, 9)
+        else:
+            rank = {
+                "kilo": 0,
+                "pollinations": 1,
+                "gemini": 2,
+                "openrouter": 3,
+            }.get(provider, 9)
+        return rank, model
+
+    return sorted(routes, key=provider_rank)
+
+
 def job_path(job_id: str, suffix: str) -> Path:
     safe_id = re.sub(r"[^a-f0-9-]", "", job_id.lower())
     return JOB_DIR / f"{safe_id}.{suffix}"
@@ -604,7 +642,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     answer_style = preferred_answer_style(query_intent, prefer_golden_kb)
     legal_query = f"{message}\n{context_block}"
     legal_domain = infer_query_domain(legal_query)
-    legal_sources = retrieve_legal_context(legal_query, limit=3 if prefer_golden_kb else 5)
+    legal_sources = retrieve_legal_context(legal_query, limit=2 if prefer_golden_kb else 4)
     golden_kb_hits = retrieve_golden_kb(message, limit=3) if prefer_golden_kb else retrieve_golden_kb(message, limit=2)
     if query_intent == "professional_formality":
         seeded_formality_query = f"{message} inscription personne physique ordre professionnel attestation radiation suspension stagiaire"
@@ -703,11 +741,15 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         *history_messages,
         {"role": "user", "content": user_prompt},
     ]
-    routes = prioritized_translation_routes(f"{message}\n{context_block}", "expert-comptable assistant chat")
+    routes = prioritize_accounting_chat_routes(
+        prioritized_translation_routes(f"{message}\n{context_block}", "expert-comptable assistant chat"),
+        answer_style,
+    )
+    max_output_tokens = min(config.LLM_MAX_TOKENS, accounting_chat_max_tokens(answer_style, query_intent))
     last_error: Exception | None = None
     async with httpx.AsyncClient(timeout=httpx.Timeout(config.LLM_PROVIDER_TIMEOUT, connect=8.0)) as client:
         for route in routes:
-            body = provider_body(route, messages, min(config.LLM_MAX_TOKENS, 2200), json_mode=True)
+            body = provider_body(route, messages, max_output_tokens, json_mode=True)
             try:
                 response = await client.post(
                     route["endpoint"],
@@ -743,7 +785,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                             ),
                         },
                     ]
-                    repair_body = provider_body(route, repair_messages, min(config.LLM_MAX_TOKENS, 2200), json_mode=True)
+                    repair_body = provider_body(route, repair_messages, max_output_tokens, json_mode=True)
                     repair_response = await client.post(
                         route["endpoint"],
                         headers=route["headers"],
