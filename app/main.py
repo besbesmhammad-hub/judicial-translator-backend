@@ -522,6 +522,41 @@ def fiscal_answer_needs_repair(answer: str, legal_domain: str) -> bool:
     return any(re.search(pattern, answer_text, re.I) for pattern in forbidden_patterns)
 
 
+def is_fiscal_overview_query(message: str, legal_domain: str, intent: str) -> bool:
+    if legal_domain != "fiscalite":
+        return False
+    query = (message or "").lower()
+    if intent not in {"general", "legal_basis", "flexible_expert"}:
+        return False
+    return bool(re.search(
+        r"lois? de tva|tva .*g[ée]n[ée]ralement|donnez[- ]moi les lois de tva|"
+        r"pr[ée]sentation de la tva|cadre g[ée]n[ée]ral de la tva|r[ée]gime tva g[ée]n[ée]ral",
+        query,
+        re.I,
+    ))
+
+
+def fiscal_overview_answer_needs_repair(answer: str, message: str, legal_domain: str, intent: str) -> bool:
+    if not is_fiscal_overview_query(message, legal_domain, intent):
+        return False
+    answer_text = (answer or "").lower()
+    risky_patterns = [
+        r"version consolid[ée]e?[^\n]{0,40}[àa] jour",
+        r"janvier\s*2026",
+        r"taux normal est de",
+        r"taux r[ée]duit",
+        r"super[- ]r[ée]duit",
+        r"mensuelle ou trimestrielle",
+        r"seuil de franchise",
+        r"r[ée]gime du forfait",
+        r"v[ée]hicules de tourisme",
+        r"locations nues d[' ]habitation",
+        r"op[ée]rations financi[èe]res, assurances",
+    ]
+    hits = sum(1 for pattern in risky_patterns if re.search(pattern, answer_text, re.I))
+    return hits >= 2
+
+
 def should_use_financial_glossary(message: str) -> bool:
     query = (message or "").lower()
     return bool(re.search(
@@ -805,6 +840,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Pour la Tunisie, prefere la terminologie locale: TVA, IRPP, IS, retenue a la source, droit de timbre, CNSS, matricule fiscal, regime reel/forfaitaire, liasse fiscale.",
         "Interdiction stricte supplementaire pour la fiscalite tunisienne: n'invente jamais un 'Code general des impots (CGI)' tunisien ni une structure fictive en Livres I/II/III/IV/V/VI si cette structure n'apparait pas explicitement dans les sources internes recuperees.",
         "Si l'utilisateur demande les principales lois fiscales tunisiennes, cite sobrement les textes recuperes tels qu'ils existent dans les sources: Code de l IRPP et de l IS, Code TVA, Code des droits et procedures fiscaux, Code des droits d enregistrement et du timbre, Code de la fiscalite locale, loi de finances, et notes generales si elles sont pertinentes.",
+        "Si l'utilisateur demande les lois de TVA en Tunisie generalement, ne donne pas par defaut un cours complet sur les taux, seuils, periodicites, franchises ou regimes speciaux sauf si ces points apparaissent explicitement dans les extraits recuperes. Dans ce cas, reponds d'abord par les textes de reference et les reserves de verification.",
         "Pour les reponses juridiques ou fiscales importantes, ajoute a la fin une courte section 'Sources utilisees' listant uniquement les titres/pages effectivement utilises dans la reponse.",
         "Quand certaines sources utiles ne sont pas encore dans la base, formule la reserve de maniere client-facing et professionnelle, par exemple: 'Les presentes informations sont fondees sur les documents actuellement indexes dans la base documentaire. Pour une analyse exhaustive, il convient egalement de consulter les versions en vigueur des textes complementaires applicables.'",
         "Ne reponds pas comme un traducteur sauf si l'utilisateur demande une traduction. Par defaut, agis comme un assistant IA expert-comptable.",
@@ -867,7 +903,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     raise RuntimeError("Model returned an empty accounting answer.")
                 if not answer_has_required_sections(answer, answer_style):
                     answer = build_structured_sections_from_answer(answer, answer_style, golden_kb_hits, legal_sources)
-                if fiscal_answer_needs_repair(answer, legal_domain):
+                if fiscal_answer_needs_repair(answer, legal_domain) or fiscal_overview_answer_needs_repair(answer, message, legal_domain, query_intent):
                     repair_messages = [
                         *messages,
                         {
@@ -876,7 +912,9 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                                 "Reecris ta reponse en corrigeant une erreur juridique: "
                                 "n'invente pas de 'Code general des impots (CGI)' tunisien, "
                                 "n'invente pas une structure en Livres I/II/III/IV/V/VI, "
-                                "et cite uniquement les textes tunisiens effectivement recuperes dans les sources internes."
+                                "cite uniquement les textes tunisiens effectivement recuperes dans les sources internes, "
+                                "et pour une question generale sur la TVA, reste au niveau des textes de reference et des reserves de verification "
+                                "sans affirmer par defaut des taux, seuils, periodicites ou regimes speciaux non explicitement recuperes."
                             ),
                         },
                     ]
@@ -902,7 +940,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                         raise RuntimeError("Accounting answer failed fiscal legal validation.")
                     if not answer_has_required_sections(answer, answer_style):
                         answer = build_structured_sections_from_answer(answer, answer_style, golden_kb_hits, legal_sources)
-                    if fiscal_answer_needs_repair(answer, legal_domain):
+                    if fiscal_answer_needs_repair(answer, legal_domain) or fiscal_overview_answer_needs_repair(answer, message, legal_domain, query_intent):
                         raise RuntimeError("Accounting answer failed fiscal legal validation.")
                 return {
                     "success": True,
