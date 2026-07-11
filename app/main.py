@@ -432,18 +432,17 @@ def fastpath_tva_overview_answer(
     texts = "\n".join(f"- {source.get('title')}" for source in canonical_sources) or "- Code TVA et droit de consommation 2026"
 
     answer = "\n\n".join([
-        "## Réponse\n"
-        "Selon les documents actuellement indexes dans la base, la TVA en Tunisie repose d'abord sur les textes de reference suivants :\n"
+        "## Reponse\n"
+        "En Tunisie, le socle juridique principal de la TVA est le **Code TVA et droit de consommation 2026**. "
+        "Dans le corpus actuellement indexe, ce recueil rassemble le texte-cadre de la TVA, ses textes d'application et des textes connexes utiles a une vue d'ensemble.\n\n"
+        "Pour une presentation generale, il faut donc partir d'abord du texte de reference suivant :\n"
         f"{texts}\n\n"
-        "Sur cette base, la bonne reponse generale consiste a presenter d'abord le cadre normatif de la TVA "
-        "(code principal et textes d'application recuperes), puis a verifier separement les modalites pratiques "
-        "comme les taux, exemptions, periodicites declaratives, regimes sectoriels ou conditions de deduction dans les textes applicables a jour.",
+        "Ensuite, selon la question posee, on verifie separement les points d'application : taux, operations exonerees ou imposables, droit a deduction, obligations declaratives, regimes particuliers et textes d'execution pertinents.",
         "## Sources utilisees\n"
         f"{source_lines}",
         "## Reserve de verification\n"
-        "Les presentes informations sont fondees sur les documents actuellement indexes dans la base documentaire. "
-        "Pour une analyse exhaustive, il convient egalement de verifier les versions en vigueur des textes complementaires applicables "
-        "et les modifications issues des lois de finances ou textes d'application pertinents.",
+        "Pour un avis de cabinet complet, il convient de verifier en plus les versions en vigueur des textes d'application, "
+        "les modifications issues des lois de finances et, le cas echeant, les dispositions particulieres propres au secteur concerne.",
     ])
 
     return {
