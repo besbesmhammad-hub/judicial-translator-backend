@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from . import config
 from .financial_glossary import search_financial_glossary
+from .golden_kb import classify_query_intent, golden_kb_status, retrieve_golden_kb
 from .legal_corpus import corpus_status, infer_query_domain, retrieve_legal_context
 from .native_documents import translate_docx_native, translate_pdf_visual_native, translate_pptx_native, translate_xlsx_native
 from .parser import detect_file_format, parse_document
@@ -196,6 +197,10 @@ def should_use_financial_glossary(message: str) -> bool:
     ))
 
 
+def should_prefer_golden_kb(intent: str) -> bool:
+    return intent in {"definition", "audit", "company_law", "comparison"}
+
+
 def job_path(job_id: str, suffix: str) -> Path:
     safe_id = re.sub(r"[^a-f0-9-]", "", job_id.lower())
     return JOB_DIR / f"{safe_id}.{suffix}"
@@ -308,6 +313,7 @@ async def health() -> dict:
         "keyless_fallback_providers": ["pollinations", "kilo"] if config.ENABLE_KEYLESS_FALLBACKS else [],
         "active_skills": ACTIVE_SKILLS,
         "legal_corpus": corpus_status(),
+        "golden_kb": golden_kb_status(),
     }
 
 
@@ -347,9 +353,12 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     context = (request.context or "").strip()
     language = request.language or "francais"
     context_block = context[:18000]
+    query_intent = classify_query_intent(message, context_block)
+    prefer_golden_kb = should_prefer_golden_kb(query_intent)
     legal_query = f"{message}\n{context_block}"
     legal_domain = infer_query_domain(legal_query)
-    legal_sources = retrieve_legal_context(legal_query, limit=5)
+    legal_sources = retrieve_legal_context(legal_query, limit=3 if prefer_golden_kb else 5)
+    golden_kb_hits = retrieve_golden_kb(message, limit=3) if prefer_golden_kb else retrieve_golden_kb(message, limit=2)
     glossary_hits = []
     if should_use_financial_glossary(message):
         glossary_hits = [row for row in search_financial_glossary(message, limit=5) if row.get("score", 0) >= 25]
@@ -370,6 +379,16 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         f"- FR: {row['fr']} | EN: {row['en']} | AR: {row['ar']} | page {row['page']}"
         for row in glossary_hits
     )
+    golden_kb_context = "\n\n".join(
+        "\n".join([
+            f"Concept: {row['concept']} | domaine: {row.get('domain') or 'non precise'} | confiance: {row.get('confidence_label', 'high')} | revue: {row.get('last_reviewed') or 'non precisee'}",
+            f"Definition canonique: {row['canonical_definition']}",
+            f"Base legale/source d ancrage: {', '.join(row.get('legal_basis', [])) or 'non precisee'}",
+            f"Concepts lies: {', '.join(row.get('related_concepts', [])) or 'aucun'}",
+            f"Erreurs frequentes: {' ; '.join(row.get('common_mistakes', [])) or 'aucune'}",
+        ])
+        for row in golden_kb_hits
+    )
     history_messages = []
     for item in request.history[-10:]:
         role = "assistant" if item.get("role") == "assistant" else "user"
@@ -388,6 +407,9 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Les corpus internes actuellement charges contiennent surtout des textes consolides autour de 2014-2022, puis quelques guides, circulaires professionnelles, formulaires de stage ou d'inscription et rapports institutionnels plus recents. Ne traite jamais un rapport moral, un guide pratique ou un formulaire comme une regle de droit contraignante au meme niveau qu'un code ou qu'une loi.",
         "Pour une reponse client finale, signale qu'il faut verifier les lois de finances, normes modificatives, interpretations ulterieures, circulaires, et textes sectoriels applicables, notamment en matiere bancaire, OPCVM, assurance, reassurance, takaful, micro-credit, OSBL, consolidation et reglementation professionnelle.",
         "Si des sources internes sont fournies, utilise-les avant ta connaissance generale et cite le titre/page dans la reponse quand c'est pertinent.",
+        "Si une ou plusieurs entrees de Golden Knowledge Base sont fournies, traite-les comme couche canonique prioritaire pour les questions de definition, d'acronyme, de concept, de distinction simple ou de comparaison de notions proches.",
+        "La Golden Knowledge Base est une couche redactionnelle haute confiance ancree sur les sources indexees; elle n'autorise pas a inventer des regles nouvelles ni a depasser les textes d'ancrage cites.",
+        "Pour une question pratique, de calcul, de traitement comptable detaille, de base legale, de procedure, de contentieux ou d'application a un cas, la Golden Knowledge Base reste secondaire: la priorite revient alors au corpus legal/comptable recupere.",
         "Quand tu cites un texte, utilise de preference son intitule exact tel qu'il apparait dans les sources internes recuperees. N'invente pas un titre simplifie si le titre source est plus precis.",
         "Par exemple, si la source s'appelle 'Code TVA et droit de consommation 2026', ne la transforme pas en 'Code de la TVA' sauf si tu precises qu'il s'agit d'un raccourci pratique.",
         "Si un glossaire terminologique trilingue interne est fourni, utilise-le seulement comme aide terminologique secondaire pour les equivalences de termes FR/EN/AR. Ne le traite jamais comme une source normative de droit positif.",
@@ -398,13 +420,17 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Quand certaines sources utiles ne sont pas encore dans la base, formule la reserve de maniere client-facing et professionnelle, par exemple: 'Les presentes informations sont fondees sur les documents actuellement indexes dans la base documentaire. Pour une analyse exhaustive, il convient egalement de consulter les versions en vigueur des textes complementaires applicables.'",
         "Ne reponds pas comme un traducteur sauf si l'utilisateur demande une traduction. Par defaut, agis comme un assistant IA expert-comptable.",
         "Si l'utilisateur demande une presentation generale d'un sujet juridique ou fiscal, structure la reponse en deux niveaux: 1) ce que disent les sources internes recuperees, 2) ce qui doit etre verifie faute de source plus recente. Ne melange pas les deux.",
+        "Quand une reponse s'appuie d'abord sur la Golden Knowledge Base, conserve un ton de cabinet: definition nette, reserve utile, et distinction claire entre notion de base et application pratique.",
         "Style: professionnel, sans emoji, sans formule marketing, avec des etapes nettes et directement exploitables.",
         "Le champ 'answer' doit contenir uniquement la reponse principale. Ne colle jamais dedans les sections Assumptions, Next steps ou Warnings.",
         "Retourne uniquement un JSON valide avec exactement ces cles: answer, assumptions, next_steps, warnings.",
     ])
     user_prompt = "\n\n".join([
         f"Langue de reponse: {language}",
+        f"Intent detecte cote orchestration: {query_intent}",
+        f"Source preferentielle: {'golden_kb' if prefer_golden_kb else 'legal_corpus'}",
         f"Domaine detecte cote retrieval: {legal_domain}",
+        golden_kb_context and f"Golden Knowledge Base recuperee:\n{golden_kb_context}",
         legal_context and f"Sources internes recuperees dans le corpus fiscal/comptable tunisien:\n{legal_context}",
         glossary_context and f"Glossaire terminologique trilingue recupere:\n{glossary_context}",
         context_block and f"Contexte/document fourni:\n{context_block}",
@@ -479,6 +505,9 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     "assumptions": assumptions,
                     "next_steps": next_steps,
                     "warnings": warnings,
+                    "intent": query_intent,
+                    "preferred_source": "golden_kb" if prefer_golden_kb else "legal_corpus",
+                    "golden_kb_hits": golden_kb_hits,
                     "sources": legal_sources,
                     "model": f"{route['provider']}/{route['model']}",
                 }
