@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from . import config
 from .financial_glossary import search_financial_glossary
 from .golden_kb import classify_query_intent, golden_kb_status, retrieve_golden_kb
-from .legal_corpus import corpus_status, infer_query_domain, retrieve_legal_context
+from .legal_corpus import corpus_status, infer_query_domain, load_corpus, retrieve_legal_context
 from .native_documents import translate_docx_native, translate_pdf_visual_native, translate_pptx_native, translate_xlsx_native
 from .parser import detect_file_format, parse_document
 from .renderer import render_document
@@ -341,6 +341,30 @@ def build_legal_context_block(sources: list[dict], intent: str, answer_style: st
     return "\n\n".join(blocks)
 
 
+def legal_sources_by_doc_ids(doc_ids: list[str]) -> list[dict]:
+    records = load_corpus()
+    if not records:
+        return []
+    by_doc: dict[str, dict] = {}
+    for record in records:
+        doc_id = record.get("doc_id")
+        if doc_id not in doc_ids or doc_id in by_doc:
+            continue
+        by_doc[doc_id] = {
+            "id": record.get("id"),
+            "title": record.get("title") or "Source interne",
+            "filename": record.get("filename"),
+            "page": record.get("page"),
+            "heading": record.get("heading", ""),
+            "excerpt": (record.get("text") or "")[:900],
+            "source_tier": record.get("source_tier", ""),
+            "authority": record.get("authority", ""),
+            "year": record.get("year"),
+            "score": 999.0,
+        }
+    return [by_doc[doc_id] for doc_id in doc_ids if doc_id in by_doc]
+
+
 def fastpath_concept_answer(
     message: str,
     intent: str,
@@ -401,16 +425,11 @@ def fastpath_tva_overview_answer(
     if not legal_sources:
         return None
 
-    source_lines = summarize_source_titles(legal_sources, limit=3) or "- Base documentaire interne"
-    key_titles: list[str] = []
-    seen: set[str] = set()
-    for source in legal_sources:
-        title = source.get("title") or "Source interne"
-        if title in seen:
-            continue
-        seen.add(title)
-        key_titles.append(title)
-    texts = "\n".join(f"- {title}" for title in key_titles[:4]) or "- Code TVA et droit de consommation 2026"
+    canonical_sources = legal_sources_by_doc_ids(["tva_droit_consommation"])
+    if not canonical_sources:
+        canonical_sources = [source for source in legal_sources if "TVA" in str(source.get("title", ""))][:2]
+    source_lines = summarize_source_titles(canonical_sources, limit=3) or "- Base documentaire interne"
+    texts = "\n".join(f"- {source.get('title')}" for source in canonical_sources) or "- Code TVA et droit de consommation 2026"
 
     answer = "\n\n".join([
         "## Réponse\n"
@@ -437,7 +456,7 @@ def fastpath_tva_overview_answer(
         "preferred_source": "legal_corpus",
         "response_style": "flexible_expert",
         "golden_kb_hits": [],
-        "sources": legal_sources,
+        "sources": canonical_sources,
         "model": "internal/tva-overview-fastpath",
         "fallback_mode": False,
         "legal_domain": legal_domain,
@@ -449,11 +468,14 @@ def fastpath_general_fiscal_framework_answer(message: str, legal_domain: str) ->
     if not is_general_fiscal_framework_query(message, legal_domain):
         return None
 
-    seeded_query = (
-        "fiscalite tunisie code irpp is code tva procedures fiscales "
-        "enregistrement timbre fiscalite locale loi de finances"
-    )
-    framework_sources = retrieve_legal_context(seeded_query, limit=6)
+    framework_sources = legal_sources_by_doc_ids([
+        "code_irpp_is_2011",
+        "tva_droit_consommation",
+        "procedures_fiscales_2026",
+        "enregistrement_timbre",
+        "fiscalite_locale",
+        "loi_finances_2026",
+    ])
     if not framework_sources:
         return None
 
