@@ -304,6 +304,8 @@ def fallback_accounting_answer(
     if not golden_kb_hits and not legal_sources:
         return None
 
+    fallback_preferred_source = "golden_kb" if answer_style == "concept_brief" and golden_kb_hits else "legal_corpus"
+
     if answer_style == "concept_brief":
         top = golden_kb_hits[0] if golden_kb_hits else None
         definition = top.get("canonical_definition") if top else "Les documents actuellement indexes permettent d'identifier la notion, mais une verification contextuelle reste utile."
@@ -356,7 +358,7 @@ def fallback_accounting_answer(
             "Verifier les textes officiels en vigueur avant usage client, surtout pour les points fiscaux et proceduraux."
         ],
         "intent": intent,
-        "preferred_source": "golden_kb" if golden_kb_hits else "legal_corpus",
+        "preferred_source": fallback_preferred_source,
         "response_style": answer_style,
         "golden_kb_hits": golden_kb_hits,
         "sources": legal_sources,
