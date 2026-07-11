@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
 from . import config
+from .financial_glossary import search_financial_glossary
 from .legal_corpus import corpus_status, infer_query_domain, retrieve_legal_context
 from .native_documents import translate_docx_native, translate_pdf_visual_native, translate_pptx_native, translate_xlsx_native
 from .parser import detect_file_format, parse_document
@@ -185,6 +186,16 @@ def fiscal_answer_needs_repair(answer: str, legal_domain: str) -> bool:
     return any(re.search(pattern, answer_text, re.I) for pattern in forbidden_patterns)
 
 
+def should_use_financial_glossary(message: str) -> bool:
+    query = (message or "").lower()
+    return bool(re.search(
+        r"tradu(?:ire|ction)|equivalent|équivalent|que veut dire|signification|definition|définition|"
+        r"term[e]?\b|glossaire|en arabe|en anglais|en francais|en français|means\b|meaning\b",
+        query,
+        re.I,
+    ))
+
+
 def job_path(job_id: str, suffix: str) -> Path:
     safe_id = re.sub(r"[^a-f0-9-]", "", job_id.lower())
     return JOB_DIR / f"{safe_id}.{suffix}"
@@ -339,6 +350,9 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     legal_query = f"{message}\n{context_block}"
     legal_domain = infer_query_domain(legal_query)
     legal_sources = retrieve_legal_context(legal_query, limit=5)
+    glossary_hits = []
+    if should_use_financial_glossary(message):
+        glossary_hits = [row for row in search_financial_glossary(message, limit=5) if row.get("score", 0) >= 25]
     legal_context = "\n\n".join(
         "\n".join([
             " | ".join([
@@ -351,6 +365,10 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
             source["excerpt"],
         ])
         for source in legal_sources
+    )
+    glossary_context = "\n".join(
+        f"- FR: {row['fr']} | EN: {row['en']} | AR: {row['ar']} | page {row['page']}"
+        for row in glossary_hits
     )
     history_messages = []
     for item in request.history[-10:]:
@@ -372,6 +390,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Si des sources internes sont fournies, utilise-les avant ta connaissance generale et cite le titre/page dans la reponse quand c'est pertinent.",
         "Quand tu cites un texte, utilise de preference son intitule exact tel qu'il apparait dans les sources internes recuperees. N'invente pas un titre simplifie si le titre source est plus precis.",
         "Par exemple, si la source s'appelle 'Code TVA et droit de consommation 2026', ne la transforme pas en 'Code de la TVA' sauf si tu precises qu'il s'agit d'un raccourci pratique.",
+        "Si un glossaire terminologique trilingue interne est fourni, utilise-le seulement comme aide terminologique secondaire pour les equivalences de termes FR/EN/AR. Ne le traite jamais comme une source normative de droit positif.",
         "Pour la Tunisie, prefere la terminologie locale: TVA, IRPP, IS, retenue a la source, droit de timbre, CNSS, matricule fiscal, regime reel/forfaitaire, liasse fiscale.",
         "Interdiction stricte supplementaire pour la fiscalite tunisienne: n'invente jamais un 'Code general des impots (CGI)' tunisien ni une structure fictive en Livres I/II/III/IV/V/VI si cette structure n'apparait pas explicitement dans les sources internes recuperees.",
         "Si l'utilisateur demande les principales lois fiscales tunisiennes, cite sobrement les textes recuperes tels qu'ils existent dans les sources: Code de l IRPP et de l IS, Code TVA, Code des droits et procedures fiscaux, Code des droits d enregistrement et du timbre, Code de la fiscalite locale, loi de finances, et notes generales si elles sont pertinentes.",
@@ -387,6 +406,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         f"Langue de reponse: {language}",
         f"Domaine detecte cote retrieval: {legal_domain}",
         legal_context and f"Sources internes recuperees dans le corpus fiscal/comptable tunisien:\n{legal_context}",
+        glossary_context and f"Glossaire terminologique trilingue recupere:\n{glossary_context}",
         context_block and f"Contexte/document fourni:\n{context_block}",
         f"Question du cabinet:\n{message}",
     ]).strip()
