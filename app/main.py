@@ -445,6 +445,67 @@ def fastpath_tva_overview_answer(
     }
 
 
+def fastpath_general_fiscal_framework_answer(message: str, legal_domain: str) -> dict | None:
+    if not is_general_fiscal_framework_query(message, legal_domain):
+        return None
+
+    seeded_query = (
+        "fiscalite tunisie code irpp is code tva procedures fiscales "
+        "enregistrement timbre fiscalite locale loi de finances"
+    )
+    framework_sources = retrieve_legal_context(seeded_query, limit=6)
+    if not framework_sources:
+        return None
+
+    preferred_titles = [
+        "Code de l IRPP et de l IS",
+        "Code TVA et droit de consommation 2026",
+        "Code des droits et procedures fiscaux 2026",
+        "Code des droits d enregistrement et du timbre 2026",
+        "Code de la fiscalite locale 2017",
+        "Loi de finances 2026",
+    ]
+    source_by_title: dict[str, dict] = {}
+    for source in framework_sources:
+        title = source.get("title") or "Source interne"
+        source_by_title.setdefault(title, source)
+
+    ordered_titles = [title for title in preferred_titles if title in source_by_title]
+    if not ordered_titles:
+        ordered_titles = list(source_by_title.keys())[:5]
+
+    source_lines = summarize_source_titles([source_by_title[title] for title in ordered_titles], limit=5)
+    text_lines = "\n".join(f"- {title}" for title in ordered_titles)
+    answer = "\n\n".join([
+        "## Réponse\n"
+        "Selon les documents actuellement indexes dans la base, le cadre fiscal tunisien doit etre presente d'abord au niveau des textes principaux, et non au niveau d'articles isoles. "
+        "Les textes de reference a citer en priorite sont :\n"
+        f"{text_lines}\n\n"
+        "En pratique, une reponse generale de cabinet doit distinguer ces grands textes de base, puis verifier separément les taux, mesures annuelles, regimes particuliers, exemptions ou procedures selon la matiere fiscale exacte.",
+        "## Sources utilisees\n"
+        f"{source_lines or '- Base documentaire interne'}",
+        "## Reserve de verification\n"
+        "Les presentes informations sont fondees sur les documents actuellement indexes dans la base documentaire. Pour une analyse exhaustive, il convient egalement de verifier les versions en vigueur, les lois de finances recentes et les textes sectoriels applicables.",
+    ])
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "general",
+        "preferred_source": "legal_corpus",
+        "response_style": "flexible_expert",
+        "golden_kb_hits": [],
+        "sources": [source_by_title[title] for title in ordered_titles],
+        "model": "internal/fiscal-framework-fastpath",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
 def fallback_accounting_answer(
     message: str,
     intent: str,
@@ -604,6 +665,19 @@ def is_fiscal_overview_query(message: str, legal_domain: str, intent: str) -> bo
     return bool(re.search(
         r"lois? de tva|tva .*g[ée]n[ée]ralement|donnez[- ]moi les lois de tva|"
         r"pr[ée]sentation de la tva|cadre g[ée]n[ée]ral de la tva|r[ée]gime tva g[ée]n[ée]ral",
+        query,
+        re.I,
+    ))
+
+
+def is_general_fiscal_framework_query(message: str, legal_domain: str) -> bool:
+    if legal_domain != "fiscalite":
+        return False
+    query = (message or "").lower()
+    return bool(re.search(
+        r"quelles sont les lois de fiscalit|quelles sont les lois fiscal|"
+        r"cadre juridique de la fiscalit|cadre fiscal tunisien|principaux textes fiscaux|"
+        r"lois de fiscalite en tunisie|lois fiscales en tunisie",
         query,
         re.I,
     ))
@@ -858,6 +932,12 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         ]
         if formality_hits:
             golden_kb_hits = formality_hits[:3]
+    fiscal_framework_fastpath = fastpath_general_fiscal_framework_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if fiscal_framework_fastpath:
+        return fiscal_framework_fastpath
     tva_overview_fastpath = fastpath_tva_overview_answer(
         message=message,
         intent=query_intent,
