@@ -293,6 +293,55 @@ def summarize_source_titles(sources: list[dict], limit: int = 3) -> str:
     return "\n".join(lines)
 
 
+def fastpath_concept_answer(
+    message: str,
+    intent: str,
+    legal_domain: str,
+    golden_kb_hits: list[dict],
+    legal_sources: list[dict],
+) -> dict | None:
+    if not golden_kb_hits:
+        return None
+    top = golden_kb_hits[0]
+    definition = top.get("canonical_definition") or "Les sources internes permettent d'identifier la notion."
+    legal_basis = ", ".join(top.get("legal_basis", []))
+    if not legal_basis and legal_sources:
+        legal_basis = "\n".join(
+            f"- {source.get('title', 'Source interne')}, page {source.get('page')}"
+            for source in legal_sources[:2]
+        )
+    vigilance_items = top.get("common_mistakes", [])[:3]
+    vigilance = "\n".join(f"- {item}" for item in vigilance_items) or "- Verifier l'application concrete au dossier du client."
+    sources_used = summarize_source_titles(
+        [{"title": ref.get("title"), "page": None, "heading": ""} for ref in top.get("source_refs", [])]
+    ) or summarize_source_titles(legal_sources)
+    answer = compose_structured_answer(
+        "concept_brief",
+        {
+            "Definition": definition,
+            "Base legale": legal_basis or "Documents internes indexes.",
+            "Points de vigilance": vigilance,
+            "Sources utilisees": sources_used or "- Base documentaire interne",
+        },
+    )
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": intent,
+        "preferred_source": "golden_kb",
+        "response_style": "concept_brief",
+        "golden_kb_hits": golden_kb_hits,
+        "sources": legal_sources,
+        "model": "internal/golden-kb-fastpath",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
 def fallback_accounting_answer(
     message: str,
     intent: str,
@@ -653,6 +702,16 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         ]
         if formality_hits:
             golden_kb_hits = formality_hits[:3]
+    if answer_style == "concept_brief" and golden_kb_hits:
+        fastpath = fastpath_concept_answer(
+            message=message,
+            intent=query_intent,
+            legal_domain=legal_domain,
+            golden_kb_hits=golden_kb_hits,
+            legal_sources=legal_sources,
+        )
+        if fastpath:
+            return fastpath
     glossary_hits = []
     if should_use_financial_glossary(message):
         glossary_hits = [row for row in search_financial_glossary(message, limit=5) if row.get("score", 0) >= 25]
