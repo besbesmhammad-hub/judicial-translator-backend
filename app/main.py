@@ -201,6 +201,14 @@ def should_prefer_golden_kb(intent: str) -> bool:
     return intent in {"definition", "audit", "company_law", "comparison", "professional_formality"}
 
 
+def preferred_answer_style(intent: str, prefer_golden_kb: bool) -> str:
+    if intent in {"definition", "comparison", "audit", "company_law", "professional_formality"} and prefer_golden_kb:
+        return "concept_brief"
+    if intent in {"legal_basis", "tax_calculation", "accounting_treatment", "document_analysis"}:
+        return "practical_analysis"
+    return "flexible_expert"
+
+
 def job_path(job_id: str, suffix: str) -> Path:
     safe_id = re.sub(r"[^a-f0-9-]", "", job_id.lower())
     return JOB_DIR / f"{safe_id}.{suffix}"
@@ -355,6 +363,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     context_block = context[:18000]
     query_intent = classify_query_intent(message, context_block)
     prefer_golden_kb = should_prefer_golden_kb(query_intent)
+    answer_style = preferred_answer_style(query_intent, prefer_golden_kb)
     legal_query = f"{message}\n{context_block}"
     legal_domain = infer_query_domain(legal_query)
     legal_sources = retrieve_legal_context(legal_query, limit=3 if prefer_golden_kb else 5)
@@ -421,6 +430,11 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Ne reponds pas comme un traducteur sauf si l'utilisateur demande une traduction. Par defaut, agis comme un assistant IA expert-comptable.",
         "Si l'utilisateur demande une presentation generale d'un sujet juridique ou fiscal, structure la reponse en deux niveaux: 1) ce que disent les sources internes recuperees, 2) ce qui doit etre verifie faute de source plus recente. Ne melange pas les deux.",
         "Quand une reponse s'appuie d'abord sur la Golden Knowledge Base, conserve un ton de cabinet: definition nette, reserve utile, et distinction claire entre notion de base et application pratique.",
+        "Respecte strictement le style de reponse demande dans le prompt utilisateur.",
+        "Si le style demande est 'concept_brief', structure le champ answer avec exactement ces intertitres markdown dans cet ordre: 'Definition', 'Base legale', 'Points de vigilance', 'Sources utilisees'.",
+        "Si le style demande est 'concept_brief', chaque section doit etre concise, utile au cabinet, et les sources citees doivent venir uniquement des sources effectivement fournies dans le contexte.",
+        "Si le style demande est 'practical_analysis', structure le champ answer avec exactement ces intertitres markdown dans cet ordre: 'Reponse', 'Application pratique', 'Points de vigilance', 'Sources utilisees'.",
+        "Si le style demande est 'flexible_expert', tu peux garder une structure libre mais professionnelle; si des sources sont pertinentes, termine par 'Sources utilisees'.",
         "Style: professionnel, sans emoji, sans formule marketing, avec des etapes nettes et directement exploitables.",
         "Le champ 'answer' doit contenir uniquement la reponse principale. Ne colle jamais dedans les sections Assumptions, Next steps ou Warnings.",
         "Retourne uniquement un JSON valide avec exactement ces cles: answer, assumptions, next_steps, warnings.",
@@ -429,6 +443,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         f"Langue de reponse: {language}",
         f"Intent detecte cote orchestration: {query_intent}",
         f"Source preferentielle: {'golden_kb' if prefer_golden_kb else 'legal_corpus'}",
+        f"Style de reponse attendu: {answer_style}",
         f"Domaine detecte cote retrieval: {legal_domain}",
         golden_kb_context and f"Golden Knowledge Base recuperee:\n{golden_kb_context}",
         legal_context and f"Sources internes recuperees dans le corpus fiscal/comptable tunisien:\n{legal_context}",
@@ -507,6 +522,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     "warnings": warnings,
                     "intent": query_intent,
                     "preferred_source": "golden_kb" if prefer_golden_kb else "legal_corpus",
+                    "response_style": answer_style,
                     "golden_kb_hits": golden_kb_hits,
                     "sources": legal_sources,
                     "model": f"{route['provider']}/{route['model']}",
