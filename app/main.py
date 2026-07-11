@@ -181,9 +181,19 @@ def normalized_heading_answer(answer: str, style: str) -> str:
         return text
     aliases = section_aliases(style)
     for canonical, variants in aliases.items():
-        pattern = r"(?im)^(?:##\s*|\*\*)?(?:" + "|".join(re.escape(item) for item in variants) + r")(?:\*\*)?\s*:?\s*$"
+        pattern = r"(?im)^(?:#+\s*|\*\*)?(?:" + "|".join(re.escape(item) for item in variants) + r")(?:\*\*)?\s*:?\s*$"
         text = re.sub(pattern, f"## {canonical}", text)
     return text
+
+
+def answer_has_required_sections(answer: str, style: str) -> bool:
+    if style == "concept_brief":
+        sections = CONCEPT_BRIEF_SECTIONS
+    elif style == "practical_analysis":
+        sections = PRACTICAL_ANALYSIS_SECTIONS
+    else:
+        return True
+    return all(f"## {section}" in answer for section in sections)
 
 
 def compose_structured_answer(style: str, section_values: dict[str, str]) -> str:
@@ -196,11 +206,62 @@ def compose_structured_answer(style: str, section_values: dict[str, str]) -> str
     return "\n\n".join(blocks).strip()
 
 
+def build_structured_sections_from_answer(
+    answer: str,
+    style: str,
+    golden_kb_hits: list[dict],
+    legal_sources: list[dict],
+) -> str:
+    raw = clean_translation_output(answer).strip()
+    top = golden_kb_hits[0] if golden_kb_hits else None
+    first_paragraph = re.split(r"\n\s*\n", raw, maxsplit=1)[0].strip() if raw else ""
+    if style == "concept_brief":
+        definition = first_paragraph or (top.get("canonical_definition") if top else "")
+        base_legale = ", ".join(top.get("legal_basis", [])) if top else ""
+        if not base_legale and legal_sources:
+            base_legale = "\n".join(
+                f"- {source.get('title', 'Source interne')}, page {source.get('page')}"
+                for source in legal_sources[:3]
+            )
+        points = "\n".join(f"- {item}" for item in (top.get("common_mistakes", []) if top else [])[:3])
+        if not points:
+            points = "- Verifier le texte exact applicable et la version en vigueur avant usage client."
+        sources_used = summarize_source_titles(
+            [{"title": ref.get("title"), "page": None, "heading": ""} for ref in top.get("source_refs", [])] if top else legal_sources
+        )
+        return compose_structured_answer(
+            "concept_brief",
+            {
+                "Definition": definition or "Les sources internes permettent d'identifier la notion, mais une verification contextuelle reste utile.",
+                "Base legale": base_legale or "Documents internes indexes.",
+                "Points de vigilance": points,
+                "Sources utilisees": sources_used or "- Base documentaire interne",
+            },
+        )
+    if style == "practical_analysis":
+        response = first_paragraph or "Les sources internes permettent de formuler une premiere orientation pratique."
+        application = "- Reconstituer les faits, montants et periodes.\n- Identifier le texte precis applicable.\n- Verifier les seuils, exceptions et pieces justificatives."
+        points = "- Verifier la date du texte, les lois de finances ulterieures et les circonstances du client."
+        sources_used = summarize_source_titles(legal_sources) or summarize_source_titles(
+            [{"title": ref.get("title"), "page": None, "heading": ""} for hit in golden_kb_hits for ref in hit.get("source_refs", [])]
+        )
+        return compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": response,
+                "Application pratique": application,
+                "Points de vigilance": points,
+                "Sources utilisees": sources_used or "- Base documentaire interne",
+            },
+        )
+    return raw
+
+
 def ensure_answer_sections(answer: str, style: str) -> str:
     text = normalized_heading_answer(answer, style)
     if style not in {"concept_brief", "practical_analysis"}:
         return text
-    if all(f"## {section}" in text for section in (CONCEPT_BRIEF_SECTIONS if style == "concept_brief" else PRACTICAL_ANALYSIS_SECTIONS)):
+    if answer_has_required_sections(text, style):
         return text
 
     mapping = parse_section_mapping(text)
@@ -656,6 +717,8 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                 answer, assumptions, next_steps, warnings = normalize_chat_payload(parsed, answer_style)
                 if not answer:
                     raise RuntimeError("Model returned an empty accounting answer.")
+                if not answer_has_required_sections(answer, answer_style):
+                    answer = build_structured_sections_from_answer(answer, answer_style, golden_kb_hits, legal_sources)
                 if fiscal_answer_needs_repair(answer, legal_domain):
                     repair_messages = [
                         *messages,
@@ -687,7 +750,11 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     repair_response.raise_for_status()
                     repair_parsed = extract_json(provider_content(route, repair_response.json()))
                     answer, assumptions, next_steps, warnings = normalize_chat_payload(repair_parsed, answer_style)
-                    if not answer or fiscal_answer_needs_repair(answer, legal_domain):
+                    if not answer:
+                        raise RuntimeError("Accounting answer failed fiscal legal validation.")
+                    if not answer_has_required_sections(answer, answer_style):
+                        answer = build_structured_sections_from_answer(answer, answer_style, golden_kb_hits, legal_sources)
+                    if fiscal_answer_needs_repair(answer, legal_domain):
                         raise RuntimeError("Accounting answer failed fiscal legal validation.")
                 return {
                     "success": True,
