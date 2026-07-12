@@ -53,7 +53,7 @@ CONCEPT_BRIEF_SECTIONS = ["Definition", "Base legale", "Points de vigilance", "S
 PRACTICAL_ANALYSIS_SECTIONS = ["Reponse", "Application pratique", "Points de vigilance", "Sources utilisees"]
 CLIENT_SOURCE_TITLES = {
     "code_irpp_is_2011": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS)",
-    "tva_droit_consommation": "Ministère des Finances, recueil TVA et droit de consommation, mis à jour au 1er janvier 2026",
+    "tva_droit_consommation": "Code de la taxe sur la valeur ajoutée (loi n° 88-61 du 2 juin 1988), recueil officiel mis à jour au 1er janvier 2026",
     "procedures_fiscales_2026": "Code des droits et procédures fiscaux, édition 2026",
     "enregistrement_timbre": "Code des droits d'enregistrement et de timbre, édition 2026",
     "fiscalite_locale": "Code de la fiscalité locale",
