@@ -813,6 +813,24 @@ def fiscal_overview_answer_needs_repair(answer: str, message: str, legal_domain:
     return hits >= 2
 
 
+def answer_needs_professional_repair(answer: str) -> bool:
+    answer_text = (answer or "").lower()
+    risky_patterns = [
+        r"we need to answer",
+        r"according to indexed",
+        r"sources internes recup",
+        r"sources internes récup",
+        r"documents actuellement index",
+        r"la bonne reponse consiste",
+        r"la bonne réponse consiste",
+        r"moteur conversationnel",
+        r"reponse de secours",
+        r"réponse de secours",
+        r'"\s*answer\s*"\s*:',
+    ]
+    return any(re.search(pattern, answer_text, re.I) for pattern in risky_patterns)
+
+
 def should_use_financial_glossary(message: str) -> bool:
     query = (message or "").lower()
     return bool(re.search(
@@ -1172,7 +1190,11 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     raise RuntimeError("Model returned an empty accounting answer.")
                 if not answer_has_required_sections(answer, answer_style):
                     answer = build_structured_sections_from_answer(answer, answer_style, golden_kb_hits, legal_sources)
-                if fiscal_answer_needs_repair(answer, legal_domain) or fiscal_overview_answer_needs_repair(answer, message, legal_domain, query_intent):
+                if (
+                    fiscal_answer_needs_repair(answer, legal_domain)
+                    or fiscal_overview_answer_needs_repair(answer, message, legal_domain, query_intent)
+                    or answer_needs_professional_repair(answer)
+                ):
                     repair_messages = [
                         *messages,
                         {
@@ -1183,7 +1205,9 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                                 "n'invente pas une structure en Livres I/II/III/IV/V/VI, "
                                 "cite uniquement les textes tunisiens effectivement recuperes dans les sources internes, "
                                 "et pour une question generale sur la TVA, reste au niveau des textes de reference et des reserves de verification "
-                                "sans affirmer par defaut des taux, seuils, periodicites ou regimes speciaux non explicitement recuperes."
+                                "sans affirmer par defaut des taux, seuils, periodicites ou regimes speciaux non explicitement recuperes. "
+                                "N'ecris jamais 'we need to answer', ne montre jamais de JSON brut, "
+                                "et ne decris jamais les sources internes, le corpus, le fallback ou le moteur conversationnel."
                             ),
                         },
                     ]
@@ -1209,7 +1233,11 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                         raise RuntimeError("Accounting answer failed fiscal legal validation.")
                     if not answer_has_required_sections(answer, answer_style):
                         answer = build_structured_sections_from_answer(answer, answer_style, golden_kb_hits, legal_sources)
-                    if fiscal_answer_needs_repair(answer, legal_domain) or fiscal_overview_answer_needs_repair(answer, message, legal_domain, query_intent):
+                    if (
+                        fiscal_answer_needs_repair(answer, legal_domain)
+                        or fiscal_overview_answer_needs_repair(answer, message, legal_domain, query_intent)
+                        or answer_needs_professional_repair(answer)
+                    ):
                         raise RuntimeError("Accounting answer failed fiscal legal validation.")
                 return {
                     "success": True,
