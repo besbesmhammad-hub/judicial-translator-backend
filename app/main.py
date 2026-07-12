@@ -32,6 +32,7 @@ import json
 import os
 import re
 import shutil
+import time
 import unicodedata
 import uuid
 from pathlib import Path
@@ -123,6 +124,8 @@ CANONICAL_FISCAL_SOURCE_METADATA = {
 }
 JOB_DIR = Path(os.getenv("TRANSLATION_JOB_DIR", "/tmp/judicial_translator_jobs"))
 JOB_DIR.mkdir(parents=True, exist_ok=True)
+ACCOUNTING_CHAT_LOG_PATH = Path(config.ACCOUNTING_CHAT_LOG_PATH)
+ACCOUNTING_CHAT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="Judicial Translator Backend", version="1.0.0")
 
@@ -831,6 +834,35 @@ def answer_needs_professional_repair(answer: str) -> bool:
     return any(re.search(pattern, answer_text, re.I) for pattern in risky_patterns)
 
 
+def accounting_log_doc_refs(rows: list[dict], limit: int = 5) -> list[dict]:
+    refs: list[dict] = []
+    for row in rows[:limit]:
+        refs.append(
+            {
+                "doc_id": row.get("doc_id"),
+                "title": client_source_title(row) if row.get("title") or row.get("doc_id") else "Source interne",
+                "page": row.get("page"),
+                "score": row.get("score"),
+            }
+        )
+    return refs
+
+
+def append_accounting_chat_log(event: dict) -> None:
+    if not config.ACCOUNTING_CHAT_LOG_ENABLED:
+        return
+    payload = {
+        "logged_at": int(time.time()),
+        "app_revision": config.APP_REVISION,
+        **event,
+    }
+    try:
+        with ACCOUNTING_CHAT_LOG_PATH.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception:
+        return
+
+
 def should_use_financial_glossary(message: str) -> bool:
     query = (message or "").lower()
     return bool(re.search(
@@ -1039,6 +1071,8 @@ async def translate(request: TranslateRequest) -> dict:
 
 @app.post("/v1/accounting-chat")
 async def accounting_chat(request: AccountingChatRequest) -> dict:
+    request_id = uuid.uuid4().hex[:12]
+    started_at = time.perf_counter()
     message = request.message.strip()
     context = (request.context or "").strip()
     language = request.language or "francais"
@@ -1053,6 +1087,26 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         legal_domain=legal_domain,
     )
     if fiscal_framework_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": query_intent,
+                "legal_domain": legal_domain,
+                "preferred_source": fiscal_framework_fastpath.get("preferred_source"),
+                "response_style": fiscal_framework_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(fiscal_framework_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": fiscal_framework_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
         return fiscal_framework_fastpath
     tva_overview_fastpath = fastpath_tva_overview_answer(
         message=message,
@@ -1060,9 +1114,37 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         legal_domain=legal_domain,
     )
     if tva_overview_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": query_intent,
+                "legal_domain": legal_domain,
+                "preferred_source": tva_overview_fastpath.get("preferred_source"),
+                "response_style": tva_overview_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(tva_overview_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": tva_overview_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
         return tva_overview_fastpath
     legal_sources = retrieve_legal_context(legal_query, limit=legal_source_limit(query_intent, prefer_golden_kb))
     golden_kb_hits = retrieve_golden_kb(message, limit=3) if prefer_golden_kb else retrieve_golden_kb(message, limit=2)
+    golden_kb_refs = [
+        {
+            "concept": row.get("concept"),
+            "domain": row.get("domain"),
+            "confidence": row.get("confidence_label"),
+        }
+        for row in golden_kb_hits[:5]
+    ]
     if query_intent == "professional_formality":
         seeded_formality_query = f"{message} inscription personne physique ordre professionnel attestation radiation suspension stagiaire"
         formality_hits = [
@@ -1081,6 +1163,26 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
             legal_sources=legal_sources,
         )
         if fastpath:
+            append_accounting_chat_log(
+                {
+                    "request_id": request_id,
+                    "kind": "accounting_chat",
+                    "message": message[:500],
+                    "language": language,
+                    "history_count": len(request.history or []),
+                    "intent": query_intent,
+                    "legal_domain": legal_domain,
+                    "preferred_source": fastpath.get("preferred_source"),
+                    "response_style": fastpath.get("response_style"),
+                    "provider_attempts": [],
+                    "golden_kb_refs": golden_kb_refs,
+                    "retrieved_legal_refs": accounting_log_doc_refs(legal_sources),
+                    "result": "fastpath",
+                    "model": fastpath.get("model"),
+                    "fallback_used": False,
+                    "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+                }
+            )
             return fastpath
     glossary_hits = []
     if should_use_financial_glossary(message):
@@ -1165,6 +1267,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     )
     max_output_tokens = min(config.LLM_MAX_TOKENS, accounting_chat_max_tokens(answer_style, query_intent))
     last_error: Exception | None = None
+    provider_attempts: list[dict] = []
     async with httpx.AsyncClient(timeout=httpx.Timeout(config.LLM_PROVIDER_TIMEOUT, connect=8.0)) as client:
         for route in routes:
             body = provider_body(route, messages, max_output_tokens, json_mode=True)
@@ -1184,6 +1287,14 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                         timeout=provider_timeout(route, message, "expert-comptable assistant chat"),
                     )
                 response.raise_for_status()
+                provider_attempts.append(
+                    {
+                        "provider": route["provider"],
+                        "model": route["model"],
+                        "status": "ok",
+                        "http_status": response.status_code,
+                    }
+                )
                 parsed = extract_json(provider_content(route, response.json()))
                 answer, assumptions, next_steps, warnings = normalize_chat_payload(parsed, answer_style)
                 if not answer:
@@ -1239,7 +1350,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                         or answer_needs_professional_repair(answer)
                     ):
                         raise RuntimeError("Accounting answer failed fiscal legal validation.")
-                return {
+                result = {
                     "success": True,
                     "answer": answer,
                     "assumptions": assumptions,
@@ -1252,7 +1363,37 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     "sources": legal_sources,
                     "model": f"{route['provider']}/{route['model']}",
                 }
+                append_accounting_chat_log(
+                    {
+                        "request_id": request_id,
+                        "kind": "accounting_chat",
+                        "message": message[:500],
+                        "language": language,
+                        "history_count": len(request.history or []),
+                        "intent": query_intent,
+                        "legal_domain": legal_domain,
+                        "preferred_source": result.get("preferred_source"),
+                        "response_style": result.get("response_style"),
+                        "provider_attempts": provider_attempts,
+                        "golden_kb_refs": golden_kb_refs,
+                        "retrieved_legal_refs": accounting_log_doc_refs(legal_sources),
+                        "result": "provider_success",
+                        "model": result.get("model"),
+                        "fallback_used": False,
+                        "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+                    }
+                )
+                return result
             except Exception as error:
+                provider_attempts.append(
+                    {
+                        "provider": route["provider"],
+                        "model": route["model"],
+                        "status": "error",
+                        "error_type": type(error).__name__,
+                        "error": clean_translation_output(str(error))[:280],
+                    }
+                )
                 last_error = error
                 continue
     if is_rate_limit_error(last_error) or is_credit_error(last_error):
@@ -1265,11 +1406,99 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
             legal_sources=legal_sources,
         )
         if fallback:
+            append_accounting_chat_log(
+                {
+                    "request_id": request_id,
+                    "kind": "accounting_chat",
+                    "message": message[:500],
+                    "language": language,
+                    "history_count": len(request.history or []),
+                    "intent": query_intent,
+                    "legal_domain": legal_domain,
+                    "preferred_source": fallback.get("preferred_source"),
+                    "response_style": fallback.get("response_style"),
+                    "provider_attempts": provider_attempts,
+                    "golden_kb_refs": golden_kb_refs,
+                    "retrieved_legal_refs": accounting_log_doc_refs(legal_sources),
+                    "result": "fallback_after_provider_failure",
+                    "model": fallback.get("model"),
+                    "fallback_used": True,
+                    "last_error_type": type(last_error).__name__ if last_error else None,
+                    "last_error": clean_translation_output(str(last_error))[:280] if last_error else None,
+                    "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+                }
+            )
             return fallback
     if is_rate_limit_error(last_error):
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": query_intent,
+                "legal_domain": legal_domain,
+                "preferred_source": "golden_kb" if prefer_golden_kb else "legal_corpus",
+                "response_style": answer_style,
+                "provider_attempts": provider_attempts,
+                "golden_kb_refs": golden_kb_refs,
+                "retrieved_legal_refs": accounting_log_doc_refs(legal_sources),
+                "result": "provider_failure",
+                "model": None,
+                "fallback_used": False,
+                "last_error_type": type(last_error).__name__ if last_error else None,
+                "last_error": clean_translation_output(str(last_error))[:280] if last_error else None,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
         raise provider_http_error(ProviderRateLimitError(friendly_provider_error(last_error)))
     if is_credit_error(last_error):
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": query_intent,
+                "legal_domain": legal_domain,
+                "preferred_source": "golden_kb" if prefer_golden_kb else "legal_corpus",
+                "response_style": answer_style,
+                "provider_attempts": provider_attempts,
+                "golden_kb_refs": golden_kb_refs,
+                "retrieved_legal_refs": accounting_log_doc_refs(legal_sources),
+                "result": "provider_failure",
+                "model": None,
+                "fallback_used": False,
+                "last_error_type": type(last_error).__name__ if last_error else None,
+                "last_error": clean_translation_output(str(last_error))[:280] if last_error else None,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
         raise provider_http_error(ProviderCreditError(friendly_provider_error(last_error)))
+    append_accounting_chat_log(
+        {
+            "request_id": request_id,
+            "kind": "accounting_chat",
+            "message": message[:500],
+            "language": language,
+            "history_count": len(request.history or []),
+            "intent": query_intent,
+            "legal_domain": legal_domain,
+            "preferred_source": "golden_kb" if prefer_golden_kb else "legal_corpus",
+            "response_style": answer_style,
+            "provider_attempts": provider_attempts,
+            "golden_kb_refs": golden_kb_refs,
+            "retrieved_legal_refs": accounting_log_doc_refs(legal_sources),
+            "result": "provider_failure",
+            "model": None,
+            "fallback_used": False,
+            "last_error_type": type(last_error).__name__ if last_error else None,
+            "last_error": clean_translation_output(str(last_error))[:280] if last_error else None,
+            "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+        }
+    )
     raise provider_http_error(last_error or RuntimeError("Aucun fournisseur IA disponible."))
 
 
