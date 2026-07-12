@@ -67,8 +67,49 @@ CLIENT_SOURCE_TITLE_ALIASES = {
     "Code de la fiscalite locale 2017": CLIENT_SOURCE_TITLES["fiscalite_locale"],
     "Loi de finances 2026": CLIENT_SOURCE_TITLES["loi_finances_2026"],
 }
-CANONICAL_SOURCE_PAGES = {
-    "tva_droit_consommation": 2,
+CANONICAL_FISCAL_SOURCE_METADATA = {
+    "code_irpp_is_2011": {
+        "title": "Code de l IRPP et de l IS",
+        "filename": "11-97.pdf",
+        "page": 1,
+        "authority": "Imprimerie Officielle de la Republique Tunisienne",
+        "year": 2011,
+    },
+    "tva_droit_consommation": {
+        "title": "Code TVA et droit de consommation 2026",
+        "filename": "Code-TVA-2026.pdf",
+        "page": 2,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2026,
+    },
+    "procedures_fiscales_2026": {
+        "title": "Code des droits et procedures fiscaux 2026",
+        "filename": "مجلة-الحقوق-والإجراءات-الجبائية-2026.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2026,
+    },
+    "enregistrement_timbre": {
+        "title": "Code des droits d enregistrement et du timbre 2026",
+        "filename": "مجلة-معاليم-التسجيل-والطابع-الجبائي-2026-1.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2026,
+    },
+    "fiscalite_locale": {
+        "title": "Code de la fiscalite locale 2017",
+        "filename": "CODE DE LA FISCALITE LOCALE, TEXTES D'APPLICATIONS ET TEXTES CONNEXES 2017 FR.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances",
+        "year": 2017,
+    },
+    "loi_finances_2026": {
+        "title": "Loi de finances 2026",
+        "filename": "115725.pdf",
+        "page": 1,
+        "authority": "Journal Officiel de la Republique Tunisienne",
+        "year": 2026,
+    },
 }
 JOB_DIR = Path(os.getenv("TRANSLATION_JOB_DIR", "/tmp/judicial_translator_jobs"))
 JOB_DIR.mkdir(parents=True, exist_ok=True)
@@ -369,35 +410,41 @@ def build_legal_context_block(sources: list[dict], intent: str, answer_style: st
 
 
 def legal_sources_by_doc_ids(doc_ids: list[str]) -> list[dict]:
-    records = load_corpus()
-    if not records:
-        return []
     by_doc: dict[str, dict] = {}
-    for record in records:
-        doc_id = record.get("doc_id")
-        if doc_id not in doc_ids:
-            continue
-        preferred_page = CANONICAL_SOURCE_PAGES.get(doc_id)
-        existing = by_doc.get(doc_id)
-        if existing and (
-            preferred_page is None
-            or existing.get("page") == preferred_page
-            or record.get("page") != preferred_page
-        ):
+    missing_doc_ids: list[str] = []
+    for doc_id in doc_ids:
+        metadata = CANONICAL_FISCAL_SOURCE_METADATA.get(doc_id)
+        if not metadata:
+            missing_doc_ids.append(doc_id)
             continue
         by_doc[doc_id] = {
-            "id": record.get("id"),
+            "id": f"canonical:{doc_id}",
             "doc_id": doc_id,
-            "title": record.get("title") or "Source interne",
-            "filename": record.get("filename"),
-            "page": record.get("page"),
-            "heading": record.get("heading", ""),
-            "excerpt": (record.get("text") or "")[:900],
-            "source_tier": record.get("source_tier", ""),
-            "authority": record.get("authority", ""),
-            "year": record.get("year"),
+            **metadata,
+            "heading": "",
+            "excerpt": "",
+            "source_tier": "primary_law",
             "score": 999.0,
         }
+
+    if missing_doc_ids:
+        for record in load_corpus():
+            doc_id = record.get("doc_id")
+            if doc_id not in missing_doc_ids or doc_id in by_doc:
+                continue
+            by_doc[doc_id] = {
+                "id": record.get("id"),
+                "doc_id": doc_id,
+                "title": record.get("title") or "Source interne",
+                "filename": record.get("filename"),
+                "page": record.get("page"),
+                "heading": record.get("heading", ""),
+                "excerpt": (record.get("text") or "")[:900],
+                "source_tier": record.get("source_tier", ""),
+                "authority": record.get("authority", ""),
+                "year": record.get("year"),
+                "score": 999.0,
+            }
     return [by_doc[doc_id] for doc_id in doc_ids if doc_id in by_doc]
 
 
