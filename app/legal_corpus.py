@@ -1122,6 +1122,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             continue
         results.append({
             "id": record["id"],
+            "doc_id": record.get("doc_id"),
             "title": record["title"],
             "filename": record["filename"],
             "page": record["page"],

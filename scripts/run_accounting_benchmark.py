@@ -39,6 +39,11 @@ def has_sections(answer: str, sections: list[str]) -> dict[str, bool]:
     return {section: (f"## {section}" in text or f"**{section}**" in text or f"{section}\n" in text) for section in sections}
 
 
+def contains_phrases(answer: str, phrases: list[str]) -> dict[str, bool]:
+    normalized = (answer or "").casefold()
+    return {phrase: phrase.casefold() in normalized for phrase in phrases}
+
+
 def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
     payload = {
         "message": case["question"],
@@ -52,6 +57,10 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
         latency_ms = round((time.time() - started) * 1000, 1)
         answer = response.get("answer", "")
         section_checks = has_sections(answer, case.get("expected_sections", []))
+        required_phrase_checks = contains_phrases(answer, case.get("expected_answer_contains", []))
+        forbidden_phrase_checks = contains_phrases(answer, case.get("forbidden_answer_contains", []))
+        all_required_phrases_present = all(required_phrase_checks.values()) if required_phrase_checks else True
+        no_forbidden_phrases = not any(forbidden_phrase_checks.values())
         return {
             "id": case["id"],
             "question": case["question"],
@@ -68,6 +77,11 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             "response_style_match": response.get("response_style") == case.get("expected_response_style"),
             "section_checks": section_checks,
             "all_sections_present": all(section_checks.values()) if section_checks else True,
+            "required_phrase_checks": required_phrase_checks,
+            "all_required_phrases_present": all_required_phrases_present,
+            "forbidden_phrase_checks": forbidden_phrase_checks,
+            "no_forbidden_phrases": no_forbidden_phrases,
+            "content_quality_pass": all_required_phrases_present and no_forbidden_phrases,
             "sources_count": len(response.get("sources") or []),
             "golden_kb_hits_count": len(response.get("golden_kb_hits") or []),
             "model": response.get("model"),
@@ -101,6 +115,7 @@ def summarize(results: list[dict]) -> dict:
     source_match = sum(1 for row in results if row.get("preferred_source_match"))
     style_match = sum(1 for row in results if row.get("response_style_match"))
     section_match = sum(1 for row in results if row.get("all_sections_present"))
+    content_quality_match = sum(1 for row in results if row.get("content_quality_pass"))
     latencies = [row["latency_ms"] for row in results if row.get("ok") and isinstance(row.get("latency_ms"), (int, float))]
     return {
         "total_cases": total,
@@ -110,6 +125,8 @@ def summarize(results: list[dict]) -> dict:
         "preferred_source_match_count": source_match,
         "response_style_match_count": style_match,
         "all_sections_present_count": section_match,
+        "content_quality_pass_count": content_quality_match,
+        "content_quality_failure_count": total - content_quality_match,
         "avg_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else None,
     }
 
@@ -164,7 +181,7 @@ def main() -> int:
     output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     print(f"Results written to: {output_path}")
-    return 0 if summary["failed_cases"] == 0 else 1
+    return 0 if summary["failed_cases"] == 0 and summary["content_quality_failure_count"] == 0 else 1
 
 
 if __name__ == "__main__":

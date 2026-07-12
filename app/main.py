@@ -51,6 +51,25 @@ SECTION_SPLIT_RE = re.compile(
 )
 CONCEPT_BRIEF_SECTIONS = ["Definition", "Base legale", "Points de vigilance", "Sources utilisees"]
 PRACTICAL_ANALYSIS_SECTIONS = ["Reponse", "Application pratique", "Points de vigilance", "Sources utilisees"]
+CLIENT_SOURCE_TITLES = {
+    "code_irpp_is_2011": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS)",
+    "tva_droit_consommation": "Ministère des Finances, recueil TVA et droit de consommation, mis à jour au 1er janvier 2026",
+    "procedures_fiscales_2026": "Code des droits et procédures fiscaux, édition 2026",
+    "enregistrement_timbre": "Code des droits d'enregistrement et de timbre, édition 2026",
+    "fiscalite_locale": "Code de la fiscalité locale",
+    "loi_finances_2026": "Loi de finances pour 2026",
+}
+CLIENT_SOURCE_TITLE_ALIASES = {
+    "Code de l IRPP et de l IS": CLIENT_SOURCE_TITLES["code_irpp_is_2011"],
+    "Code TVA et droit de consommation 2026": CLIENT_SOURCE_TITLES["tva_droit_consommation"],
+    "Code des droits et procedures fiscaux 2026": CLIENT_SOURCE_TITLES["procedures_fiscales_2026"],
+    "Code des droits d enregistrement et du timbre 2026": CLIENT_SOURCE_TITLES["enregistrement_timbre"],
+    "Code de la fiscalite locale 2017": CLIENT_SOURCE_TITLES["fiscalite_locale"],
+    "Loi de finances 2026": CLIENT_SOURCE_TITLES["loi_finances_2026"],
+}
+CANONICAL_SOURCE_PAGES = {
+    "tva_droit_consommation": 2,
+}
 JOB_DIR = Path(os.getenv("TRANSLATION_JOB_DIR", "/tmp/judicial_translator_jobs"))
 JOB_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -280,12 +299,20 @@ def ensure_answer_sections(answer: str, style: str) -> str:
     return rebuilt or text
 
 
+def client_source_title(source: dict) -> str:
+    doc_id = source.get("doc_id")
+    if doc_id in CLIENT_SOURCE_TITLES:
+        return CLIENT_SOURCE_TITLES[doc_id]
+    title = source.get("title") or "Source interne"
+    return CLIENT_SOURCE_TITLE_ALIASES.get(title, title)
+
+
 def summarize_source_titles(sources: list[dict], limit: int = 3) -> str:
     lines: list[str] = []
     for source in sources[:limit]:
-        title = source.get("title") or "Source interne"
+        title = client_source_title(source)
         page = source.get("page")
-        heading = source.get("heading") or ""
+        heading = "" if source.get("score") == 999.0 else (source.get("heading") or "")
         suffix = f", page {page}" if page is not None else ""
         if heading:
             suffix += f" - {heading}"
@@ -348,10 +375,19 @@ def legal_sources_by_doc_ids(doc_ids: list[str]) -> list[dict]:
     by_doc: dict[str, dict] = {}
     for record in records:
         doc_id = record.get("doc_id")
-        if doc_id not in doc_ids or doc_id in by_doc:
+        if doc_id not in doc_ids:
+            continue
+        preferred_page = CANONICAL_SOURCE_PAGES.get(doc_id)
+        existing = by_doc.get(doc_id)
+        if existing and (
+            preferred_page is None
+            or existing.get("page") == preferred_page
+            or record.get("page") != preferred_page
+        ):
             continue
         by_doc[doc_id] = {
             "id": record.get("id"),
+            "doc_id": doc_id,
             "title": record.get("title") or "Source interne",
             "filename": record.get("filename"),
             "page": record.get("page"),
@@ -418,31 +454,34 @@ def fastpath_tva_overview_answer(
     message: str,
     intent: str,
     legal_domain: str,
-    legal_sources: list[dict],
 ) -> dict | None:
     if not is_fiscal_overview_query(message, legal_domain, intent):
         return None
-    if not legal_sources:
-        return None
 
-    canonical_sources = legal_sources_by_doc_ids(["tva_droit_consommation"])
+    canonical_sources = legal_sources_by_doc_ids([
+        "tva_droit_consommation",
+        "procedures_fiscales_2026",
+        "loi_finances_2026",
+    ])
     if not canonical_sources:
-        canonical_sources = [source for source in legal_sources if "TVA" in str(source.get("title", ""))][:2]
-    source_lines = summarize_source_titles(canonical_sources, limit=3) or "- Base documentaire interne"
-    texts = "\n".join(f"- {source.get('title')}" for source in canonical_sources) or "- Code TVA et droit de consommation 2026"
+        return None
+    source_lines = summarize_source_titles(canonical_sources, limit=3)
 
     answer = "\n\n".join([
-        "## Reponse\n"
-        "En Tunisie, le socle juridique principal de la TVA est le **Code TVA et droit de consommation 2026**. "
-        "Dans le corpus actuellement indexe, ce recueil rassemble le texte-cadre de la TVA, ses textes d'application et des textes connexes utiles a une vue d'ensemble.\n\n"
-        "Pour une presentation generale, il faut donc partir d'abord du texte de reference suivant :\n"
-        f"{texts}\n\n"
-        "Ensuite, selon la question posee, on verifie separement les points d'application : taux, operations exonerees ou imposables, droit a deduction, obligations declaratives, regimes particuliers et textes d'execution pertinents.",
-        "## Sources utilisees\n"
+        "## Réponse\n"
+        "En Tunisie, la TVA est principalement régie par le **Code de la taxe sur la valeur ajoutée**, "
+        "promulgué par la **loi n° 88-61 du 2 juin 1988**. Ce code fixe notamment le champ d'application "
+        "de la TVA, les opérations imposables ou exonérées, l'assiette, le fait générateur, le droit à déduction "
+        "et les obligations propres à cette taxe.\n\n"
+        "Il est complété par ses textes d'application et modifié, le cas échéant, par les lois de finances. "
+        "Le **Code des droits et procédures fiscaux** encadre les règles de contrôle, de redressement, "
+        "de sanctions et de contentieux. Des dispositions particulières peuvent aussi "
+        "s'appliquer selon l'activité, le produit ou l'opération concernée.\n\n"
+        "Le droit de consommation est une imposition distincte de la TVA, même si les deux matières sont "
+        "réunies dans un même recueil officiel. Pour un dossier concret, les taux, exonérations et conditions "
+        "de déduction doivent être vérifiés dans les textes en vigueur à la date de l'opération.",
+        "## Sources utilisées\n"
         f"{source_lines}",
-        "## Reserve de verification\n"
-        "Pour un avis de cabinet complet, il convient de verifier en plus les versions en vigueur des textes d'application, "
-        "les modifications issues des lois de finances et, le cas echeant, les dispositions particulieres propres au secteur concerne.",
     ])
 
     return {
@@ -478,35 +517,23 @@ def fastpath_general_fiscal_framework_answer(message: str, legal_domain: str) ->
     if not framework_sources:
         return None
 
-    preferred_titles = [
-        "Code de l IRPP et de l IS",
-        "Code TVA et droit de consommation 2026",
-        "Code des droits et procedures fiscaux 2026",
-        "Code des droits d enregistrement et du timbre 2026",
-        "Code de la fiscalite locale 2017",
-        "Loi de finances 2026",
-    ]
-    source_by_title: dict[str, dict] = {}
-    for source in framework_sources:
-        title = source.get("title") or "Source interne"
-        source_by_title.setdefault(title, source)
-
-    ordered_titles = [title for title in preferred_titles if title in source_by_title]
-    if not ordered_titles:
-        ordered_titles = list(source_by_title.keys())[:5]
-
-    source_lines = summarize_source_titles([source_by_title[title] for title in ordered_titles], limit=5)
-    text_lines = "\n".join(f"- {title}" for title in ordered_titles)
+    source_lines = summarize_source_titles(framework_sources, limit=6)
     answer = "\n\n".join([
         "## Réponse\n"
-        "Selon les documents actuellement indexes dans la base, le cadre fiscal tunisien doit etre presente d'abord au niveau des textes principaux, et non au niveau d'articles isoles. "
-        "Les textes de reference a citer en priorite sont :\n"
-        f"{text_lines}\n\n"
-        "En pratique, une reponse generale de cabinet doit distinguer ces grands textes de base, puis verifier separément les taux, mesures annuelles, regimes particuliers, exemptions ou procedures selon la matiere fiscale exacte.",
-        "## Sources utilisees\n"
-        f"{source_lines or '- Base documentaire interne'}",
-        "## Reserve de verification\n"
-        "Les presentes informations sont fondees sur les documents actuellement indexes dans la base documentaire. Pour une analyse exhaustive, il convient egalement de verifier les versions en vigueur, les lois de finances recentes et les textes sectoriels applicables.",
+        "En Tunisie, la fiscalité n'est pas regroupée dans un Code général des impôts unique. Elle repose "
+        "principalement sur plusieurs textes complémentaires :\n"
+        "- le **Code de l'IRPP et de l'IS**, pour l'impôt sur le revenu des personnes physiques et l'impôt sur les sociétés ;\n"
+        "- le **Code de la taxe sur la valeur ajoutée**, pour la TVA ;\n"
+        "- le **Code des droits et procédures fiscaux**, pour le contrôle, le redressement, les sanctions et le contentieux ;\n"
+        "- le **Code des droits d'enregistrement et de timbre** ;\n"
+        "- le **Code de la fiscalité locale**, pour les impositions relevant des collectivités locales ;\n"
+        "- les **lois de finances annuelles**, qui peuvent modifier les taux, avantages, obligations et procédures.\n\n"
+        "Ces textes sont complétés par leurs décrets et arrêtés d'application ainsi que par les dispositions "
+        "sectorielles pertinentes. Les notes communes et circulaires administratives peuvent éclairer leur "
+        "application, sans se substituer aux textes législatifs et réglementaires. Pour une situation précise, "
+        "la version en vigueur à la date de l'opération doit toujours être vérifiée.",
+        "## Sources utilisées\n"
+        f"{source_lines}",
     ])
 
     return {
@@ -519,7 +546,7 @@ def fastpath_general_fiscal_framework_answer(message: str, legal_domain: str) ->
         "preferred_source": "legal_corpus",
         "response_style": "flexible_expert",
         "golden_kb_hits": [],
-        "sources": [source_by_title[title] for title in ordered_titles],
+        "sources": framework_sources,
         "model": "internal/fiscal-framework-fastpath",
         "fallback_mode": False,
         "legal_domain": legal_domain,
@@ -942,6 +969,19 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     answer_style = preferred_answer_style(query_intent, prefer_golden_kb)
     legal_query = f"{message}\n{context_block}"
     legal_domain = infer_query_domain(legal_query)
+    fiscal_framework_fastpath = fastpath_general_fiscal_framework_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if fiscal_framework_fastpath:
+        return fiscal_framework_fastpath
+    tva_overview_fastpath = fastpath_tva_overview_answer(
+        message=message,
+        intent=query_intent,
+        legal_domain=legal_domain,
+    )
+    if tva_overview_fastpath:
+        return tva_overview_fastpath
     legal_sources = retrieve_legal_context(legal_query, limit=legal_source_limit(query_intent, prefer_golden_kb))
     golden_kb_hits = retrieve_golden_kb(message, limit=3) if prefer_golden_kb else retrieve_golden_kb(message, limit=2)
     if query_intent == "professional_formality":
@@ -953,20 +993,6 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         ]
         if formality_hits:
             golden_kb_hits = formality_hits[:3]
-    fiscal_framework_fastpath = fastpath_general_fiscal_framework_answer(
-        message=message,
-        legal_domain=legal_domain,
-    )
-    if fiscal_framework_fastpath:
-        return fiscal_framework_fastpath
-    tva_overview_fastpath = fastpath_tva_overview_answer(
-        message=message,
-        intent=query_intent,
-        legal_domain=legal_domain,
-        legal_sources=legal_sources,
-    )
-    if tva_overview_fastpath:
-        return tva_overview_fastpath
     if answer_style == "concept_brief" and golden_kb_hits:
         fastpath = fastpath_concept_answer(
             message=message,
@@ -1016,17 +1042,17 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Si une ou plusieurs entrees de Golden Knowledge Base sont fournies, traite-les comme couche canonique prioritaire pour les questions de definition, d'acronyme, de concept, de distinction simple ou de comparaison de notions proches.",
         "La Golden Knowledge Base est une couche redactionnelle haute confiance ancree sur les sources indexees; elle n'autorise pas a inventer des regles nouvelles ni a depasser les textes d'ancrage cites.",
         "Pour une question pratique, de calcul, de traitement comptable detaille, de base legale, de procedure, de contentieux ou d'application a un cas, la Golden Knowledge Base reste secondaire: la priorite revient alors au corpus legal/comptable recupere.",
-        "Quand tu cites un texte, utilise de preference son intitule exact tel qu'il apparait dans les sources internes recuperees. N'invente pas un titre simplifie si le titre source est plus precis.",
-        "Par exemple, si la source s'appelle 'Code TVA et droit de consommation 2026', ne la transforme pas en 'Code de la TVA' sauf si tu precises qu'il s'agit d'un raccourci pratique.",
+        "Quand tu cites un texte, utilise son intitule juridique ou un intitule professionnel clair. Ne presente jamais un nom de fichier PDF, un identifiant interne ou une etiquette technique comme s'il s'agissait du titre officiel du texte.",
+        "Le millesime d'un recueil documentaire indique sa date de mise a jour; il ne fait pas partie du nom de la loi ou du code sauf si le texte lui-meme le prevoit.",
         "Si un glossaire terminologique trilingue interne est fourni, utilise-le seulement comme aide terminologique secondaire pour les equivalences de termes FR/EN/AR. Ne le traite jamais comme une source normative de droit positif.",
         "Pour la Tunisie, prefere la terminologie locale: TVA, IRPP, IS, retenue a la source, droit de timbre, CNSS, matricule fiscal, regime reel/forfaitaire, liasse fiscale.",
         "Interdiction stricte supplementaire pour la fiscalite tunisienne: n'invente jamais un 'Code general des impots (CGI)' tunisien ni une structure fictive en Livres I/II/III/IV/V/VI si cette structure n'apparait pas explicitement dans les sources internes recuperees.",
         "Si l'utilisateur demande les principales lois fiscales tunisiennes, cite sobrement les textes recuperes tels qu'ils existent dans les sources: Code de l IRPP et de l IS, Code TVA, Code des droits et procedures fiscaux, Code des droits d enregistrement et du timbre, Code de la fiscalite locale, loi de finances, et notes generales si elles sont pertinentes.",
-        "Si l'utilisateur demande les lois de TVA en Tunisie generalement, ne donne pas par defaut un cours complet sur les taux, seuils, periodicites, franchises ou regimes speciaux sauf si ces points apparaissent explicitement dans les extraits recuperes. Dans ce cas, reponds d'abord par les textes de reference et les reserves de verification.",
+        "Si l'utilisateur demande les lois de TVA en Tunisie generalement, reponds directement que la TVA est principalement regie par le Code de la taxe sur la valeur ajoutee, complete par ses textes d'application, les lois de finances modificatives et le Code des droits et procedures fiscaux pour les aspects proceduraux. Ne donne pas de taux ou de seuil sans source explicite.",
         "Pour les reponses juridiques ou fiscales importantes, ajoute a la fin une courte section 'Sources utilisees' listant uniquement les titres/pages effectivement utilises dans la reponse.",
-        "Quand certaines sources utiles ne sont pas encore dans la base, formule la reserve de maniere client-facing et professionnelle, par exemple: 'Les presentes informations sont fondees sur les documents actuellement indexes dans la base documentaire. Pour une analyse exhaustive, il convient egalement de consulter les versions en vigueur des textes complementaires applicables.'",
+        "Le retrieval reste entierement interne. N'ecris jamais au client 'selon les documents indexes', 'dans le corpus', 'sources recuperees', 'la bonne reponse consiste a' ou toute autre description du fonctionnement de la base. Donne directement la conclusion professionnelle, puis cite les sources utilisees.",
         "Ne reponds pas comme un traducteur sauf si l'utilisateur demande une traduction. Par defaut, agis comme un assistant IA expert-comptable.",
-        "Si l'utilisateur demande une presentation generale d'un sujet juridique ou fiscal, structure la reponse en deux niveaux: 1) ce que disent les sources internes recuperees, 2) ce qui doit etre verifie faute de source plus recente. Ne melange pas les deux.",
+        "Si l'utilisateur demande une presentation generale d'un sujet juridique ou fiscal, expose directement le cadre applicable et integre toute reserve de date dans une phrase professionnelle concise. Ne decris jamais la methode de recherche.",
         "Quand une reponse s'appuie d'abord sur la Golden Knowledge Base, conserve un ton de cabinet: definition nette, reserve utile, et distinction claire entre notion de base et application pratique.",
         "Respecte strictement le style de reponse demande dans le prompt utilisateur.",
         "Si le style demande est 'concept_brief', structure le champ answer avec exactement ces intertitres markdown dans cet ordre: 'Definition', 'Base legale', 'Points de vigilance', 'Sources utilisees'.",
