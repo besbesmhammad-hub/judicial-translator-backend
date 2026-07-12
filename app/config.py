@@ -47,3 +47,5 @@ ALLOWED_ORIGINS = csv_env(
     "https://taupe-gingersnap-1b1260.netlify.app,https://judicial-translator-20260706031117.netlify.app,http://localhost:8888,http://127.0.0.1:8888,http://localhost:5001,http://127.0.0.1:5001,http://localhost:5012,http://127.0.0.1:5012",
 )
 APP_REVISION = current_revision()
+ACCOUNTING_CHAT_LOG_ENABLED = os.getenv("ACCOUNTING_CHAT_LOG_ENABLED", "true").lower() not in {"0", "false", "no", "off"}
+ACCOUNTING_CHAT_LOG_PATH = os.getenv("ACCOUNTING_CHAT_LOG_PATH", "/tmp/accounting_chat_requests.jsonl")
