@@ -75,6 +75,7 @@ def corpus_status() -> dict:
 DOMAIN_ROUTE_PATTERNS = {
     "fiscalite": re.compile(
         r"\bfiscal(?:ite)?\b|fiscalit[eé]|\btva\b|irpp|\bis\b|impot|impôt|retenue a la source|retenue à la source|"
+        r"dividendes?|associe resident|associé résident|prestations de services|client etabli en france|client établi en france|"
         r"procedure fiscale|procédure fiscale|procedures fiscales|procédures fiscales|loi de finances|"
         r"enregistrement|timbre|matricule fiscal|facturation electronique|facture electronique|"
         r"e-facturation|dette fiscale|dettes fiscales|redressement|controle fiscal|contrôle fiscal|"
@@ -664,6 +665,22 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 4.4
             elif record.get("doc_id") == "nc_14_eventualites_post_cloture":
                 score *= 1.8
+        if ("dividendes" in query_text and ("associe resident" in query_text or "associe" in query_text or "retenue a la source" in query_text or "consequences fiscales" in query_text)):
+            if record.get("doc_id") == "code_irpp_is_2011":
+                score *= 5.4
+            elif record.get("doc_id") == "procedures_fiscales_2026":
+                score *= 1.8
+            elif record.get("doc_id") == "loi_finances_2026":
+                score *= 1.4
+            elif record.get("doc_id") in {"code_societes_commerciales_2022", "guide_creation_sarl_tunisie"}:
+                score *= 0.45
+        if ("prestations de services" in query_text and ("france" in query_text or "client etabli" in query_text or "client établi" in query_text)):
+            if record.get("doc_id") == "tva_droit_consommation":
+                score *= 5.6
+            elif record.get("doc_id") == "procedures_fiscales_2026":
+                score *= 1.6
+            elif record.get("doc_id") in {"droits_taxes_hors_codes", "fiscalite_locale"}:
+                score *= 0.35
         if ("ias 11" in query_text or "contrats de construction" in query_text or "pourcentage d'avancement" in query_text or "pourcentage d’avancement" in query_text):
             if record.get("doc_id") == "ias_11_contrats_construction":
                 score *= 4.2
@@ -923,6 +940,16 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 "rapport_audit_nebras_2023",
             }:
                 score *= 4.6
+        if (("anomalie significative" in query_text or "apres l emission de son rapport" in query_text or "apres emission de son rapport" in query_text or "reglementation" in query_text) and ("commissaire aux comptes" in query_text or "rapport" in query_text)):
+            if record.get("doc_id") in {
+                "audit_resume_gaida_normes_missions",
+                "audit_resume_maaloul_audit_financier",
+                "audit_resume_acceptation_controle_qualite",
+                "audit_resume_chakroun_scan",
+            }:
+                score *= 4.8
+            elif record.get("source_tier") == "audit_report":
+                score *= 0.42
         if ("association" in query_text or "ong" in query_text or "audit 2023" in query_text or "nebras" in query_text) and ("rapport" in query_text or "audit" in query_text or "commissaire aux comptes" in query_text):
             if record.get("doc_id") == "rapport_audit_nebras_2023":
                 score *= 6.2

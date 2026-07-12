@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from functools import lru_cache
 from pathlib import Path
 
@@ -14,6 +15,13 @@ STOPWORDS = {
     "and", "for", "from", "that", "this", "def", "definition", "signifie", "cest",
     "quoi", "quelle", "quelles", "meaning", "means", "dire",
 }
+
+
+def match_key(value: str) -> str:
+    text = unicodedata.normalize("NFKD", value or "")
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = text.lower().replace("’", "'").replace("-", " ")
+    return re.sub(r"\s+", " ", text).strip()
 
 DEFINITION_PATTERN = re.compile(
     r"qu[' ]est ce que|qu[' ]est ce qu[' ]un|qu[' ]est ce qu[' ]une|c[' ]est quoi|defin|d[ée]fin|"
@@ -64,9 +72,13 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         re.compile(
             r"quelle loi|quelle regle|quelle règle|base legale|base légale|quel article|quels articles|"
             r"fondement juridique|texte applicable|quels textes|quel texte|regime tva|r[ée]gime tva|"
+            r"bases? legales?|bases? légales?|cons[eé]quences? fiscales?|que prevoit la reglementation|"
+            r"que prévoit la réglementation|apres l emission de son rapport|après l émission de son rapport|"
+            r"apres emission de son rapport|après émission de son rapport|"
             r"obligations de facturation [ée]lectronique|facturation [ée]lectronique|parite d[' ]echange|"
             r"parit[ée] d[' ][ée]change|evaluation des actifs et passifs|[ée]valuation des actifs et passifs|"
-            r"prestataire non resident|prestataire non r[ée]sident|textes fiscaux",
+            r"prestataire non resident|prestataire non r[ée]sident|textes fiscaux|"
+            r"prestations de services.*client etabli en france|prestations de services.*client établi en france",
             re.I,
         ),
     ),
@@ -129,7 +141,7 @@ def contains_exact_phrase(haystack: str, needle: str) -> bool:
 
 
 def classify_query_intent(message: str, context: str = "") -> str:
-    query = f"{message}\n{context}".strip()
+    query = match_key(f"{message}\n{context}".strip())
     accounting_pattern = next(pattern for intent, pattern in INTENT_PATTERNS if intent == "accounting_treatment")
     legal_pattern = next(pattern for intent, pattern in INTENT_PATTERNS if intent == "legal_basis")
     if accounting_pattern.search(query) and legal_pattern.search(query):
