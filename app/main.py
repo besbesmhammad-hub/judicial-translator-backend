@@ -520,14 +520,15 @@ def fastpath_tva_overview_answer(
         "promulgué par la **loi n° 88-61 du 2 juin 1988**. Ce code fixe notamment le champ d'application "
         "de la TVA, les opérations imposables ou exonérées, l'assiette, le fait générateur, le droit à déduction "
         "et les obligations propres à cette taxe.\n\n"
-        "Il est complété par ses textes d'application et modifié, le cas échéant, par les lois de finances. "
+        "Ce code est complété par ses textes d'application et par les modifications introduites, le cas échéant, "
+        "par les lois de finances. "
         "Le **Code des droits et procédures fiscaux** encadre les règles de contrôle, de redressement, "
         "de sanctions et de contentieux. Des dispositions particulières peuvent aussi "
         "s'appliquer selon l'activité, le produit ou l'opération concernée.\n\n"
         "Le droit de consommation est une imposition distincte de la TVA, même si les deux matières sont "
-        "réunies dans un même recueil officiel. Pour un dossier concret, les taux, exonérations et conditions "
-        "de déduction doivent être vérifiés dans les textes en vigueur à la date de l'opération.",
-        "## Sources utilisées\n"
+        "réunies dans un même recueil officiel. Les lois de finances peuvent également modifier certaines "
+        "dispositions du régime de TVA.",
+        "## Base légale\n"
         f"{source_lines}",
     ])
 
@@ -577,9 +578,8 @@ def fastpath_general_fiscal_framework_answer(message: str, legal_domain: str) ->
         "- les **lois de finances annuelles**, qui peuvent modifier les taux, avantages, obligations et procédures.\n\n"
         "Ces textes sont complétés par leurs décrets et arrêtés d'application ainsi que par les dispositions "
         "sectorielles pertinentes. Les notes communes et circulaires administratives peuvent éclairer leur "
-        "application, sans se substituer aux textes législatifs et réglementaires. Pour une situation précise, "
-        "la version en vigueur à la date de l'opération doit toujours être vérifiée.",
-        "## Sources utilisées\n"
+        "application, sans se substituer aux textes législatifs et réglementaires.",
+        "## Base légale\n"
         f"{source_lines}",
     ])
 
