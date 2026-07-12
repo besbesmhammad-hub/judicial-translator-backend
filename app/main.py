@@ -32,6 +32,7 @@ import json
 import os
 import re
 import shutil
+import unicodedata
 import uuid
 from pathlib import Path
 
@@ -51,6 +52,15 @@ SECTION_SPLIT_RE = re.compile(
 )
 CONCEPT_BRIEF_SECTIONS = ["Definition", "Base legale", "Points de vigilance", "Sources utilisees"]
 PRACTICAL_ANALYSIS_SECTIONS = ["Reponse", "Application pratique", "Points de vigilance", "Sources utilisees"]
+
+
+def match_key(value: str) -> str:
+    text = unicodedata.normalize("NFKD", value or "")
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = text.lower().replace("’", "'").replace("-", " ")
+    return re.sub(r"\s+", " ", text).strip()
+
+
 CLIENT_SOURCE_TITLES = {
     "code_irpp_is_2011": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS)",
     "tva_droit_consommation": "Code de la taxe sur la valeur ajoutée (loi n° 88-61 du 2 juin 1988), recueil officiel mis à jour au 1er janvier 2026",
@@ -292,10 +302,10 @@ def build_structured_sections_from_answer(
         return compose_structured_answer(
             "concept_brief",
             {
-                "Definition": definition or "Les sources internes permettent d'identifier la notion, mais une verification contextuelle reste utile.",
-                "Base legale": base_legale or "Documents internes indexes.",
+                "Definition": definition or "La notion doit être rattachée aux textes applicables et au contexte précis du dossier.",
+                "Base legale": base_legale or "Base légale à préciser selon le dossier.",
                 "Points de vigilance": points,
-                "Sources utilisees": sources_used or "- Base documentaire interne",
+                "Sources utilisees": sources_used or "- Référence à préciser selon le texte applicable",
             },
         )
     if style == "practical_analysis":
@@ -311,7 +321,7 @@ def build_structured_sections_from_answer(
                 "Reponse": response,
                 "Application pratique": application,
                 "Points de vigilance": points,
-                "Sources utilisees": sources_used or "- Base documentaire interne",
+                "Sources utilisees": sources_used or "- Référence à préciser selon le texte applicable",
             },
         )
     return raw
@@ -616,9 +626,9 @@ def fallback_accounting_answer(
 
     if answer_style == "concept_brief":
         top = golden_kb_hits[0] if golden_kb_hits else None
-        definition = top.get("canonical_definition") if top else "Les documents actuellement indexes permettent d'identifier la notion, mais une verification contextuelle reste utile."
+        definition = top.get("canonical_definition") if top else "La notion doit être rattachée aux textes applicables et au contexte précis du dossier."
         legal_basis = ", ".join(top.get("legal_basis", [])) if top else (
-            ", ".join({source.get("title", "") for source in legal_sources[:2] if source.get("title")}) or "Documents internes indexes"
+            ", ".join({client_source_title(source) for source in legal_sources[:2] if source.get("title")}) or "Base légale à préciser selon le dossier"
         )
         vigilance_items = top.get("common_mistakes", []) if top else []
         vigilance = "\n".join(f"- {item}" for item in vigilance_items[:3]) or "- Verifier l'application concrete de la notion au dossier du client."
@@ -635,11 +645,12 @@ def fallback_accounting_answer(
             },
         )
     else:
-        response = "Les sources actuellement recuperees permettent de donner une premiere reponse de cabinet, mais la formulation ci-dessous doit etre relue a la lumiere du texte officiel applicable."
+        response = "En première analyse, la réponse doit être rattachée aux textes applicables et aux faits précis du dossier."
         if legal_sources:
-            response = f"Les sources internes recuperées orientent la réponse vers le cadre suivant: {legal_sources[0].get('title', 'source interne')}."
+            main_title = client_source_title(legal_sources[0])
+            response = f"En première analyse, le point doit être rattaché principalement au cadre suivant : {main_title}."
         practical = "- Identifier le texte exact applicable au cas du client.\n- Verifier la date de la version du texte et les modifications ulterieures.\n- Contrôler les pieces, montants, periodes et hypotheses avant conclusion."
-        vigilance = "- Reponse de secours generee sans moteur conversationnel complet.\n- Confirmer le texte, la date et les seuils applicables avant usage client."
+        vigilance = "- Confirmer le texte, la date et les seuils applicables avant usage client.\n- Ne pas conclure sans rapprocher les faits du dossier avec la version officielle du texte."
         sources_used = summarize_source_titles(legal_sources) or summarize_source_titles(
             [{"title": ref.get("title"), "page": None, "heading": ""} for hit in golden_kb_hits for ref in hit.get("source_refs", [])]
         )
@@ -656,12 +667,8 @@ def fallback_accounting_answer(
     return {
         "success": True,
         "answer": answer,
-        "assumptions": [
-            "Reponse de secours produite a partir du Golden KB et/ou du corpus interne, sans completion par un fournisseur conversationnel externe."
-        ],
-        "next_steps": [
-            "Relancer la question quand un fournisseur IA est disponible pour obtenir une reponse plus developpee si necessaire."
-        ],
+        "assumptions": [],
+        "next_steps": [],
         "warnings": [
             "Verifier les textes officiels en vigueur avant usage client, surtout pour les points fiscaux et proceduraux."
         ],
@@ -752,27 +759,34 @@ def fiscal_answer_needs_repair(answer: str, legal_domain: str) -> bool:
 
 
 def is_fiscal_overview_query(message: str, legal_domain: str, intent: str) -> bool:
-    if legal_domain != "fiscalite":
+    if legal_domain not in {"fiscalite", "general"}:
         return False
-    query = (message or "").lower()
+    query = match_key(message)
     if intent not in {"general", "legal_basis", "flexible_expert"}:
         return False
     return bool(re.search(
-        r"lois? de tva|tva .*g[ée]n[ée]ralement|donnez[- ]moi les lois de tva|"
-        r"pr[ée]sentation de la tva|cadre g[ée]n[ée]ral de la tva|r[ée]gime tva g[ée]n[ée]ral",
+        r"lois? de tva|tva .*generalement|donnez? moi les lois de tva|"
+        r"presentation de la tva|cadre general de la tva|regime tva general",
         query,
         re.I,
     ))
 
 
 def is_general_fiscal_framework_query(message: str, legal_domain: str) -> bool:
-    if legal_domain != "fiscalite":
+    if legal_domain not in {"fiscalite", "general"}:
         return False
-    query = (message or "").lower()
+    query = match_key(message)
+    if "tva" in query:
+        return False
     return bool(re.search(
         r"quelles sont les lois de fiscalit|quelles sont les lois fiscal|"
-        r"cadre juridique de la fiscalit|cadre fiscal tunisien|principaux textes fiscaux|"
-        r"lois de fiscalite en tunisie|lois fiscales en tunisie",
+        r"donnez? moi les lois de fiscalit|donnez? moi les lois fiscal|"
+        r"donnes? moi les lois de fiscalit|donnes? moi les lois fiscal|"
+        r"cadre juridique de la fiscalit|cadre fiscal tunisien|systeme fiscal tunisien|"
+        r"principaux textes fiscaux|principales lois fiscales|textes de fiscalit|"
+        r"lois de fiscalite en tunisie|lois fiscales en tunisie|"
+        r"fiscalite .*tunisie.*generalement|fiscalite tunisienne.*generalement|"
+        r"cadre general de la fiscalit|reglementation fiscale generale",
         query,
         re.I,
     ))
