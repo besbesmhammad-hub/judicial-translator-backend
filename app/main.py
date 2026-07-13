@@ -856,6 +856,8 @@ def append_accounting_chat_log(event: dict) -> None:
         "app_revision": config.APP_REVISION,
         **event,
     }
+    payload.setdefault("user_rating", None)
+    payload.setdefault("review_status", None)
     try:
         with ACCOUNTING_CHAT_LOG_PATH.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
