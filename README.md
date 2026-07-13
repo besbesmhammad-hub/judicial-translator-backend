@@ -47,6 +47,8 @@ Required environment variables:
 - `OPENROUTER_API_KEY`
 - `LLM_MODEL`, optional, defaults to `google/gemini-2.5-flash-lite`
 - `ALLOWED_ORIGINS`, optional, comma-separated
+- `ACCOUNTING_CHAT_LOG_ENABLED`, optional, defaults to `true`
+- `ACCOUNTING_CHAT_LOG_PATH`, optional, defaults to `/tmp/accounting_chat_requests.jsonl`
 
 After deployment, set `BACKEND_API_URL` in Netlify to the backend URL.
 
@@ -77,3 +79,32 @@ Recommended workflow:
 2. Run the benchmark
 3. Turn every production failure into a permanent benchmark case
 4. Fix routing, retrieval or formatting until the case stays green
+
+## Observability
+
+`/v1/accounting-chat` can write one JSONL trace row per request. Each row includes:
+
+- intent and legal domain
+- retrieved legal references and Golden KB hints
+- provider attempts and provider errors
+- fallback usage
+- latency
+- `user_rating` and `review_status` placeholders for later human review
+
+Summarize the trace file:
+
+```powershell
+python scripts/summarize_accounting_chat_logs.py
+python scripts/summarize_accounting_chat_logs.py --log-path C:\path\to\accounting_chat_requests.jsonl
+```
+
+The summary includes:
+
+- fallback rate
+- average latency
+- provider success rate
+- top intents
+- top provider errors
+- most retrieved documents
+- top models
+- recorded ratings
