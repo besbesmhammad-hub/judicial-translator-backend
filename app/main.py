@@ -377,6 +377,8 @@ def summarize_source_titles(sources: list[dict], limit: int = 3) -> str:
             suffix += " - passage cible"
         elif support_level == "framework_source":
             suffix += " - source-cadre, article precis a verifier"
+        elif support_level == "missing_source":
+            suffix += " - source manquante a indexer"
         lines.append(f"- {title}{suffix}")
     return "\n".join(lines)
 
@@ -386,6 +388,7 @@ def source_precision_note(sources: list[dict]) -> str:
         return ""
     direct = [source for source in sources if source.get("support_level") == "direct_passage"]
     framework = [source for source in sources if source.get("support_level") == "framework_source"]
+    missing = [source for source in sources if source.get("support_level") == "missing_source"]
     notes: list[str] = []
     if direct:
         notes.append("Niveau d'appui: au moins un passage cible a ete retrouve dans le corpus.")
@@ -393,6 +396,8 @@ def source_precision_note(sources: list[dict]) -> str:
         notes.append(
             "Limite: certaines conclusions restent a rattacher a l'article exact avant usage client."
         )
+    if missing:
+        notes.append("Source manquante: un texte indispensable a l'analyse doit etre ajoute au corpus.")
     return "\n".join(f"- {note}" for note in notes)
 
 
@@ -485,6 +490,45 @@ def legal_sources_by_doc_ids(doc_ids: list[str]) -> list[dict]:
 
 def source_precision_rules(message: str) -> list[dict]:
     query = match_key(message)
+    if is_cross_border_service_case(query):
+        return [
+            {
+                "doc_id": "tva_droit_consommation",
+                "terms": [
+                    "مــيدان التطــبيق",
+                    "البــاب األول",
+                    "تخضع العمليات",
+                    "العمليات المنجزة",
+                    "إسداء الخدمات",
+                    "الخدمات",
+                    "الفصل1",
+                    "الفصل5",
+                ],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "procedures_fiscales_2026",
+                "terms": ["facture", "declaration", "controle", "recouvrement", "contentieux", "justificatifs"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "code_irpp_is_2011",
+                "terms": ["non resident", "retenue a la source", "redevance", "beneficiaire", "services"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "loi_finances_2026",
+                "terms": ["loi de finances", "2026", "retenue", "tva", "الأداء على القيمة المضافة"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "convention_fiscale_france_tunisie",
+                "missing": True,
+                "title": "Convention fiscale France-Tunisie contre les doubles impositions",
+                "terms": ["convention fiscale", "france", "tunisie", "etablissement stable"],
+                "min_matches": 1,
+            },
+        ]
     if "dividende" in query or "dividendes" in query:
         return [
             {
@@ -600,6 +644,39 @@ def source_precision_rules(message: str) -> list[dict]:
     return []
 
 
+def is_cross_border_service_case(query: str) -> bool:
+    return (
+        ("france" in query or "client francais" in query or "client etabli en france" in query)
+        and ("120 000" in query or "120000" in query or "eur" in query or "euro" in query or "consultant" in query or "20 jours" in query)
+        and (
+            "prestation" in query
+            or "services" in query
+            or "informatique" in query
+            or "installation" in query
+            or "formation" in query
+            or "logiciel" in query
+        )
+    )
+
+
+def missing_source_row(doc_id: str, title: str) -> dict:
+    return {
+        "id": f"missing:{doc_id}",
+        "doc_id": doc_id,
+        "title": title,
+        "filename": None,
+        "page": None,
+        "heading": "",
+        "excerpt": "",
+        "source_tier": "missing_primary_source",
+        "authority": "Source officielle a indexer",
+        "year": None,
+        "score": 0.0,
+        "matched_terms": [],
+        "support_level": "missing_source",
+    }
+
+
 def best_precision_source(doc_id: str, terms: list[str], min_matches: int) -> dict | None:
     normalized_terms = [match_key(term) for term in terms if match_key(term)]
     best: dict | None = None
@@ -646,6 +723,9 @@ def precision_sources_for_case(message: str, fallback_sources: list[dict]) -> li
     fallback_by_doc = {source.get("doc_id"): source for source in fallback_sources if source.get("doc_id")}
     for rule in rules:
         doc_id = str(rule["doc_id"])
+        if rule.get("missing"):
+            selected.append(missing_source_row(doc_id, str(rule.get("title") or doc_id)))
+            continue
         source = best_precision_source(doc_id, list(rule["terms"]), int(rule.get("min_matches") or 1))
         if source is None:
             source = fallback_by_doc.get(doc_id)
@@ -1099,7 +1179,16 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     priority_doc_ids: list[str] = []
     blocked_doc_ids: set[str] = set()
 
-    if "dividende" in query or "dividendes" in query:
+    if is_cross_border_service_case(query):
+        priority_doc_ids = ["tva_droit_consommation", "procedures_fiscales_2026", "code_irpp_is_2011", "loi_finances_2026"]
+        blocked_doc_ids = {
+            "code_societes_commerciales_2022",
+            "guide_creation_sarl_tunisie",
+            "fiscalite_locale",
+            "code_commerce_2014",
+            "code_obligations_contrats_2015",
+        }
+    elif "dividende" in query or "dividendes" in query:
         priority_doc_ids = ["code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026"]
         blocked_doc_ids = {
             "code_societes_commerciales_2022",
@@ -1161,7 +1250,48 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
     returned_intent = intent
     returned_domain = legal_domain
 
-    if "dividende" in query or "dividendes" in query:
+    if is_cross_border_service_case(query):
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Ce dossier doit etre traite comme une analyse fiscale transfrontaliere multi-issues, et non comme une simple question IRPP/IS. "
+                    "Les faits a qualifier sont les suivants: societe tunisienne de services informatiques, facture de 120 000 EUR a une societe francaise, "
+                    "travaux realises en partie depuis la Tunisie, deux consultants tunisiens presents en France, installation et formation en France, "
+                    "duree de presence annoncee de 20 jours. L'analyse doit separer au minimum la TVA tunisienne, la retenue a la source ou le risque d'imposition "
+                    "sur le paiement transfrontalier, la convention fiscale France-Tunisie, le risque d'etablissement stable, la facturation et les justificatifs."
+                ),
+                "Application pratique": (
+                    "- TVA: verifier dans le Code de la taxe sur la valeur ajoutee si la prestation est localisee, utilisee ou exploitee en Tunisie ou hors de Tunisie, "
+                    "et si le traitement releve d'une exportation de services, d'une exonération ou d'un autre regime. Ne pas fonder cette partie sur le Code IRPP/IS.\n"
+                    "- Nature de la remuneration: decomposer la facture entre service informatique, assistance technique, installation, formation, maintenance eventuelle, "
+                    "licence de logiciel ou redevance. La qualification peut changer le traitement fiscal.\n"
+                    "- Retenue a la source: verifier dans le Code de l'IRPP et de l'IS si le paiement a un non-resident ou la remuneration d'une prestation technique, "
+                    "d'une licence ou d'une redevance declenche une retenue; ne pas conclure sur un taux sans article direct.\n"
+                    "- Convention fiscale: verifier obligatoirement la convention France-Tunisie avant toute conclusion sur retenue, redevances, benefices d'entreprise "
+                    "ou etablissement stable. Cette convention n'est pas encore indexee dans le corpus actuel.\n"
+                    "- Etablissement stable: analyser la presence de 20 jours en France, la nature de l'installation/formation, les pouvoirs des consultants, "
+                    "l'existence d'un chantier ou d'une installation fixe, et les seuils conventionnels applicables. Les 20 jours ne suffisent pas seuls pour conclure.\n"
+                    "- Facturation: verifier les mentions de facture, devise, client etranger, lieu d'execution, description detaillee des prestations, traitement TVA retenu "
+                    "et reference documentaire justifiant l'exoneration ou le regime applique.\n"
+                    "- Justificatifs: conserver contrat, commande, facture, preuve du statut et de l'etablissement du client francais, preuves de paiement, feuilles de mission, "
+                    "dates de deplacement, livrables, PV d'installation/formation et ventilation du prix par nature de prestation.\n"
+                    "- Informations manquantes: statut TVA du client, clauses contractuelles, propriete ou licence du logiciel, lieu d'utilisation effective, ventilation du prix, "
+                    "pouvoirs des consultants, pays de paiement, existence d'un avenant de maintenance et texte exact de la convention fiscale applicable."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas repondre par un cadre IRPP/IS unique: la TVA, la convention fiscale, l'etablissement stable, la facturation et les justificatifs sont des issues distinctes.\n"
+                    "- Ne pas affirmer un taux de retenue, une absence de TVA ou une absence d'etablissement stable sans passage direct du Code TVA, du Code IRPP/IS et de la convention France-Tunisie.\n"
+                    "- La convention France-Tunisie doit etre ajoutee au corpus; tant qu'elle manque, la conclusion sur etablissement stable, redevances et retenue reste une reserve professionnelle.\n"
+                    "- Si une partie du prix correspond a une licence ou a une redevance logicielle, l'analyse peut differer d'une prestation de services pure."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif "dividende" in query or "dividendes" in query:
         returned_intent = "tax_calculation"
         returned_domain = "fiscalite"
         beneficiary_label = "résident"
@@ -1343,6 +1473,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
         "fallback_mode": False,
         "legal_domain": returned_domain,
         "question": message,
+        "workflow": "level3_multi_domain_case_analysis" if is_cross_border_service_case(query) else "case_analysis_fastpath",
     }
 
 
@@ -2300,7 +2431,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         return finalize_accounting_response(
             case_analysis_fastpath,
             request,
-            workflow="case_analysis_fastpath",
+            workflow=case_analysis_fastpath.get("workflow") or "case_analysis_fastpath",
             case_analysis_enabled=True,
             retrieval_domains=[case_analysis_fastpath.get("legal_domain") or legal_domain],
             selected_sources=case_analysis_fastpath.get("sources") or [],

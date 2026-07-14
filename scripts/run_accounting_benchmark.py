@@ -130,6 +130,25 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["receivable_mentions_evidence"] = contains_any(normalized, ["justificatifs suffisants", "relances", "recouvrement", "balance agee"])
         checks["receivable_uses_accounting_and_tax_sources"] = ("code_irpp_is_2011" in docs and any(doc.startswith(("nc_", "ias_")) for doc in docs))
 
+    if "level3" in case_id or ("120 000" in question and "france" in question and "consultant" in question):
+        checks["level3_not_generic_fallback_phrase"] = not contains_any(
+            normalized,
+            ["en premiere analyse, le point doit etre rattache principalement au cadre suivant"],
+        )
+        checks["level3_mentions_tva"] = contains_any(normalized, ["tva", "taxe sur la valeur ajoutee"])
+        checks["level3_mentions_withholding"] = contains_any(normalized, ["retenue a la source"])
+        checks["level3_mentions_tax_treaty"] = contains_any(normalized, ["convention fiscale", "france-tunisie", "france tunisie"])
+        checks["level3_mentions_permanent_establishment"] = contains_any(normalized, ["etablissement stable"])
+        checks["level3_mentions_invoicing"] = contains_any(normalized, ["facturation", "facture"])
+        checks["level3_mentions_supporting_docs"] = contains_any(normalized, ["justificatifs", "preuves", "contrat"])
+        checks["level3_mentions_missing_facts"] = contains_any(normalized, ["informations manquantes", "statut tva du client", "ventilation du prix"])
+        checks["level3_uses_tva_source"] = "tva_droit_consommation" in docs
+        checks["level3_uses_irpp_source"] = "code_irpp_is_2011" in docs
+        checks["level3_flags_treaty_gap"] = "convention_fiscale_france_tunisie" in docs and contains_any(
+            normalized,
+            ["convention france-tunisie doit etre ajoutee", "convention france tunisie doit etre ajoutee", "n'est pas encore indexee"],
+        )
+
     passed = all(checks.values()) if checks else True
     return {
         "checks": checks,
@@ -157,7 +176,7 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
     checks["source_support_classified"] = bool(supports)
     checks["source_precision_visible"] = contains_any(
         normalized,
-        ["passage cible", "source-cadre", "article precis a verifier", "niveau d'appui", "limite:"],
+        ["passage cible", "source-cadre", "source manquante", "article precis a verifier", "niveau d'appui", "limite:"],
     )
 
     if "amortissement" in case_id or "amortissement" in question:
@@ -186,6 +205,13 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
         checks["fraud_has_audit_support"] = any(doc.startswith("audit_") for doc in docs)
         checks["fraud_support_classified"] = any(level in {"direct_passage", "framework_source"} for level in supports)
 
+    if "level3" in case_id or ("120 000" in question and "france" in question and "consultant" in question):
+        checks["level3_has_tva_direct_or_framework"] = "tva_droit_consommation" in docs and any(
+            level in {"direct_passage", "framework_source"} for level in supports
+        )
+        checks["level3_has_missing_treaty_source"] = "convention_fiscale_france_tunisie" in docs and "missing_source" in supports
+        checks["level3_source_support_classified"] = bool(supports)
+
     return {
         "checks": checks,
         "passed": all(checks.values()) if checks else True,
@@ -213,6 +239,8 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
         forbidden_phrase_checks = contains_phrases(answer, case.get("forbidden_answer_contains", []))
         substance = level2_substance_checks(case, answer, debug_trace)
         source_precision = level25_source_precision_checks(case, answer, debug_trace)
+        expected_workflow = case.get("expected_workflow")
+        workflow_match = True if not expected_workflow else debug_trace.get("workflow") == expected_workflow
         all_required_phrases_present = all(required_phrase_checks.values()) if required_phrase_checks else True
         no_forbidden_phrases = not any(forbidden_phrase_checks.values())
         return {
@@ -229,6 +257,9 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             "expected_response_style": case.get("expected_response_style"),
             "actual_response_style": response.get("response_style"),
             "response_style_match": response.get("response_style") == case.get("expected_response_style"),
+            "expected_workflow": expected_workflow,
+            "actual_workflow": debug_trace.get("workflow"),
+            "workflow_match": workflow_match,
             "section_checks": section_checks,
             "all_sections_present": all(section_checks.values()) if section_checks else True,
             "required_phrase_checks": required_phrase_checks,
@@ -241,7 +272,7 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             "source_precision_pass": source_precision["passed"],
             "source_support_levels": source_precision["support_levels"],
             "source_headings": source_precision["headings"],
-            "content_quality_pass": all_required_phrases_present and no_forbidden_phrases and substance["passed"] and source_precision["passed"],
+            "content_quality_pass": all_required_phrases_present and no_forbidden_phrases and substance["passed"] and source_precision["passed"] and workflow_match,
             "sources_count": len(response.get("sources") or []),
             "golden_kb_hits_count": len(response.get("golden_kb_hits") or []),
             "model": response.get("model"),
