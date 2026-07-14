@@ -34,6 +34,7 @@ import re
 import shutil
 import time
 import unicodedata
+import urllib.request
 import uuid
 from pathlib import Path
 
@@ -126,6 +127,7 @@ JOB_DIR = Path(os.getenv("TRANSLATION_JOB_DIR", "/tmp/judicial_translator_jobs")
 JOB_DIR.mkdir(parents=True, exist_ok=True)
 ACCOUNTING_CHAT_LOG_PATH = Path(config.ACCOUNTING_CHAT_LOG_PATH)
 ACCOUNTING_CHAT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+SPACE_REVISION_CACHE: dict[str, str | float | None] = {"value": None, "ts": 0.0}
 
 app = FastAPI(title="Judicial Translator Backend", version="1.0.0")
 
@@ -1429,10 +1431,42 @@ def accounting_runtime_environment() -> str:
     )
 
 
+def public_space_revision() -> str | None:
+    cached = SPACE_REVISION_CACHE.get("value")
+    cached_at = float(SPACE_REVISION_CACHE.get("ts") or 0)
+    if cached and time.time() - cached_at < 300:
+        return str(cached)
+    space_id = (
+        os.getenv("HF_SPACE_ID")
+        or os.getenv("SPACE_ID")
+        or os.getenv("SPACE_REPOSITORY")
+        or "mhammed001/judicial-translator-backend"
+    )
+    try:
+        with urllib.request.urlopen(f"https://huggingface.co/api/spaces/{space_id}", timeout=2.5) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        runtime = payload.get("runtime") or {}
+        revision = runtime.get("sha") or payload.get("sha")
+        if revision:
+            revision = str(revision)[:7]
+            SPACE_REVISION_CACHE["value"] = revision
+            SPACE_REVISION_CACHE["ts"] = time.time()
+            return revision
+    except Exception:
+        return None
+    return None
+
+
+def effective_app_revision() -> str:
+    if config.APP_REVISION and config.APP_REVISION != "unknown":
+        return config.APP_REVISION
+    return public_space_revision() or config.APP_REVISION or "unknown"
+
+
 def version_payload() -> dict:
     return {
         "app_version": app.version,
-        "commit_hash": config.APP_REVISION,
+        "commit_hash": effective_app_revision(),
         "environment": accounting_runtime_environment(),
         "deployed_at": (
             os.getenv("DEPLOYED_AT")
@@ -1527,7 +1561,7 @@ def finalize_accounting_response(
 
     trace = {
         "app_version": app.version,
-        "commit_hash": config.APP_REVISION,
+        "commit_hash": effective_app_revision(),
         "environment": accounting_runtime_environment(),
         "endpoint_name": endpoint_name,
         "intent": intent or output.get("intent"),
