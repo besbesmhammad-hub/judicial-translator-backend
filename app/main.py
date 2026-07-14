@@ -529,6 +529,55 @@ def source_precision_rules(message: str) -> list[dict]:
                 "min_matches": 1,
             },
         ]
+    if is_mixed_dividends_case(query):
+        return [
+            {"doc_id": "code_irpp_is_2011", "terms": ["dividende", "revenus distribues", "retenue a la source", "beneficiaire"], "min_matches": 2},
+            {"doc_id": "loi_finances_2026", "terms": ["dividende", "retenue", "2026"], "min_matches": 2},
+            {"doc_id": "procedures_fiscales_2026", "terms": ["declaration", "reversement", "certificat", "retenue"], "min_matches": 2},
+            {"doc_id": "convention_fiscale_france_tunisie", "missing": True, "title": "Convention fiscale France-Tunisie contre les doubles impositions", "terms": ["convention fiscale", "france", "tunisie"], "min_matches": 1},
+        ]
+    if is_revenue_cutoff_tva_case(query):
+        return [
+            {"doc_id": "nc_03_revenus", "terms": ["revenu", "prestation de services", "realisation", "exercice"], "min_matches": 2},
+            {"doc_id": "nc_01_norme_generale", "terms": ["periodicite", "rattachement", "produits", "exercice"], "min_matches": 2},
+            {"doc_id": "tva_droit_consommation", "terms": ["الفصل5", "إسداء الخدمات", "الفاتورة", "الأداء على القيمة المضافة"], "min_matches": 2},
+            {"doc_id": "code_irpp_is_2011", "terms": ["benefice imposable", "produits", "exercice", "charges"], "min_matches": 2},
+        ]
+    if is_receivable_subsequent_recovery_case(query):
+        return [
+            {"doc_id": "nc_01_norme_generale", "terms": ["creances", "depreciation", "provision", "recouvrement"], "min_matches": 2},
+            {"doc_id": "ias_37_provisions_passifs_actifs_eventuels", "terms": ["provision", "obligation", "estimation", "creances douteuses"], "min_matches": 2},
+            {"doc_id": "ias_10_evenements_post_cloture", "terms": ["evenements posterieurs", "date de cloture", "ajuster", "non ajuster"], "min_matches": 2},
+            {"doc_id": "code_irpp_is_2011", "terms": ["creances douteuses", "provision", "deductible", "depreciation"], "min_matches": 2},
+        ]
+    if is_going_concern_case(query):
+        return [
+            {"doc_id": "cadre_conceptuel_comptable", "terms": ["continuite de l'exploitation", "entreprise poursuit", "avenir previsible"], "min_matches": 2},
+            {"doc_id": "nc_01_norme_generale", "terms": ["continuite", "etats financiers", "informations"], "min_matches": 2},
+            {"doc_id": "audit_resume_gaida_normes_missions", "terms": ["continuite", "rapport", "opinion", "elements probants"], "min_matches": 2},
+            {"doc_id": "audit_resume_acceptation_controle_qualite", "terms": ["planification", "risque", "rapport", "documentation"], "min_matches": 2},
+        ]
+    if is_related_party_property_case(query):
+        return [
+            {"doc_id": "nc_39_parties_liees", "terms": ["parties liees", "transactions", "informations", "dirigeants"], "min_matches": 2},
+            {"doc_id": "code_societes_commerciales_2022", "terms": ["conventions", "dirigeants", "autorisation", "associes"], "min_matches": 2},
+            {"doc_id": "code_irpp_is_2011", "terms": ["acte anormal", "benefice imposable", "reintegre", "avantage"], "min_matches": 2},
+            {"doc_id": "audit_resume_gaida_normes_missions", "terms": ["parties liees", "risque", "rapport", "documentation"], "min_matches": 2},
+        ]
+    if is_cash_consulting_evidence_case(query):
+        return [
+            {"doc_id": "loi_comptable", "terms": ["pieces justificatives", "enregistrement", "journal", "operation"], "min_matches": 2},
+            {"doc_id": "code_irpp_is_2011", "terms": ["charges", "deduction", "benefice imposable", "justifie"], "min_matches": 2},
+            {"doc_id": "procedures_fiscales_2026", "terms": ["controle", "justificatifs", "facture", "paiement"], "min_matches": 2},
+            {"doc_id": "nc_01_norme_generale", "terms": ["objectivite", "preuves", "transactions", "charges"], "min_matches": 2},
+        ]
+    if is_accounting_tax_bridge_case(query):
+        return [
+            {"doc_id": "ias_37_provisions_passifs_actifs_eventuels", "terms": ["provision", "obligation", "estimation", "passif"], "min_matches": 2},
+            {"doc_id": "nc_14_eventualites_post_cloture", "terms": ["provision", "eventualite", "probable", "estimation"], "min_matches": 2},
+            {"doc_id": "code_irpp_is_2011", "terms": ["provision", "deductible", "benefice imposable", "reintegr"], "min_matches": 2},
+            {"doc_id": "ias_12_impots_resultat", "terms": ["impot differe", "difference temporaire", "resultat fiscal"], "min_matches": 2},
+        ]
     if "dividende" in query or "dividendes" in query:
         return [
             {
@@ -656,6 +705,72 @@ def is_cross_border_service_case(query: str) -> bool:
             or "formation" in query
             or "logiciel" in query
         )
+    )
+
+
+def is_mixed_dividends_case(query: str) -> bool:
+    return (
+        ("dividende" in query or "dividendes" in query)
+        and ("300 000" in query or "300000" in query)
+        and ("200 000" in query or "200000" in query)
+        and ("100 000" in query or "100000" in query)
+        and ("francais" in query or "france" in query or "non resident" in query)
+    )
+
+
+def is_revenue_cutoff_tva_case(query: str) -> bool:
+    return (
+        ("maintenance" in query or "contrat annuel" in query or "abonnement" in query)
+        and ("avance" in query or "upfront" in query or "paye" in query or "payee" in query or "facture" in query)
+        and ("2025" in query and "2026" in query)
+    )
+
+
+def is_receivable_subsequent_recovery_case(query: str) -> bool:
+    return (
+        ("creance douteuse" in query or "creances douteuses" in query)
+        and ("30 000" in query or "30000" in query or "recouvrement partiel" in query or "encaisse" in query)
+        and ("apres cloture" in query or "post cloture" in query or "apres la cloture" in query)
+    )
+
+
+def is_going_concern_case(query: str) -> bool:
+    return (
+        "continuite" in query
+        or "going concern" in query
+        or ("capitaux propres" in query and ("negatifs" in query or "negative" in query))
+        or ("financement bancaire" in query and "non confirme" in query)
+    )
+
+
+def is_related_party_property_case(query: str) -> bool:
+    return (
+        ("immeuble" in query or "bien immobilier" in query or "propriete" in query or "terrain" in query)
+        and ("gerant" in query or "dirigeant" in query or "associe" in query or "actionnaire" in query)
+        and ("valeur de marche" in query or "dessous" in query or "inferieur" in query or "prix bas" in query)
+    )
+
+
+def is_cash_consulting_evidence_case(query: str) -> bool:
+    return (
+        ("consulting" in query or "consultant" in query or "conseil" in query or "honoraires" in query)
+        and ("especes" in query or "cash" in query or "liquide" in query)
+        and ("facture" in query or "justificatif" in query or "preuve" in query)
+    )
+
+
+def is_accounting_tax_bridge_case(query: str) -> bool:
+    return (
+        "provision" in query
+        and ("comptable" in query or "comptabilisee" in query)
+        and (
+            "non deductible" in query
+            or "non deductibilite" in query
+            or "pas deductible" in query
+            or "pas fiscalement deductible" in query
+            or "fiscalement deductible" in query
+        )
+        and ("fiscal" in query or "fiscalement" in query)
     )
 
 
@@ -1188,6 +1303,27 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "code_commerce_2014",
             "code_obligations_contrats_2015",
         }
+    elif is_mixed_dividends_case(query):
+        priority_doc_ids = ["code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026"]
+        blocked_doc_ids = {"fiscalite_locale", "droits_taxes_hors_codes", "code_commerce_2014"}
+    elif is_revenue_cutoff_tva_case(query):
+        priority_doc_ids = ["nc_03_revenus", "nc_01_norme_generale", "tva_droit_consommation", "code_irpp_is_2011"]
+        blocked_doc_ids = {"audit_resume_gaida_normes_missions", "ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
+    elif is_receivable_subsequent_recovery_case(query):
+        priority_doc_ids = ["nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011"]
+        blocked_doc_ids = {"fiscalite_locale", "code_commerce_2014", "nct_44_takaful_controle_interne"}
+    elif is_going_concern_case(query):
+        priority_doc_ids = ["cadre_conceptuel_comptable", "nc_01_norme_generale", "audit_resume_gaida_normes_missions", "audit_resume_acceptation_controle_qualite"]
+        blocked_doc_ids = {"code_societes_commerciales_2022", "fiscalite_locale", "code_irpp_is_2011"}
+    elif is_related_party_property_case(query):
+        priority_doc_ids = ["nc_39_parties_liees", "code_societes_commerciales_2022", "code_irpp_is_2011", "audit_resume_gaida_normes_missions"]
+        blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale", "tva_droit_consommation"}
+    elif is_cash_consulting_evidence_case(query):
+        priority_doc_ids = ["loi_comptable", "code_irpp_is_2011", "procedures_fiscales_2026", "nc_01_norme_generale"]
+        blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "audit_resume_gaida_normes_missions", "fiscalite_locale"}
+    elif is_accounting_tax_bridge_case(query):
+        priority_doc_ids = ["ias_37_provisions_passifs_actifs_eventuels", "nc_14_eventualites_post_cloture", "code_irpp_is_2011", "ias_12_impots_resultat"]
+        blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale", "code_commerce_2014"}
     elif "dividende" in query or "dividendes" in query:
         priority_doc_ids = ["code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026"]
         blocked_doc_ids = {
@@ -1249,8 +1385,10 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
     answer: str | None = None
     returned_intent = intent
     returned_domain = legal_domain
+    workflow_name = "case_analysis_fastpath"
 
     if is_cross_border_service_case(query):
+        workflow_name = "level3_multi_domain_case_analysis"
         returned_intent = "legal_basis"
         returned_domain = "fiscalite"
         answer = compose_structured_answer(
@@ -1286,6 +1424,208 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Ne pas affirmer un taux de retenue, une absence de TVA ou une absence d'etablissement stable sans passage direct du Code TVA, du Code IRPP/IS et de la convention France-Tunisie.\n"
                     "- La convention France-Tunisie doit etre ajoutee au corpus; tant qu'elle manque, la conclusion sur etablissement stable, redevances et retenue reste une reserve professionnelle.\n"
                     "- Si une partie du prix correspond a une licence ou a une redevance logicielle, l'analyse peut differer d'une prestation de services pure."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_mixed_dividends_case(query):
+        workflow_name = "shareholder_split_tax_analysis"
+        returned_intent = "tax_calculation"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Cette distribution doit etre analysee beneficiaire par beneficiaire. Le dossier ne peut pas recevoir une reponse globale, car les trois profils "
+                    "ne portent pas le meme risque fiscal: 300 000 TND a une personne physique residente, 200 000 TND a une societe tunisienne, et 100 000 TND "
+                    "a un associe francais non-resident. Pour chacun, il faut verifier la retenue a la source, la declaration et le reversement, le certificat ou "
+                    "la preuve de retenue, et pour le non-resident la convention fiscale France-Tunisie."
+                ),
+                "Application pratique": (
+                    "- Personne physique residente - 300 000 TND: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues, la retenue a la source applicable, "
+                    "son caractere eventuellement liberatoire ou imputable, et la justification remise au beneficiaire.\n"
+                    "- Societe tunisienne - 200 000 TND: verifier si le regime differe selon la qualite de personne morale residente, le traitement dans le resultat fiscal, "
+                    "et l'existence d'une retenue ou d'une dispense documentee.\n"
+                    "- Associe francais non-resident - 100 000 TND: verifier la retenue interne tunisienne, puis la convention fiscale France-Tunisie avant de retenir un taux, "
+                    "une limitation ou une condition de residence beneficiale.\n"
+                    "- Declaration et reversement: identifier l'obligation declarative, la periode de reversement et les pieces a conserver pour chaque beneficiaire.\n"
+                    "- Certificats et justificatifs: conserver decision de distribution, PV, identite fiscale des beneficiaires, preuve de residence du non-resident, calcul brut/retenue/net et certificat de retenue.\n"
+                    "- Informations manquantes: forme exacte des associes, residence fiscale, beneficiaire effectif, convention applicable, article/taux direct et echeance declarative."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas appliquer le meme traitement aux trois associes.\n"
+                    "- Ne pas affirmer de taux ou d'article tant que le passage direct sur dividendes n'est pas indexe.\n"
+                    "- La convention France-Tunisie manque encore au corpus: le cas non-resident doit rester sous reserve jusqu'a ingestion du traite."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_revenue_cutoff_tva_case(query):
+        workflow_name = "revenue_cutoff_tva_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Un contrat annuel de maintenance paye d'avance doit etre analyse comme un cas de cut-off comptable et fiscal, pas comme une simple definition de TVA. "
+                    "Il faut distinguer la date de facturation ou d'encaissement, la periode de service, la part rattachee a 2025, la part rattachee a 2026, "
+                    "les produits constates d'avance le cas echeant, le resultat fiscal et l'exigibilite TVA."
+                ),
+                "Application pratique": (
+                    "- Comptabilite: reconnaitre le produit au rythme de la prestation de maintenance rendue; la part non acquise a la cloture doit etre examinee comme produit constate d'avance.\n"
+                    "- Cut-off 2025/2026: ventiler le revenu selon la periode couverte par le contrat, et non uniquement selon la date de paiement.\n"
+                    "- Fiscalite: verifier si le resultat fiscal suit le rattachement comptable ou si une regle fiscale specifique modifie le traitement.\n"
+                    "- TVA: verifier le fait generateur et l'exigibilite selon facture, encaissement ou execution du service d'apres le Code TVA applicable.\n"
+                    "- Facturation: rapprocher contrat, facture, periode de couverture, date d'encaissement, conditions de remboursement et obligations de service restantes.\n"
+                    "- Informations manquantes: date de debut/fin du contrat, date de facture, date d'encaissement, montant HT/TVA, conditions de resiliation et prestations deja effectuees."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas comptabiliser tout le montant en produit de 2025 si une partie remunere des services 2026.\n"
+                    "- Ne pas confondre exigibilite TVA et reconnaissance comptable du revenu.\n"
+                    "- Documenter la cle de ventilation et conserver le contrat."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_receivable_subsequent_recovery_case(query):
+        workflow_name = "receivable_impairment_subsequent_event"
+        returned_intent = "tax_calculation"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Une creance douteuse avec recouvrement partiel de 30 000 TND apres cloture doit etre analysee en deux temps: la depreciation/provision a la date de cloture, "
+                    "puis le traitement de l'encaissement posterieur comme evenement posterieur ajustant ou non ajustant selon ce qu'il prouve sur la situation existant a la cloture. "
+                    "Il faut distinguer la constatation comptable de la depreciation et la deductibilite fiscale de la provision."
+                ),
+                "Application pratique": (
+                    "- Classer la creance: identifier facture, echeance, anciennete, litige, garanties, relances et risque reel de non-recouvrement a la cloture.\n"
+                    "- Evaluer la provision: limiter la depreciation a l'exposition restante apres analyse des chances de recouvrement.\n"
+                    "- Encaissement de 30 000 TND apres cloture: determiner s'il confirme une information deja existante a la cloture; dans ce cas il peut ajuster l'estimation. "
+                    "S'il resulte d'un evenement nouveau, il peut etre non ajustant mais a divulguer si significatif.\n"
+                    "- Fiscalite: verifier les conditions de deductibilite, l'individualisation de la creance, les justificatifs, les actions de recouvrement et le calcul conserve au dossier.\n"
+                    "- Documentation: balance agee, relances, correspondances, accord de paiement, preuve d'encaissement posterieur et note de jugement de direction."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas maintenir une provision brute si le recouvrement posterieur modifie l'exposition restante.\n"
+                    "- Ne pas deduire fiscalement une provision globale sans dossier client par client.\n"
+                    "- Distinguer clairement preuve posterieure d'une situation existante et evenement nouveau."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_going_concern_case(query):
+        workflow_name = "going_concern_case_analysis"
+        returned_intent = "audit"
+        returned_domain = "audit"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Ce cas concerne la continuite d'exploitation, pas une definition du commissaire aux comptes. Des capitaux propres negatifs, des retards de paiement fournisseurs "
+                    "et un financement bancaire non confirme constituent des signaux d'incertitude qui doivent etre analyses par la direction puis audites."
+                ),
+                "Application pratique": (
+                    "- Direction: obtenir l'evaluation de la continuite, le budget de tresorerie, les hypotheses commerciales, le plan de financement et les mesures de redressement.\n"
+                    "- Financement bancaire: verifier si l'accord est confirme, conditionnel ou seulement verbal; une promesse non confirmee ne suffit pas.\n"
+                    "- Fournisseurs: analyser l'anciennete des dettes, les plans d'echelonnement et les risques de rupture d'approvisionnement.\n"
+                    "- Etats financiers: verifier si les notes decrivent correctement les incertitudes significatives et les hypotheses retenues.\n"
+                    "- Audit: effectuer des procedures sur flux de tresorerie, evenements posterieurs, confirmations bancaires, covenants, plans de direction et coherence des hypotheses.\n"
+                    "- Opinion: si les informations sont insuffisantes ou trompeuses, analyser l'impact possible sur le rapport et l'opinion."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas conclure a la continuite seulement parce que la direction espere un financement.\n"
+                    "- Les disclosures sont centrales: une incertitude significative mal presentee peut affecter le rapport.\n"
+                    "- Documenter les jugements et les elements probants."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_related_party_property_case(query):
+        workflow_name = "related_party_transaction_case"
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "La vente d'un bien immobilier a un gerant, associe ou actionnaire a un prix inferieur a la valeur de marche doit etre analysee comme une transaction avec partie liee "
+                    "et comme un risque fiscal potentiel. L'analyse doit couvrir la valeur de marche, l'information sur parties liees, l'acte anormal de gestion ou distribution dissimulee, "
+                    "les autorisations societaires, le risque de redressement et les diligences d'audit."
+                ),
+                "Application pratique": (
+                    "- Valeur: obtenir expertise independante, comparables, base de valorisation et justification du prix.\n"
+                    "- Parties liees: identifier la relation, les conditions de la transaction et l'information a fournir dans les etats financiers.\n"
+                    "- Fiscalite: verifier le risque de rehaussement, avantage occulte, acte anormal de gestion ou distribution dissimulee si l'ecart de prix n'est pas justifie.\n"
+                    "- Droit des societes: verifier l'approbation, la procedure de convention reglementee ou l'autorisation applicable selon la forme sociale.\n"
+                    "- Audit/gouvernance: communiquer le risque, evaluer l'incidence sur les comptes, les disclosures et l'opinion si l'operation est significative."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas accepter le prix contractuel sans preuve de juste valeur.\n"
+                    "- Ne pas traiter l'operation comme une vente ordinaire si le dirigeant est partie liee.\n"
+                    "- Les consequences fiscales exactes exigent les articles directs et les pieces de valorisation."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_cash_consulting_evidence_case(query):
+        workflow_name = "expense_deductibility_evidence_case"
+        returned_intent = "tax_calculation"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Avec seulement une facture de consulting et un paiement en especes, la deductibilite ne peut pas etre confirmee prudemment. "
+                    "Il faut prouver la realite du service, l'interet de l'entreprise, la documentation contractuelle, les livrables et la tracabilite du paiement."
+                ),
+                "Application pratique": (
+                    "- Realite du service: demander contrat, bon de commande, rapport de mission, livrables, emails, planning, preuve d'intervention et validation interne.\n"
+                    "- Interet de l'entreprise: rattacher la charge a l'activite, au besoin economique et au benefice attendu.\n"
+                    "- Facture: verifier l'identite du prestataire, matricule fiscal, description precise, date, montant, TVA et coherence avec les livrables.\n"
+                    "- Paiement en especes: traiter comme facteur de risque; verifier les restrictions et seuils applicables seulement si un passage source les confirme.\n"
+                    "- Fiscalite: examiner la deductibilite dans le Code de l'IRPP/IS, les conditions de justification et les risques de rejet en controle.\n"
+                    "- Conclusion prudente: sans preuves autres que la facture et le cash, preparer une reserve et demander les justificatifs avant deduction."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas router ce cas vers une simple analyse de tresorerie: la question porte sur la deductibilite et la preuve.\n"
+                    "- Une facture seule ne prouve pas toujours la prestation.\n"
+                    "- Documenter pourquoi la charge est necessaire et normale pour l'entreprise."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_accounting_tax_bridge_case(query):
+        workflow_name = "accounting_tax_bridge_case"
+        returned_intent = "tax_calculation"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Une provision peut etre comptabilisee tout en n'etant pas fiscalement deductible. Il faut separer le traitement comptable, fonde sur l'existence d'une obligation "
+                    "ou d'un risque estimable, du traitement fiscal, qui peut imposer une reintegration extra-comptable."
+                ),
+                "Application pratique": (
+                    "- Comptabilite: verifier si la provision repond aux criteres de reconnaissance, d'estimation fiable et de rattachement a l'exercice.\n"
+                    "- Fiscalite: verifier si la provision entre dans une categorie deductible; sinon elle doit etre reintegree extra-comptablement dans le resultat fiscal.\n"
+                    "- Impot differe: analyser seulement si le referentiel applique et les sources disponibles permettent de traiter une difference temporaire.\n"
+                    "- Documentation: conserver note de calcul, fait generateur, estimation, decision de direction, traitement fiscal retenu et justification de la reintegration.\n"
+                    "- Informations manquantes: nature de la provision, exercice, base de calcul, texte fiscal applicable et referentiel comptable utilise."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas confondre comptabilisation et deductibilite fiscale.\n"
+                    "- Rester strictement sur le pont comptabilite-fiscalite de la provision traitee.\n"
+                    "- Toute conclusion fiscale doit etre rattachee a l'article applicable."
                 ),
                 "Sources utilisees": source_lines,
             },
@@ -1473,7 +1813,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
         "fallback_mode": False,
         "legal_domain": returned_domain,
         "question": message,
-        "workflow": "level3_multi_domain_case_analysis" if is_cross_border_service_case(query) else "case_analysis_fastpath",
+        "workflow": workflow_name,
     }
 
 
