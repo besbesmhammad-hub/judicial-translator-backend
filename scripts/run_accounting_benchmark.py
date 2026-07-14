@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -39,9 +40,86 @@ def has_sections(answer: str, sections: list[str]) -> dict[str, bool]:
     return {section: (f"## {section}" in text or f"**{section}**" in text or f"{section}\n" in text) for section in sections}
 
 
+def normalize_for_match(value: str) -> str:
+    text = unicodedata.normalize("NFKD", value or "")
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    return text.casefold()
+
+
 def contains_phrases(answer: str, phrases: list[str]) -> dict[str, bool]:
-    normalized = (answer or "").casefold()
-    return {phrase: phrase.casefold() in normalized for phrase in phrases}
+    normalized = normalize_for_match(answer)
+    return {phrase: normalize_for_match(phrase) in normalized for phrase in phrases}
+
+
+def selected_doc_ids(debug_trace: dict) -> list[str]:
+    return [
+        str(source.get("doc_id") or "")
+        for source in (debug_trace.get("selected_sources") or [])
+        if source.get("doc_id")
+    ]
+
+
+def contains_any(normalized_answer: str, phrases: list[str]) -> bool:
+    return any(normalize_for_match(phrase) in normalized_answer for phrase in phrases)
+
+
+def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
+    case_id = str(case.get("id") or "")
+    question = normalize_for_match(str(case.get("question") or ""))
+    normalized = normalize_for_match(answer)
+    docs = selected_doc_ids(debug_trace)
+    checks: dict[str, bool] = {}
+
+    generic_forbidden = [
+        "en premiere analyse, le point doit etre rattache principalement au cadre suivant",
+        "identifier le texte exact applicable au cas du client",
+        "verifier la date de la version du texte",
+        "la notion doit etre rattachee aux textes applicables",
+    ]
+    checks["not_generic_fallback"] = not contains_any(normalized, generic_forbidden)
+    checks["no_guardrail_block"] = not bool(debug_trace.get("guardrail_blocked"))
+
+    if "dividende" in case_id or "dividende" in question:
+        checks["dividends_mentions_withholding"] = contains_any(normalized, ["retenue a la source", "retenue operee"])
+        checks["dividends_mentions_declaration"] = contains_any(normalized, ["obligations declaratives", "declaration", "reversement"])
+        checks["dividends_mentions_beneficiary_status"] = contains_any(normalized, ["associe resident", "personne physique", "non-resident", "non resident"])
+        checks["dividends_uses_tax_sources"] = "code_irpp_is_2011" in docs and "loi_finances_2026" in docs
+        if "non resident" in question:
+            checks["nonresident_mentions_treaty"] = contains_any(normalized, ["convention fiscale", "beneficiaire etranger"])
+
+    if ("tva" in case_id and ("france" in case_id or "client" in case_id)) or ("prestation" in question and "france" in question):
+        checks["tva_uses_tva_source"] = "tva_droit_consommation" in docs
+        checks["tva_not_irpp_primary"] = not docs or docs[0] != "code_irpp_is_2011"
+        checks["tva_mentions_territoriality"] = contains_any(normalized, ["territorialite", "client etranger", "etabli hors de tunisie"])
+        checks["tva_no_placeholder"] = not contains_any(normalized, ["article [x]", "article x", "reference implicite", "source implicite"])
+        if "non assujetti" in question:
+            checks["non_taxable_client_changes_analysis"] = contains_any(normalized, ["non assujetti", "ne pas reprendre mecaniquement", "schema b2b"])
+
+    if "fraude" in case_id or "anomalie_apres_rapport" in case_id or "fraude" in question:
+        checks["fraud_not_definition"] = "le cac, ou commissaire aux comptes, est" not in normalized
+        checks["fraud_addresses_timing"] = contains_any(normalized, ["apres l'emission", "avant la signature", "date de decouverte"])
+        checks["fraud_mentions_impact"] = contains_any(normalized, ["evaluer l'incidence", "reevaluer", "remet en cause"])
+        checks["fraud_mentions_governance_or_documentation"] = contains_any(normalized, ["gouvernance", "direction", "documentation", "documenter"])
+        checks["fraud_uses_audit_sources"] = any(doc.startswith("audit_") for doc in docs)
+
+    if "amortissement" in case_id or "amortissement" in question:
+        checks["amortization_mentions_service_date"] = contains_any(normalized, ["mise en service", "prete a etre utilisee", "pret a etre utilise"])
+        checks["amortization_mentions_accounting_basis"] = contains_any(normalized, ["base amortissable", "duree d'utilite", "mode d'amortissement"])
+        checks["amortization_uses_accounting_sources"] = "nc_05_immobilisations_corporelles" in docs or "ias_16_immobilisations_corporelles" in docs
+        checks["amortization_no_audit_sources"] = not any("audit" in doc for doc in docs)
+
+    if "creance" in case_id or "creances" in case_id or "creance douteuse" in question or "creances douteuses" in question:
+        checks["receivable_distinguishes_accounting_tax"] = contains_any(normalized, ["distinguer la constatation comptable", "deductibilite fiscale", "traitement comptable"])
+        checks["receivable_mentions_individualized"] = contains_any(normalized, ["creance est individualisee", "client par client", "chaque creance"])
+        checks["receivable_mentions_evidence"] = contains_any(normalized, ["justificatifs suffisants", "relances", "recouvrement", "balance agee"])
+        checks["receivable_uses_accounting_and_tax_sources"] = ("code_irpp_is_2011" in docs and any(doc.startswith(("nc_", "ias_")) for doc in docs))
+
+    passed = all(checks.values()) if checks else True
+    return {
+        "checks": checks,
+        "passed": passed,
+        "selected_doc_ids": docs,
+    }
 
 
 def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
@@ -50,15 +128,18 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
         "context": case.get("context") or None,
         "language": case.get("language") or "francais",
         "history": [],
+        "debug": True,
     }
     started = time.time()
     try:
         response = post_json(f"{base_url.rstrip('/')}/v1/accounting-chat", payload, timeout=timeout)
         latency_ms = round((time.time() - started) * 1000, 1)
         answer = response.get("answer", "")
+        debug_trace = response.get("debug_trace") or {}
         section_checks = has_sections(answer, case.get("expected_sections", []))
         required_phrase_checks = contains_phrases(answer, case.get("expected_answer_contains", []))
         forbidden_phrase_checks = contains_phrases(answer, case.get("forbidden_answer_contains", []))
+        substance = level2_substance_checks(case, answer, debug_trace)
         all_required_phrases_present = all(required_phrase_checks.values()) if required_phrase_checks else True
         no_forbidden_phrases = not any(forbidden_phrase_checks.values())
         return {
@@ -81,10 +162,18 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             "all_required_phrases_present": all_required_phrases_present,
             "forbidden_phrase_checks": forbidden_phrase_checks,
             "no_forbidden_phrases": no_forbidden_phrases,
-            "content_quality_pass": all_required_phrases_present and no_forbidden_phrases,
+            "substance_checks": substance["checks"],
+            "substance_quality_pass": substance["passed"],
+            "content_quality_pass": all_required_phrases_present and no_forbidden_phrases and substance["passed"],
             "sources_count": len(response.get("sources") or []),
             "golden_kb_hits_count": len(response.get("golden_kb_hits") or []),
             "model": response.get("model"),
+            "debug_trace": debug_trace,
+            "workflow": debug_trace.get("workflow"),
+            "generator_path": debug_trace.get("generator_path"),
+            "selected_sources": debug_trace.get("selected_sources") or [],
+            "fallback_used": debug_trace.get("fallback_used"),
+            "guardrail_blocked": debug_trace.get("guardrail_blocked"),
             "answer_preview": answer[:700],
             "warnings": response.get("warnings") or [],
             "assumptions": response.get("assumptions") or [],

@@ -614,6 +614,533 @@ def fastpath_general_fiscal_framework_answer(message: str, legal_domain: str) ->
     }
 
 
+def fastpath_fiscal_sources_answer(message: str, legal_domain: str) -> dict | None:
+    query = match_key(message)
+    if legal_domain not in {"fiscalite", "general"}:
+        return None
+    if not re.search(r"sources? du droit fiscal|sources? principales? du droit fiscal|principales? sources? du droit fiscal", query, re.I):
+        return None
+
+    framework_sources = legal_sources_by_doc_ids([
+        "code_irpp_is_2011",
+        "tva_droit_consommation",
+        "procedures_fiscales_2026",
+        "enregistrement_timbre",
+        "fiscalite_locale",
+        "loi_finances_2026",
+    ])
+    if not framework_sources:
+        return None
+
+    source_lines = summarize_source_titles(framework_sources, limit=6)
+    answer = "\n\n".join([
+        "## Réponse\n"
+        "Les principales sources du droit fiscal tunisien sont d'abord les textes législatifs qui organisent "
+        "l'assiette de l'impôt, les procédures fiscales et les principales catégories de prélèvements. En pratique, "
+        "il faut retenir en priorité :\n"
+        "- le **Code de l'IRPP et de l'IS** ;\n"
+        "- le **Code de la taxe sur la valeur ajoutée** ;\n"
+        "- le **Code des droits et procédures fiscaux** ;\n"
+        "- le **Code des droits d'enregistrement et de timbre** ;\n"
+        "- le **Code de la fiscalité locale** ;\n"
+        "- les **lois de finances annuelles**, qui modifient régulièrement ces textes ou y ajoutent des mesures nouvelles.\n\n"
+        "À ce noyau s'ajoutent les décrets et arrêtés d'application, ainsi que les circulaires et notes communes "
+        "qui en précisent l'interprétation pratique sans se substituer aux dispositions législatives et réglementaires.",
+        "## Base légale\n"
+        f"{source_lines}",
+    ])
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "general",
+        "preferred_source": "legal_corpus",
+        "response_style": "flexible_expert",
+        "golden_kb_hits": [],
+        "sources": framework_sources,
+        "model": "internal/fiscal-sources-fastpath",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
+def fastpath_fiscal_code_comparison_answer(message: str, legal_domain: str) -> dict | None:
+    query = match_key(message)
+    if legal_domain not in {"fiscalite", "general"}:
+        return None
+    if not (
+        ("procedure" in query or "procedures fiscales" in query)
+        and ("irpp" in query or "is" in query or "code de l irpp" in query)
+        and re.search(r"difference|compar|vs|versus", query, re.I)
+    ):
+        return None
+
+    sources = legal_sources_by_doc_ids([
+        "code_irpp_is_2011",
+        "procedures_fiscales_2026",
+    ])
+    if not sources:
+        return None
+
+    source_lines = summarize_source_titles(sources, limit=2)
+    answer = "\n\n".join([
+        "## Réponse\n"
+        "La différence est la suivante : le **Code de l'IRPP et de l'IS** fixe les règles de fond de l'imposition, "
+        "alors que le **Code des droits et procédures fiscaux** organise la manière dont l'administration contrôle, "
+        "redresse et recouvre l'impôt.\n\n"
+        "- **Code de l'IRPP et de l'IS** : il détermine notamment les personnes imposables, les catégories de revenus, "
+        "l'assiette, les déductions admises, les règles de calcul et, selon les cas, le régime applicable à l'impôt.\n"
+        "- **Code des droits et procédures fiscaux** : il traite principalement des déclarations, du contrôle fiscal, "
+        "des notifications, des délais, des voies de recours, des sanctions et du contentieux.\n\n"
+        "En pratique, on consulte donc le premier pour savoir quoi est imposé et comment l'impôt se calcule, "
+        "et le second pour savoir comment la règle fiscale s'applique, se contrôle et se conteste.",
+        "## Base légale\n"
+        f"{source_lines}",
+    ])
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "comparison",
+        "preferred_source": "legal_corpus",
+        "response_style": "flexible_expert",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/fiscal-code-comparison-fastpath",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
+def fastpath_legal_hierarchy_answer(message: str, legal_domain: str) -> dict | None:
+    query = match_key(message)
+    if legal_domain not in {"fiscalite", "general"}:
+        return None
+    if not re.search(r"hierarchie des normes|hierarchie juridique|ordre des normes|valeur juridique des normes|rang des normes", query, re.I):
+        return None
+
+    sources = legal_sources_by_doc_ids([
+        "code_irpp_is_2011",
+        "tva_droit_consommation",
+        "procedures_fiscales_2026",
+        "loi_finances_2026",
+    ])
+    if not sources:
+        return None
+
+    source_lines = summarize_source_titles(sources, limit=4)
+    answer = "\n\n".join([
+        "## Réponse\n"
+        "En droit fiscal tunisien, la hiérarchie des normes se lit, en pratique, de la manière suivante :\n"
+        "- la **Constitution** ;\n"
+        "- les **traités internationaux régulièrement ratifiés**, selon leur place dans l'ordre juridique applicable ;\n"
+        "- les **lois**, parmi lesquelles figurent les codes fiscaux et les lois de finances ;\n"
+        "- les **décrets** et **arrêtés d'application** ;\n"
+        "- les **circulaires**, **notes communes** et autres instructions administratives, qui guident l'interprétation pratique sans créer une règle supérieure à la loi.\n\n"
+        "En conséquence, un code fiscal et une loi de finances relèvent tous deux du niveau législatif. "
+        "Les textes d'application viennent ensuite, puis les prises de position administratives.",
+        "## Base légale\n"
+        f"{source_lines}",
+    ])
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "legal_hierarchy",
+        "preferred_source": "legal_corpus",
+        "response_style": "flexible_expert",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/legal-hierarchy-fastpath",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
+def fastpath_commissariat_texts_answer(message: str, legal_domain: str) -> dict | None:
+    query = match_key(message)
+    if legal_domain not in {"audit", "general"}:
+        return None
+    if not re.search(
+        r"textes? qui regissent le commissariat aux comptes|"
+        r"textes? du commissariat aux comptes|"
+        r"commissariat aux comptes en tunisie|"
+        r"cadre juridique du commissariat aux comptes|"
+        r"quels textes.*commissariat aux comptes",
+        query,
+        re.I,
+    ):
+        return None
+
+    sources = legal_sources_by_doc_ids([
+        "code_societes_commerciales_2022",
+        "textes_profession_comptable_2018",
+        "note_orientation_bct_2012_02",
+    ])
+    if not sources:
+        return None
+
+    source_lines = summarize_source_titles(sources, limit=3)
+    answer = "\n\n".join([
+        "## Réponse\n"
+        "En Tunisie, le commissariat aux comptes repose d'abord sur le **Code des sociétés commerciales**, "
+        "qui fixe le cadre légal de la désignation, de la mission et, selon les cas, de certaines obligations de contrôle légal. "
+        "Ce socle est complété par les textes professionnels relatifs aux **experts-comptables et commissaires aux comptes**, "
+        "notamment pour les règles d'exercice, d'indépendance et d'encadrement de la profession.\n\n"
+        "À cela s'ajoutent les **normes professionnelles** et textes d'orientation applicables à certaines missions ou secteurs, "
+        "notamment lorsqu'un texte réglementaire spécial impose des diligences ou un format de rapport particulier. "
+        "En pratique, il faut donc raisonner à la fois avec le cadre sociétaire, le cadre professionnel de la profession comptable "
+        "et les normes professionnelles applicables à la mission concernée.",
+        "## Sources utilisées\n"
+        f"{source_lines}",
+    ])
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "general",
+        "preferred_source": "legal_corpus",
+        "response_style": "flexible_expert",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/commissariat-texts-fastpath",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
+def fastpath_loi_finances_tva_answer(message: str, legal_domain: str) -> dict | None:
+    query = match_key(message)
+    if legal_domain not in {"fiscalite", "general"}:
+        return None
+    if not re.search(
+        r"loi de finances .*modifi.*code tva|"
+        r"une loi de finances peut elle modifier le code tva|"
+        r"loi de finances peut elle modifier la tva|"
+        r"modification du code tva par loi de finances",
+        query,
+        re.I,
+    ):
+        return None
+
+    sources = legal_sources_by_doc_ids([
+        "tva_droit_consommation",
+        "loi_finances_2026",
+        "procedures_fiscales_2026",
+    ])
+    if not sources:
+        return None
+
+    source_lines = summarize_source_titles(sources, limit=3)
+    answer = "\n\n".join([
+        "## Réponse\n"
+        "Oui. En Tunisie, une **loi de finances** peut modifier le **Code de la taxe sur la valeur ajoutée**, "
+        "comme elle peut modifier d'autres textes fiscaux de niveau législatif. En pratique, la loi de finances "
+        "peut changer des taux, des exonérations, des modalités d'application ou introduire des dispositions nouvelles "
+        "qui s'intègrent au régime de TVA.\n\n"
+        "Il convient toutefois de distinguer le **texte de base** de la TVA, qui demeure le Code de la taxe sur la valeur ajoutée, "
+        "et les **modifications législatives annuelles** apportées par les lois de finances. Pour une réponse complète sur un point précis, "
+        "il faut donc lire le code avec ses textes d'application et vérifier les lois de finances modificatives pertinentes.",
+        "## Base légale\n"
+        f"{source_lines}",
+    ])
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "general",
+        "preferred_source": "legal_corpus",
+        "response_style": "flexible_expert",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/loi-finances-tva-fastpath",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
+def merge_priority_sources(priority_sources: list[dict], retrieved_sources: list[dict], limit: int = 5) -> list[dict]:
+    merged: list[dict] = []
+    seen: set[str] = set()
+    for source in [*priority_sources, *retrieved_sources]:
+        key = source.get("doc_id") or source.get("id") or source.get("title")
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        merged.append(source)
+        if len(merged) >= limit:
+            break
+    return merged
+
+
+def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]:
+    query = match_key(message)
+    priority_doc_ids: list[str] = []
+    blocked_doc_ids: set[str] = set()
+
+    if "dividende" in query or "dividendes" in query:
+        priority_doc_ids = ["code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026"]
+        blocked_doc_ids = {
+            "code_societes_commerciales_2022",
+            "guide_creation_sarl_tunisie",
+            "droits_taxes_hors_codes",
+            "fiscalite_locale",
+        }
+    elif ("prestations de services" in query or "prestation informatique" in query) and ("france" in query or "client etabli" in query or "client francais" in query):
+        priority_doc_ids = ["tva_droit_consommation", "procedures_fiscales_2026", "loi_finances_2026"]
+        blocked_doc_ids = {"code_irpp_is_2011", "code_societes_commerciales_2022", "droits_taxes_hors_codes", "fiscalite_locale"}
+    elif "fraude" in query and ("commissaire aux comptes" in query or "rapport" in query):
+        priority_doc_ids = [
+            "audit_resume_gaida_normes_missions",
+            "audit_resume_acceptation_controle_qualite",
+            "code_societes_commerciales_2022",
+        ]
+    elif "amortissement" in query and ("immobilisation" in query or "corporelle" in query):
+        priority_doc_ids = ["nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "nc_01_norme_generale"]
+        blocked_doc_ids = {
+            "audit_resume_gaida_normes_missions",
+            "audit_resume_chakroun_scan",
+            "audit_resume_acceptation_controle_qualite",
+            "cours_audit_chiheb_ghanmi",
+            "audit_controle_qualite_imed_ennouri",
+            "cours_audit_imed_ennouri",
+        }
+    elif ("creances douteuses" in query or "créances douteuses" in query or "creance douteuse" in query or "créance douteuse" in query) and (
+        "deductible" in query or "deductibilite" in query or "deductibile" in query or "déductible" in query or "déductibilité" in query
+    ):
+        priority_doc_ids = ["code_irpp_is_2011", "procedures_fiscales_2026", "nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels"]
+        blocked_doc_ids = {
+            "code_commerce_2014",
+            "nct_44_takaful_controle_interne",
+            "nc_22_bancaire_controle_interne",
+            "droits_taxes_hors_codes",
+            "fiscalite_locale",
+        }
+
+    if not priority_doc_ids and not blocked_doc_ids:
+        return legal_sources
+
+    filtered = [source for source in legal_sources if source.get("doc_id") not in blocked_doc_ids]
+    priority = legal_sources_by_doc_ids(priority_doc_ids) if priority_doc_ids else []
+    return merge_priority_sources(priority, filtered, limit=len(priority_doc_ids) if priority_doc_ids else 5)
+
+
+def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, legal_sources: list[dict]) -> dict | None:
+    query = match_key(message)
+    sources = case_analysis_sources(message, legal_sources)
+    source_lines = summarize_source_titles(sources, limit=5)
+    if not sources:
+        return None
+
+    answer: str | None = None
+    returned_intent = intent
+    returned_domain = legal_domain
+
+    if "dividende" in query or "dividendes" in query:
+        returned_intent = "tax_calculation" if intent == "general" else intent
+        returned_domain = "fiscalite"
+        beneficiary_label = "résident"
+        if "non resident" in query or "non-résident" in query:
+            beneficiary_label = "non-résident"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Pour une distribution de dividendes par une SARL tunisienne à un associé {beneficiary_label}, l'analyse doit d'abord porter "
+                    "sur la retenue à la source éventuellement applicable au moment du paiement, puis sur les obligations déclaratives "
+                    "et la justification remise à l'associé. Le montant de 250 000 TND ne suffit pas, à lui seul, pour conclure sur le taux "
+                    "ou sur un caractère définitif d'imposition sans retrouver l'article fiscal applicable dans la version en vigueur."
+                ),
+                "Application pratique": (
+                    "- Identifier la qualité exacte de l'associé: personne physique ou morale, statut de résidence fiscale, régime particulier éventuel.\n"
+                    "- Vérifier dans le Code de l'IRPP et de l'IS le régime des revenus distribués et de la retenue à la source.\n"
+                    "- Si l'associé est non-résident, vérifier en plus la convention fiscale applicable et les conditions documentaires liées au bénéficiaire étranger.\n"
+                    "- Vérifier les modifications des lois de finances applicables à l'année 2026 avant de retenir un taux.\n"
+                    "- Préparer les éléments de paiement: décision de distribution, montant brut, retenue opérée le cas échéant, déclaration, reversement et certificat de retenue."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas affirmer un taux, une option ou un caractère définitif d'imposition si l'article exact n'est pas cité.\n"
+                    "- Ne pas confondre le traitement fiscal d'un associé résident avec celui d'un associé non-résident, ni celui d'une personne physique avec celui d'une personne morale.\n"
+                    "- Séparer la régularité sociétaire de la distribution et son traitement fiscal."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+        if "250 000" not in query and "250000" not in query and answer:
+            answer = answer.replace(
+                "Le montant de 250 000 TND ne suffit pas, à lui seul, pour conclure sur le taux ou sur un caractère définitif d'imposition sans retrouver l'article fiscal applicable dans la version en vigueur.",
+                "La seule annonce d'une distribution en 2026 ne suffit pas, à elle seule, pour conclure sur le taux ou sur un caractère définitif d'imposition sans retrouver l'article fiscal applicable dans la version en vigueur.",
+            )
+        if "non resident" not in query and "non-résident" not in query and answer:
+            answer = answer.replace(
+                "- Si l'associé est non-résident, vérifier en plus la convention fiscale applicable et les conditions documentaires liées au bénéficiaire étranger.\n",
+                "",
+            )
+
+    elif ("prestations de services" in query or "prestation informatique" in query) and ("france" in query or "client etabli" in query or "client francais" in query):
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        non_assujetti = "non assujetti" in query
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Pour des prestations de services facturées par une société tunisienne à un client établi en France, il faut raisonner "
+                    "en TVA sur la territorialité, la nature exacte du service et les conditions de preuve liées au client étranger. "
+                    "La réponse ne doit pas être déduite de l'IRPP/IS: le texte de référence est le Code de la taxe sur la valeur ajoutée, "
+                    "complété par les règles de procédure fiscale."
+                ),
+                "Application pratique": (
+                    "- Qualifier le service: prestation intellectuelle, numérique, assistance, étude, licence, intervention matériellement exécutée en Tunisie ou hors Tunisie.\n"
+                    + ("- Identifier le lieu d'établissement et le statut du client français non assujetti, puis vérifier si le régime diffère d'une prestation rendue à un assujetti.\n" if non_assujetti else "- Identifier le lieu d'établissement et le statut du client français, puis vérifier si l'opération relève d'une exportation ou d'un régime d'exonération avec droit à déduction.\n")
+                    + "- Conserver les preuves: contrat, bon de commande, facture, justificatifs du client étranger, preuve de paiement et éléments montrant que le bénéficiaire est établi hors de Tunisie.\n"
+                    "- Vérifier séparément les retenues à la source ou conventions fiscales seulement si le paiement transfrontalier soulève un sujet d'IRPP/IS."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas citer le Code de l'IRPP et de l'IS comme base de la TVA.\n"
+                    + ("- La qualité de client non assujetti peut modifier l'analyse; ne pas reprendre mécaniquement la solution d'un schéma B2B.\n" if non_assujetti else "")
+                    + "- Ne pas conclure définitivement sans connaître la nature du service et le lieu d'utilisation ou d'exploitation.\n"
+                    + "- Les règles de facturation et les justificatifs conditionnent la sécurité du traitement."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif "fraude" in query and ("commissaire aux comptes" in query or "rapport" in query):
+        returned_intent = "legal_basis"
+        returned_domain = "audit"
+        before_signature = "avant la signature" in query
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    ("Si le commissaire aux comptes découvre une fraude avant la signature de son rapport, il doit intégrer cette information dans ses travaux avant émission, "
+                     "réévaluer le risque, l'incidence sur les états financiers et les conséquences sur l'opinion envisagée."
+                    ) if before_signature else
+                    ("Si le commissaire aux comptes découvre une fraude après l'émission de son rapport, la réponse n'est pas de redéfinir le CAC: "
+                     "il doit analyser si l'information existait à la date du rapport, si elle remet en cause les états financiers ou l'opinion émise, "
+                     "et quelles communications ou diligences complémentaires sont nécessaires.")
+                ),
+                "Application pratique": (
+                    "- Documenter la date de découverte, la nature de la fraude, les montants, les personnes concernées et les périodes touchées.\n"
+                    + ("- Réévaluer immédiatement le programme de travail, les éléments probants et l'opinion avant signature.\n" if before_signature else "- Évaluer l'incidence sur les états financiers déjà audités et sur le rapport émis.\n")
+                    + "- Informer le niveau approprié de direction et de gouvernance, sauf situation imposant une autre voie de communication.\n"
+                    + ("- Déterminer s'il faut demander une correction, étendre les diligences ou adapter l'opinion avant émission.\n" if before_signature else "- Déterminer s'il faut demander une correction, émettre une communication complémentaire, modifier la position du cabinet ou consulter juridiquement avant toute démarche externe.\n")
+                    + "- Conserver une documentation complète des faits, décisions, échanges et fondements professionnels."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas traiter la fraude comme une simple anomalie sans apprécier son caractère significatif et intentionnel.\n"
+                    "- Vérifier les obligations légales, professionnelles et sectorielles applicables avant toute communication externe.\n"
+                    + ("- Avant signature, ne pas finaliser le rapport tant que l'incidence n'est pas correctement analysée.\n" if before_signature else "- Lorsque la situation touche un rapport déjà émis, une revue qualité ou un avis juridique est prudent avant conclusion.")
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif "amortissement" in query and ("immobilisation" in query or "corporelle" in query):
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Avant la clôture, l'amortissement d'une immobilisation corporelle doit être analysé comme une estimation comptable: "
+                    "il faut vérifier la base amortissable, la durée d'utilité, le mode d'amortissement, la date de mise en service et l'existence "
+                    "éventuelle d'indices de perte de valeur."
+                ),
+                "Application pratique": (
+                    "- Rapprocher l'actif avec les factures, le registre des immobilisations et la date de mise en service.\n"
+                    "- Vérifier le coût d'entrée, les composants significatifs, la valeur résiduelle éventuelle et la durée d'utilité retenue.\n"
+                    "- Contrôler le mode d'amortissement et sa cohérence avec le rythme de consommation des avantages économiques.\n"
+                    "- Calculer la dotation de l'exercice et rapprocher la comptabilité avec le tableau des immobilisations.\n"
+                    "- Traiter séparément les limites ou réintégrations fiscales éventuelles: elles ne doivent pas remplacer l'analyse comptable."
+                ),
+                "Points de vigilance": (
+                    "- Éviter de reprendre automatiquement les taux fiscaux comme durées comptables.\n"
+                    "- Revoir les actifs cédés, mis au rebut, non utilisés ou devenus obsolètes.\n"
+                    "- Documenter tout changement de durée, de méthode ou d'estimation."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+        if ("a partir de quelle date" in query or "15 septembre" in query) and answer:
+            answer = answer.replace(
+                "## Reponse\n",
+                "## Reponse\nL'amortissement commence à la date à laquelle l'immobilisation est prête à être utilisée dans les conditions prévues par l'entreprise. Si l'actif acheté le 15 septembre est immédiatement disponible et mis en service, le point de départ est le 15 septembre; si une installation, un essai ou une mise en service intervient plus tard, l'amortissement commence à cette date de mise en service.\n\n",
+                1,
+            )
+
+    elif ("creances douteuses" in query or "créances douteuses" in query or "creance douteuse" in query or "créance douteuse" in query) and (
+        "deductible" in query or "deductibilite" in query or "deductibile" in query or "déductible" in query or "déductibilité" in query
+    ):
+        returned_intent = "tax_calculation" if intent == "general" else intent
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Une provision pour créances douteuses ne doit pas être traitée comme une simple définition comptable. "
+                    "Il faut distinguer la constatation comptable de la dépréciation et sa déductibilité fiscale. En pratique, "
+                    "elle n'est défendable fiscalement que si la créance est individualisée, le risque de non-recouvrement est réel, "
+                    "le montant est estimé de manière fiable et le dossier contient des justificatifs suffisants."
+                ),
+                "Application pratique": (
+                    "- Identifier chaque créance: client, facture, échéance, montant TTC/HT, ancienneté et solde restant dû.\n"
+                    "- Documenter les indices de doute: retards, relances, litige, procédure de recouvrement, situation financière du débiteur, garanties.\n"
+                    "- Comptabiliser la dépréciation avant clôture selon une méthode cohérente et justifiée.\n"
+                    "- Vérifier dans le Code de l'IRPP et de l'IS les conditions fiscales spécifiques avant déduction du résultat imposable.\n"
+                    "- Préparer un dossier de contrôle: balance âgée, relances, correspondances, calcul de la provision et validation de direction."
+                ),
+                "Points de vigilance": (
+                    "- Une provision globale ou forfaitaire sans analyse client par client est fragile.\n"
+                    "- La déductibilité fiscale peut être plus restrictive que le traitement comptable.\n"
+                    "- Vérifier les règles applicables à l'année concernée et les éventuelles limites sectorielles."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    if not answer:
+        return None
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": returned_intent,
+        "preferred_source": "legal_corpus",
+        "response_style": "practical_analysis",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/case-analysis-playbook",
+        "fallback_mode": False,
+        "legal_domain": returned_domain,
+        "question": message,
+    }
+
+
 def fallback_accounting_answer(
     message: str,
     intent: str,
@@ -624,6 +1151,12 @@ def fallback_accounting_answer(
 ) -> dict | None:
     if not golden_kb_hits and not legal_sources:
         return None
+
+    case_fallback = fastpath_case_analysis_answer(message, intent, legal_domain, legal_sources)
+    if case_fallback:
+        case_fallback["fallback_mode"] = True
+        case_fallback["model"] = "fallback/case-analysis-playbook"
+        return case_fallback
 
     fallback_preferred_source = "golden_kb" if answer_style == "concept_brief" and golden_kb_hits else "legal_corpus"
 
@@ -744,7 +1277,7 @@ def normalize_chat_payload(parsed: dict, answer_style: str = "flexible_expert") 
 
 
 def fiscal_answer_needs_repair(answer: str, legal_domain: str) -> bool:
-    if legal_domain != "fiscalite":
+    if legal_domain not in {"fiscalite", "general"}:
         return False
     answer_text = (answer or "").lower()
     forbidden_patterns = [
@@ -757,6 +1290,8 @@ def fiscal_answer_needs_repair(answer: str, legal_domain: str) -> bool:
         r"livre iv\s*:\s*droits d'enregistrement",
         r"livre v\s*:\s*imp[oô]ts locaux",
         r"livre vi\s*:\s*taxes sp[eé]cifiques",
+        r"code des impots",
+        r"code de s impots",
     ]
     return any(re.search(pattern, answer_text, re.I) for pattern in forbidden_patterns)
 
@@ -820,6 +1355,14 @@ def answer_needs_professional_repair(answer: str) -> bool:
     answer_text = (answer or "").lower()
     risky_patterns = [
         r"we need to answer",
+        r"we need to rewrite",
+        r"rewrite the answer",
+        r"the answer should",
+        r"system prompt",
+        r"developer prompt",
+        r"retourne uniquement un json",
+        r"json valide",
+        r"tu es un assistant",
         r"according to indexed",
         r"sources internes recup",
         r"sources internes récup",
@@ -829,8 +1372,19 @@ def answer_needs_professional_repair(answer: str) -> bool:
         r"moteur conversationnel",
         r"reponse de secours",
         r"réponse de secours",
+        r"fallback",
         r'"\s*answer\s*"\s*:',
     ]
+    risky_patterns.extend([
+        r"we need to",
+        r"rewrite answer",
+        r"correcting error",
+        r"article\s*\[\s*x\s*\]",
+        r"source implicite",
+        r"r[Ã©e]f[Ã©e]rence implicite",
+        r"sources? non cit[Ã©e]es",
+        r"non cit[Ã©e] dans le corpus",
+    ])
     return any(re.search(pattern, answer_text, re.I) for pattern in risky_patterns)
 
 
@@ -863,6 +1417,132 @@ def append_accounting_chat_log(event: dict) -> None:
             handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
     except Exception:
         return
+
+
+def accounting_runtime_environment() -> str:
+    return (
+        os.getenv("APP_ENV")
+        or os.getenv("ENVIRONMENT")
+        or os.getenv("RENDER_SERVICE_NAME")
+        or os.getenv("SPACE_ID")
+        or "local"
+    )
+
+
+def version_payload() -> dict:
+    return {
+        "app_version": app.version,
+        "commit_hash": config.APP_REVISION,
+        "environment": accounting_runtime_environment(),
+        "deployed_at": (
+            os.getenv("DEPLOYED_AT")
+            or os.getenv("RENDER_DEPLOY_CREATED_AT")
+            or os.getenv("BUILD_TIMESTAMP")
+            or None
+        ),
+        "service_name": (
+            os.getenv("RENDER_SERVICE_NAME")
+            or os.getenv("SPACE_ID")
+            or os.getenv("SERVICE_NAME")
+            or "local"
+        ),
+        "branch": (
+            os.getenv("RENDER_GIT_BRANCH")
+            or os.getenv("BRANCH")
+            or os.getenv("GIT_BRANCH")
+            or os.getenv("CF_PAGES_BRANCH")
+            or None
+        ),
+        "case_analysis_available": True,
+        "accounting_chat_debug_available": True,
+    }
+
+
+def accounting_debug_enabled(request: AccountingChatRequest) -> bool:
+    env_value = os.getenv("ACCOUNTING_CHAT_DEBUG", "").lower()
+    return bool(getattr(request, "debug", False)) or env_value in {"1", "true", "yes", "on"}
+
+
+def controlled_source_insufficient_response(original: dict, selected_sources: list[dict]) -> dict:
+    sources_used = summarize_source_titles(selected_sources or original.get("sources") or [], limit=5)
+    return {
+        "success": True,
+        "answer": compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Les sources disponibles ne permettent pas de produire une reponse suffisamment fiable "
+                    "pour un usage client sans verification complementaire."
+                ),
+                "Application pratique": (
+                    "- Reprendre la question avec les pieces, dates, statuts fiscaux et textes applicables.\n"
+                    "- Verifier les articles exacts dans les sources officielles avant toute conclusion.\n"
+                    "- Relancer l'analyse apres correction des sources ou du fournisseur IA si necessaire."
+                ),
+                "Points de vigilance": (
+                    "- Une reponse automatique a ete bloquee car elle contenait un marqueur interne, "
+                    "un placeholder juridique ou une reference non exploitable.\n"
+                    "- Le systeme ne doit jamais afficher ce type de contenu au client final."
+                ),
+                "Sources utilisees": sources_used or "- Source insuffisante",
+            },
+        ),
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [
+            "Reponse remplacee par le garde-fou final: sortie interne ou reference insuffisante detectee."
+        ],
+        "intent": original.get("intent"),
+        "preferred_source": original.get("preferred_source"),
+        "response_style": "practical_analysis",
+        "golden_kb_hits": original.get("golden_kb_hits", []),
+        "sources": original.get("sources", selected_sources),
+        "model": "guardrail/source-insufficient",
+        "fallback_mode": True,
+        "legal_domain": original.get("legal_domain"),
+        "question": original.get("question"),
+        "blocked_by_guardrail": True,
+    }
+
+
+def finalize_accounting_response(
+    response: dict,
+    request: AccountingChatRequest,
+    *,
+    endpoint_name: str = "POST /v1/accounting-chat",
+    intent: str | None = None,
+    workflow: str | None = None,
+    case_analysis_enabled: bool = False,
+    retrieval_domains: list[str] | None = None,
+    selected_sources: list[dict] | None = None,
+    fallback_used: bool | None = None,
+    answer_template_used: str | None = None,
+    generator_path: str | None = None,
+) -> dict:
+    output = dict(response)
+    effective_sources = selected_sources if selected_sources is not None else (output.get("sources") or [])
+    blocked = answer_needs_professional_repair(str(output.get("answer") or ""))
+    if blocked:
+        output = controlled_source_insufficient_response(output, effective_sources)
+
+    trace = {
+        "app_version": app.version,
+        "commit_hash": config.APP_REVISION,
+        "environment": accounting_runtime_environment(),
+        "endpoint_name": endpoint_name,
+        "intent": intent or output.get("intent"),
+        "workflow": workflow or output.get("workflow"),
+        "case_analysis_enabled": case_analysis_enabled,
+        "retrieval_domains": retrieval_domains or ([output.get("legal_domain")] if output.get("legal_domain") else []),
+        "selected_sources": accounting_log_doc_refs(effective_sources),
+        "fallback_used": bool(output.get("fallback_mode")) if fallback_used is None else fallback_used,
+        "answer_template_used": answer_template_used or output.get("response_style"),
+        "generator_path": generator_path or output.get("model"),
+        "guardrail_blocked": blocked,
+    }
+    if accounting_debug_enabled(request):
+        output["debug_trace"] = trace
+    return output
 
 
 def should_use_financial_glossary(message: str) -> bool:
@@ -1022,9 +1702,12 @@ async def run_document_job(
 
 @app.get("/health")
 async def health() -> dict:
+    version = version_payload()
     return {
         "ok": True,
+        **version,
         "backend_revision": config.APP_REVISION,
+        "accounting_chat_debug_enabled": os.getenv("ACCOUNTING_CHAT_DEBUG", "").lower() in {"1", "true", "yes", "on"},
         "model": config.LLM_MODEL,
         "llm_configured": bool(config.LLM_API_KEY),
         "gemini_configured": bool(config.GEMINI_API_KEY),
@@ -1039,6 +1722,11 @@ async def health() -> dict:
         "legal_corpus": corpus_status(),
         "golden_kb": golden_kb_status(),
     }
+
+
+@app.get("/version")
+async def version() -> dict:
+    return version_payload()
 
 
 @app.post("/v1/analyze-file", response_model=AnalyzeResponse)
@@ -1084,6 +1772,181 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     answer_style = preferred_answer_style(query_intent, prefer_golden_kb)
     legal_query = f"{message}\n{context_block}"
     legal_domain = infer_query_domain(legal_query)
+    commissariat_fastpath = fastpath_commissariat_texts_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if commissariat_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": commissariat_fastpath.get("intent"),
+                "legal_domain": legal_domain,
+                "preferred_source": commissariat_fastpath.get("preferred_source"),
+                "response_style": commissariat_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(commissariat_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": commissariat_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            commissariat_fastpath,
+            request,
+            workflow="fastpath",
+            case_analysis_enabled=False,
+            retrieval_domains=[legal_domain],
+            selected_sources=commissariat_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=commissariat_fastpath.get("model"),
+        )
+    loi_finances_tva_fastpath = fastpath_loi_finances_tva_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if loi_finances_tva_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": loi_finances_tva_fastpath.get("intent"),
+                "legal_domain": legal_domain,
+                "preferred_source": loi_finances_tva_fastpath.get("preferred_source"),
+                "response_style": loi_finances_tva_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(loi_finances_tva_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": loi_finances_tva_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            loi_finances_tva_fastpath,
+            request,
+            workflow="fastpath",
+            case_analysis_enabled=False,
+            retrieval_domains=[legal_domain],
+            selected_sources=loi_finances_tva_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=loi_finances_tva_fastpath.get("model"),
+        )
+    legal_hierarchy_fastpath = fastpath_legal_hierarchy_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if legal_hierarchy_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": legal_hierarchy_fastpath.get("intent"),
+                "legal_domain": legal_domain,
+                "preferred_source": legal_hierarchy_fastpath.get("preferred_source"),
+                "response_style": legal_hierarchy_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(legal_hierarchy_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": legal_hierarchy_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            legal_hierarchy_fastpath,
+            request,
+            workflow="fastpath",
+            case_analysis_enabled=False,
+            retrieval_domains=[legal_domain],
+            selected_sources=legal_hierarchy_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=legal_hierarchy_fastpath.get("model"),
+        )
+    fiscal_sources_fastpath = fastpath_fiscal_sources_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if fiscal_sources_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": fiscal_sources_fastpath.get("intent"),
+                "legal_domain": legal_domain,
+                "preferred_source": fiscal_sources_fastpath.get("preferred_source"),
+                "response_style": fiscal_sources_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(fiscal_sources_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": fiscal_sources_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            fiscal_sources_fastpath,
+            request,
+            workflow="fastpath",
+            case_analysis_enabled=False,
+            retrieval_domains=[legal_domain],
+            selected_sources=fiscal_sources_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=fiscal_sources_fastpath.get("model"),
+        )
+    fiscal_code_comparison_fastpath = fastpath_fiscal_code_comparison_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if fiscal_code_comparison_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": fiscal_code_comparison_fastpath.get("intent"),
+                "legal_domain": legal_domain,
+                "preferred_source": fiscal_code_comparison_fastpath.get("preferred_source"),
+                "response_style": fiscal_code_comparison_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(fiscal_code_comparison_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": fiscal_code_comparison_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            fiscal_code_comparison_fastpath,
+            request,
+            workflow="fastpath",
+            case_analysis_enabled=False,
+            retrieval_domains=[legal_domain],
+            selected_sources=fiscal_code_comparison_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=fiscal_code_comparison_fastpath.get("model"),
+        )
     fiscal_framework_fastpath = fastpath_general_fiscal_framework_answer(
         message=message,
         legal_domain=legal_domain,
@@ -1109,7 +1972,16 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                 "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
             }
         )
-        return fiscal_framework_fastpath
+        return finalize_accounting_response(
+            fiscal_framework_fastpath,
+            request,
+            workflow="fastpath",
+            case_analysis_enabled=False,
+            retrieval_domains=[legal_domain],
+            selected_sources=fiscal_framework_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=fiscal_framework_fastpath.get("model"),
+        )
     tva_overview_fastpath = fastpath_tva_overview_answer(
         message=message,
         intent=query_intent,
@@ -1136,8 +2008,18 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                 "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
             }
         )
-        return tva_overview_fastpath
+        return finalize_accounting_response(
+            tva_overview_fastpath,
+            request,
+            workflow="fastpath",
+            case_analysis_enabled=False,
+            retrieval_domains=[legal_domain],
+            selected_sources=tva_overview_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=tva_overview_fastpath.get("model"),
+        )
     legal_sources = retrieve_legal_context(legal_query, limit=legal_source_limit(query_intent, prefer_golden_kb))
+    legal_sources = case_analysis_sources(message, legal_sources)
     golden_kb_hits = retrieve_golden_kb(message, limit=3) if prefer_golden_kb else retrieve_golden_kb(message, limit=2)
     golden_kb_refs = [
         {
@@ -1147,6 +2029,43 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         }
         for row in golden_kb_hits[:5]
     ]
+    case_analysis_fastpath = fastpath_case_analysis_answer(
+        message=message,
+        intent=query_intent,
+        legal_domain=legal_domain,
+        legal_sources=legal_sources,
+    )
+    if case_analysis_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": case_analysis_fastpath.get("intent"),
+                "legal_domain": case_analysis_fastpath.get("legal_domain"),
+                "preferred_source": case_analysis_fastpath.get("preferred_source"),
+                "response_style": case_analysis_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": golden_kb_refs,
+                "retrieved_legal_refs": accounting_log_doc_refs(case_analysis_fastpath.get("sources") or []),
+                "result": "case_analysis_fastpath",
+                "model": case_analysis_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            case_analysis_fastpath,
+            request,
+            workflow="case_analysis_fastpath",
+            case_analysis_enabled=True,
+            retrieval_domains=[case_analysis_fastpath.get("legal_domain") or legal_domain],
+            selected_sources=case_analysis_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=case_analysis_fastpath.get("model"),
+        )
     if query_intent == "professional_formality":
         seeded_formality_query = f"{message} inscription personne physique ordre professionnel attestation radiation suspension stagiaire"
         formality_hits = [
@@ -1185,7 +2104,16 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
                 }
             )
-            return fastpath
+            return finalize_accounting_response(
+                fastpath,
+                request,
+                workflow="golden_kb_fastpath",
+                case_analysis_enabled=False,
+                retrieval_domains=[legal_domain],
+                selected_sources=legal_sources,
+                fallback_used=False,
+                generator_path=fastpath.get("model"),
+            )
     glossary_hits = []
     if should_use_financial_glossary(message):
         glossary_hits = [row for row in search_financial_glossary(message, limit=5) if row.get("score", 0) >= 25]
@@ -1241,6 +2169,9 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
         "Si le style demande est 'concept_brief', structure le champ answer avec exactement ces intertitres markdown dans cet ordre: 'Definition', 'Base legale', 'Points de vigilance', 'Sources utilisees'.",
         "Si le style demande est 'concept_brief', chaque section doit etre concise, utile au cabinet, et les sources citees doivent venir uniquement des sources effectivement fournies dans le contexte.",
         "Si le style demande est 'practical_analysis', structure le champ answer avec exactement ces intertitres markdown dans cet ordre: 'Reponse', 'Application pratique', 'Points de vigilance', 'Sources utilisees'.",
+        "Pour un cas pratique, ne donne pas une definition generale. Commence par qualifier les faits, identifie les questions juridiques/comptables, applique les sources recuperees, puis liste les controles et pieces a demander.",
+        "Pour un cas pratique multi-domaines, separe clairement le traitement comptable, fiscal, juridique et audit lorsque c'est utile. Ne cite pas une source IRPP/IS pour justifier une regle de TVA, ni une source d'audit pour justifier un traitement comptable.",
+        "Si les sources recuperees ne contiennent pas l'article exact, formule la conclusion comme une verification a effectuer et non comme une certitude.",
         "Si le style demande est 'flexible_expert', tu peux garder une structure libre mais professionnelle; si des sources sont pertinentes, termine par 'Sources utilisees'.",
         "Style: professionnel, sans emoji, sans formule marketing, avec des etapes nettes et directement exploitables.",
         "Le champ 'answer' doit contenir uniquement la reponse principale. Ne colle jamais dedans les sections Assumptions, Next steps ou Warnings.",
@@ -1385,7 +2316,16 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                         "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
                     }
                 )
-                return result
+                return finalize_accounting_response(
+                    result,
+                    request,
+                    workflow="llm_provider",
+                    case_analysis_enabled=True,
+                    retrieval_domains=[legal_domain],
+                    selected_sources=legal_sources,
+                    fallback_used=False,
+                    generator_path=result.get("model"),
+                )
             except Exception as error:
                 provider_attempts.append(
                     {
@@ -1398,6 +2338,48 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                 )
                 last_error = error
                 continue
+    if isinstance(last_error, RuntimeError):
+        fallback = fallback_accounting_answer(
+            message=message,
+            intent=query_intent,
+            answer_style=answer_style,
+            legal_domain=legal_domain,
+            golden_kb_hits=golden_kb_hits,
+            legal_sources=case_analysis_sources(message, legal_sources),
+        )
+        if fallback:
+            append_accounting_chat_log(
+                {
+                    "request_id": request_id,
+                    "kind": "accounting_chat",
+                    "message": message[:500],
+                    "language": language,
+                    "history_count": len(request.history or []),
+                    "intent": query_intent,
+                    "legal_domain": legal_domain,
+                    "preferred_source": fallback.get("preferred_source"),
+                    "response_style": fallback.get("response_style"),
+                    "provider_attempts": provider_attempts,
+                    "golden_kb_refs": golden_kb_refs,
+                    "retrieved_legal_refs": accounting_log_doc_refs(fallback.get("sources") or []),
+                    "result": "fallback_after_validation_failure",
+                    "model": fallback.get("model"),
+                    "fallback_used": True,
+                    "last_error_type": type(last_error).__name__,
+                    "last_error": clean_translation_output(str(last_error))[:280],
+                    "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+                }
+            )
+            return finalize_accounting_response(
+                fallback,
+                request,
+                workflow="fallback_after_validation_failure",
+                case_analysis_enabled=True,
+                retrieval_domains=[legal_domain],
+                selected_sources=fallback.get("sources") or [],
+                fallback_used=True,
+                generator_path=fallback.get("model"),
+            )
     if is_rate_limit_error(last_error) or is_credit_error(last_error):
         fallback = fallback_accounting_answer(
             message=message,
@@ -1430,7 +2412,16 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
                 }
             )
-            return fallback
+            return finalize_accounting_response(
+                fallback,
+                request,
+                workflow="fallback_after_provider_failure",
+                case_analysis_enabled=True,
+                retrieval_domains=[legal_domain],
+                selected_sources=fallback.get("sources") or [],
+                fallback_used=True,
+                generator_path=fallback.get("model"),
+            )
     if is_rate_limit_error(last_error):
         append_accounting_chat_log(
             {

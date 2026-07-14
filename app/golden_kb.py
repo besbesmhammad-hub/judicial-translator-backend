@@ -38,6 +38,14 @@ PROFESSIONAL_FORMALITY_PATTERN = re.compile(
 
 INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
+        "legal_hierarchy",
+        re.compile(
+            r"hierarchie des normes|hi[ée]rarchie des normes|hierarchie juridique|hi[ée]rarchie juridique|"
+            r"ordre des normes|valeur juridique des normes|rang des normes",
+            re.I,
+        ),
+    ),
+    (
         "document_analysis",
         re.compile(
             r"piece jointe|document ci-joint|document joint|dans ce document|analyse ce document|selon ce document|"
@@ -63,7 +71,7 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
             r"montant de l[' ]impot|montant de l[' ]impôt|d[ée]termination de l[' ]impot|"
             r"dividendes?.*retenues? a la source|retenues? a la source.*dividendes?|"
             r"credit de tva|cr[ée]dit de tva|restitution|demarches|d[ée]marches|"
-            r"points de controle|points de contr[ôo]le",
+            r"points de controle|points de contr[ôo]le|d[ée]ductible|d[ée]ductibilit[ée]|deductibilite|deductibile",
             re.I,
         ),
     ),
@@ -78,7 +86,9 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
             r"obligations de facturation [ée]lectronique|facturation [ée]lectronique|parite d[' ]echange|"
             r"parit[ée] d[' ][ée]change|evaluation des actifs et passifs|[ée]valuation des actifs et passifs|"
             r"prestataire non resident|prestataire non r[ée]sident|textes fiscaux|"
-            r"prestations de services.*client etabli en france|prestations de services.*client établi en france",
+            r"prestations? de services.*client etabli en france|prestations? de services.*client établi en france|"
+            r"prestation informatique.*client francais|prestation informatique.*client français|"
+            r"client non assujetti|non assujetti a la tva|non assujetti à la tva",
             re.I,
         ),
     ),
@@ -88,7 +98,7 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
             r"comment comptabil|traitement comptable|ecriture comptable|écriture comptable|passation|"
             r"enregistrer comptablement|presentation dans les etats financiers|présentation dans les états financiers|"
             r"traiter une provision|provision pour clients douteux|subvention d[' ]investissement|goodwill|"
-            r"amortir un goodwill|credit[ -]bail|cr[ée]dit[ -]bail|reconnaissance du revenu|ifrs ?15|ifrs ?16|"
+            r"amortissement|amortir un goodwill|credit[ -]bail|cr[ée]dit[ -]bail|reconnaissance du revenu|ifrs ?15|ifrs ?16|"
             r"contrat de location|avant comptabilisation|avant cloture|avant cl[ôo]ture",
             re.I,
         ),
@@ -144,9 +154,12 @@ def classify_query_intent(message: str, context: str = "") -> str:
     query = match_key(f"{message}\n{context}".strip())
     accounting_pattern = next(pattern for intent, pattern in INTENT_PATTERNS if intent == "accounting_treatment")
     legal_pattern = next(pattern for intent, pattern in INTENT_PATTERNS if intent == "legal_basis")
+    if re.search(r"dividendes?|associe non resident|associe resident|retenue a la source", query, re.I):
+        return "tax_calculation" if re.search(r"retenue a la source|points fiscaux|consequences fiscales|bases? legales?", query, re.I) else "legal_basis"
     if accounting_pattern.search(query) and legal_pattern.search(query):
         return "accounting_treatment"
     priority_intents = {
+        "legal_hierarchy",
         "document_analysis",
         "comparison",
         "tax_calculation",

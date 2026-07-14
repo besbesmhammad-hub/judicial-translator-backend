@@ -15,6 +15,7 @@ class AccountingChatRequest(BaseModel):
     context: str | None = None
     language: str = "francais"
     history: list[dict[str, str]] = Field(default_factory=list)
+    debug: bool = False
 
 
 class RetrievedTerm(BaseModel):
