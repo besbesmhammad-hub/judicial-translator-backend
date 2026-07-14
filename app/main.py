@@ -372,8 +372,28 @@ def summarize_source_titles(sources: list[dict], limit: int = 3) -> str:
         suffix = f", page {page}" if page is not None else ""
         if heading:
             suffix += f" - {heading}"
+        support_level = source.get("support_level")
+        if support_level == "direct_passage":
+            suffix += " - passage cible"
+        elif support_level == "framework_source":
+            suffix += " - source-cadre, article precis a verifier"
         lines.append(f"- {title}{suffix}")
     return "\n".join(lines)
+
+
+def source_precision_note(sources: list[dict]) -> str:
+    if not sources:
+        return ""
+    direct = [source for source in sources if source.get("support_level") == "direct_passage"]
+    framework = [source for source in sources if source.get("support_level") == "framework_source"]
+    notes: list[str] = []
+    if direct:
+        notes.append("Niveau d'appui: au moins un passage cible a ete retrouve dans le corpus.")
+    if framework:
+        notes.append(
+            "Limite: certaines conclusions restent a rattacher a l'article exact avant usage client."
+        )
+    return "\n".join(f"- {note}" for note in notes)
 
 
 def legal_source_limit(intent: str, prefer_golden_kb: bool) -> int:
@@ -461,6 +481,185 @@ def legal_sources_by_doc_ids(doc_ids: list[str]) -> list[dict]:
                 "score": 999.0,
             }
     return [by_doc[doc_id] for doc_id in doc_ids if doc_id in by_doc]
+
+
+def source_precision_rules(message: str) -> list[dict]:
+    query = match_key(message)
+    if "dividende" in query or "dividendes" in query:
+        return [
+            {
+                "doc_id": "code_irpp_is_2011",
+                "terms": ["dividende", "revenus distribues", "retenue a la source", "distribution", "beneficiaire"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "loi_finances_2026",
+                "terms": ["dividende", "retenue a la source", "distribution"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "procedures_fiscales_2026",
+                "terms": ["declaration", "reversement", "retenue", "certificat", "paiement"],
+                "min_matches": 2,
+            },
+        ]
+    if ("prestations de services" in query or "prestation informatique" in query) and (
+        "france" in query or "client etabli" in query or "client francais" in query
+    ):
+        return [
+            {
+                "doc_id": "tva_droit_consommation",
+                "terms": [
+                    "مــيدان التطــبيق",
+                    "البــاب األول",
+                    "مــيدان التطــبيق",
+                    "العـملـيات الخـاضـعـة",
+                    "تخضع العمليات",
+                    "العمليات المنجزة",
+                    "بالبلاد التونسية",
+                    "الأداء على القيمة المضافة",
+                    "إسداء الخدمات",
+                    "الخدمات",
+                    "الفصل1",
+                    "الفصل5",
+                ],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "procedures_fiscales_2026",
+                "terms": ["facture", "declaration", "controle", "recouvrement", "contentieux"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "loi_finances_2026",
+                "terms": ["loi de finances", "2026", "tva", "الأداء على القيمة المضافة"],
+                "min_matches": 2,
+            },
+        ]
+    if "fraude" in query and ("commissaire aux comptes" in query or "rapport" in query):
+        return [
+            {
+                "doc_id": "audit_resume_gaida_normes_missions",
+                "terms": ["fraude", "anomalie", "rapport", "documentation", "evenements posterieurs"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "audit_resume_acceptation_controle_qualite",
+                "terms": ["fraude", "anomalie", "planification", "rapport", "documentation"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "code_societes_commerciales_2022",
+                "terms": ["commissaire aux comptes", "rapport", "fraude", "information"],
+                "min_matches": 2,
+            },
+        ]
+    if "amortissement" in query and ("immobilisation" in query or "corporelle" in query):
+        return [
+            {
+                "doc_id": "nc_05_immobilisations_corporelles",
+                "terms": ["amortissement", "duree d'utilite", "base amortissable", "valeur residuelle", "mise en service"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "ias_16_immobilisations_corporelles",
+                "terms": ["amortissement", "duree d'utilite", "valeur residuelle", "pret a etre utilisee", "base amortissable"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "nc_01_norme_generale",
+                "terms": ["immobilisations", "amortissement", "etats financiers", "estimation"],
+                "min_matches": 2,
+            },
+        ]
+    if ("creances douteuses" in query or "creance douteuse" in query) and (
+        "deductible" in query or "deductibilite" in query or "deductibile" in query
+    ):
+        return [
+            {
+                "doc_id": "code_irpp_is_2011",
+                "terms": ["creances douteuses", "provision", "deductible", "depreciation", "recouvrement"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "nc_01_norme_generale",
+                "terms": ["provision", "recouvrement", "depreciation", "creances"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+                "terms": ["provision", "obligation", "estimation", "depreciation", "creances douteuses"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "procedures_fiscales_2026",
+                "terms": ["controle", "justificatifs", "declaration", "contentieux"],
+                "min_matches": 2,
+            },
+        ]
+    return []
+
+
+def best_precision_source(doc_id: str, terms: list[str], min_matches: int) -> dict | None:
+    normalized_terms = [match_key(term) for term in terms if match_key(term)]
+    best: dict | None = None
+    best_score = -1.0
+    for record in load_corpus():
+        if record.get("doc_id") != doc_id:
+            continue
+        haystack = match_key(" ".join([record.get("title", ""), record.get("heading", ""), record.get("text", "")]))
+        matched_terms = [term for term in normalized_terms if term and term in haystack]
+        if not matched_terms:
+            continue
+        heading = record.get("heading", "")
+        text = record.get("text", "") or ""
+        score = len(matched_terms) * 10 + min(len(record.get("text", "") or "") / 1000, 3)
+        if re.search(r"article|art\.|chapitre|section|titre|الفصل|باب|القسم", heading, re.I):
+            score += 5
+        if "................................" in text:
+            score -= 12
+        if score > best_score:
+            best_score = score
+            best = {
+                "id": record.get("id"),
+                "doc_id": doc_id,
+                "title": record.get("title") or "Source interne",
+                "filename": record.get("filename"),
+                "page": record.get("page"),
+                "heading": heading,
+                "excerpt": compact_excerpt(record.get("text", ""), 1000),
+                "source_tier": record.get("source_tier", ""),
+                "authority": record.get("authority", ""),
+                "year": record.get("year"),
+                "score": round(score, 3),
+                "matched_terms": matched_terms,
+                "support_level": "direct_passage" if len(matched_terms) >= min_matches else "framework_source",
+            }
+    return best
+
+
+def precision_sources_for_case(message: str, fallback_sources: list[dict]) -> list[dict]:
+    rules = source_precision_rules(message)
+    if not rules:
+        return fallback_sources
+    selected: list[dict] = []
+    fallback_by_doc = {source.get("doc_id"): source for source in fallback_sources if source.get("doc_id")}
+    for rule in rules:
+        doc_id = str(rule["doc_id"])
+        source = best_precision_source(doc_id, list(rule["terms"]), int(rule.get("min_matches") or 1))
+        if source is None:
+            source = fallback_by_doc.get(doc_id)
+        if source is None:
+            source_list = legal_sources_by_doc_ids([doc_id])
+            source = source_list[0] if source_list else None
+        if source is None:
+            continue
+        if source.get("support_level") != "direct_passage":
+            source = dict(source)
+            source["support_level"] = "framework_source"
+            source.setdefault("matched_terms", [])
+        selected.append(source)
+    return merge_priority_sources(selected, fallback_sources, limit=max(5, len(selected)))
 
 
 def fastpath_concept_answer(
@@ -944,13 +1143,17 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
 
     filtered = [source for source in legal_sources if source.get("doc_id") not in blocked_doc_ids]
     priority = legal_sources_by_doc_ids(priority_doc_ids) if priority_doc_ids else []
-    return merge_priority_sources(priority, filtered, limit=len(priority_doc_ids) if priority_doc_ids else 5)
+    merged = merge_priority_sources(priority, filtered, limit=len(priority_doc_ids) if priority_doc_ids else 5)
+    return precision_sources_for_case(message, merged)
 
 
 def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, legal_sources: list[dict]) -> dict | None:
     query = match_key(message)
     sources = case_analysis_sources(message, legal_sources)
     source_lines = summarize_source_titles(sources, limit=5)
+    precision_note = source_precision_note(sources)
+    if precision_note:
+        source_lines = f"{source_lines}\n{precision_note}" if source_lines else precision_note
     if not sources:
         return None
 
@@ -959,7 +1162,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
     returned_domain = legal_domain
 
     if "dividende" in query or "dividendes" in query:
-        returned_intent = "tax_calculation" if intent == "general" else intent
+        returned_intent = "tax_calculation"
         returned_domain = "fiscalite"
         beneficiary_label = "résident"
         if "non resident" in query or "non-résident" in query:
@@ -1398,6 +1601,10 @@ def accounting_log_doc_refs(rows: list[dict], limit: int = 5) -> list[dict]:
                 "doc_id": row.get("doc_id"),
                 "title": client_source_title(row) if row.get("title") or row.get("doc_id") else "Source interne",
                 "page": row.get("page"),
+                "heading": row.get("heading") or "",
+                "support_level": row.get("support_level") or "unclassified",
+                "matched_terms": row.get("matched_terms") or [],
+                "excerpt_preview": compact_excerpt(row.get("excerpt", ""), 280) if row.get("excerpt") else "",
                 "score": row.get("score"),
             }
         )

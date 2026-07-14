@@ -59,6 +59,22 @@ def selected_doc_ids(debug_trace: dict) -> list[str]:
     ]
 
 
+def selected_source_support(debug_trace: dict) -> list[str]:
+    return [
+        str(source.get("support_level") or "")
+        for source in (debug_trace.get("selected_sources") or [])
+        if source.get("support_level")
+    ]
+
+
+def selected_source_headings(debug_trace: dict) -> list[str]:
+    return [
+        str(source.get("heading") or "")
+        for source in (debug_trace.get("selected_sources") or [])
+        if source.get("heading")
+    ]
+
+
 def contains_any(normalized_answer: str, phrases: list[str]) -> bool:
     return any(normalize_for_match(phrase) in normalized_answer for phrase in phrases)
 
@@ -122,6 +138,62 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
     }
 
 
+def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) -> dict:
+    case_id = str(case.get("id") or "")
+    question = normalize_for_match(str(case.get("question") or ""))
+    normalized = normalize_for_match(answer)
+    supports = selected_source_support(debug_trace)
+    headings = selected_source_headings(debug_trace)
+    docs = selected_doc_ids(debug_trace)
+    checks: dict[str, bool] = {}
+
+    is_case_analysis = any(
+        token in case_id or token in question
+        for token in ["dividende", "tva", "france", "fraude", "anomalie", "amortissement", "creance", "creances"]
+    )
+    if not is_case_analysis:
+        return {"checks": checks, "passed": True, "support_levels": supports, "headings": headings}
+
+    checks["source_support_classified"] = bool(supports)
+    checks["source_precision_visible"] = contains_any(
+        normalized,
+        ["passage cible", "source-cadre", "article precis a verifier", "niveau d'appui", "limite:"],
+    )
+
+    if "amortissement" in case_id or "amortissement" in question:
+        checks["amortization_has_direct_passage"] = "direct_passage" in supports
+        checks["amortization_has_heading_or_excerpt"] = bool(headings) or any(
+            source.get("excerpt_preview") for source in (debug_trace.get("selected_sources") or [])
+        )
+
+    if "creance" in case_id or "creances" in case_id or "creance douteuse" in question or "creances douteuses" in question:
+        checks["receivable_has_direct_passage"] = "direct_passage" in supports
+        checks["receivable_has_tax_doc"] = "code_irpp_is_2011" in docs
+
+    if ("tva" in case_id and ("france" in case_id or "client" in case_id)) or ("prestation" in question and "france" in question):
+        checks["tva_has_tva_doc"] = "tva_droit_consommation" in docs
+        checks["tva_no_irpp_primary"] = not docs or docs[0] != "code_irpp_is_2011"
+        checks["tva_support_is_not_unclassified"] = any(level in {"direct_passage", "framework_source"} for level in supports)
+
+    if "dividende" in case_id or "dividende" in question:
+        checks["dividends_uses_tax_framework"] = "code_irpp_is_2011" in docs and "loi_finances_2026" in docs
+        checks["dividends_no_fake_article_precision"] = not contains_any(
+            normalized,
+            ["article [x]", "source implicite", "reference implicite"],
+        )
+
+    if "fraude" in case_id or "anomalie_apres_rapport" in case_id or "fraude" in question:
+        checks["fraud_has_audit_support"] = any(doc.startswith("audit_") for doc in docs)
+        checks["fraud_support_classified"] = any(level in {"direct_passage", "framework_source"} for level in supports)
+
+    return {
+        "checks": checks,
+        "passed": all(checks.values()) if checks else True,
+        "support_levels": supports,
+        "headings": headings,
+    }
+
+
 def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
     payload = {
         "message": case["question"],
@@ -140,6 +212,7 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
         required_phrase_checks = contains_phrases(answer, case.get("expected_answer_contains", []))
         forbidden_phrase_checks = contains_phrases(answer, case.get("forbidden_answer_contains", []))
         substance = level2_substance_checks(case, answer, debug_trace)
+        source_precision = level25_source_precision_checks(case, answer, debug_trace)
         all_required_phrases_present = all(required_phrase_checks.values()) if required_phrase_checks else True
         no_forbidden_phrases = not any(forbidden_phrase_checks.values())
         return {
@@ -164,7 +237,11 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             "no_forbidden_phrases": no_forbidden_phrases,
             "substance_checks": substance["checks"],
             "substance_quality_pass": substance["passed"],
-            "content_quality_pass": all_required_phrases_present and no_forbidden_phrases and substance["passed"],
+            "source_precision_checks": source_precision["checks"],
+            "source_precision_pass": source_precision["passed"],
+            "source_support_levels": source_precision["support_levels"],
+            "source_headings": source_precision["headings"],
+            "content_quality_pass": all_required_phrases_present and no_forbidden_phrases and substance["passed"] and source_precision["passed"],
             "sources_count": len(response.get("sources") or []),
             "golden_kb_hits_count": len(response.get("golden_kb_hits") or []),
             "model": response.get("model"),
@@ -205,6 +282,7 @@ def summarize(results: list[dict]) -> dict:
     style_match = sum(1 for row in results if row.get("response_style_match"))
     section_match = sum(1 for row in results if row.get("all_sections_present"))
     content_quality_match = sum(1 for row in results if row.get("content_quality_pass"))
+    source_precision_match = sum(1 for row in results if row.get("source_precision_pass"))
     latencies = [row["latency_ms"] for row in results if row.get("ok") and isinstance(row.get("latency_ms"), (int, float))]
     return {
         "total_cases": total,
@@ -214,6 +292,8 @@ def summarize(results: list[dict]) -> dict:
         "preferred_source_match_count": source_match,
         "response_style_match_count": style_match,
         "all_sections_present_count": section_match,
+        "source_precision_pass_count": source_precision_match,
+        "source_precision_failure_count": total - source_precision_match,
         "content_quality_pass_count": content_quality_match,
         "content_quality_failure_count": total - content_quality_match,
         "avg_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else None,
