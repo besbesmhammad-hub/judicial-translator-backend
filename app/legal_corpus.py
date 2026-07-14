@@ -38,7 +38,7 @@ SOURCE_TIER_WEIGHTS = {
 
 
 def tokenize(value: str) -> list[str]:
-    tokens = re.findall(r"[0-9A-Za-zÀ-ÿ']{3,}|[\u0600-\u06FF]{2,}", value.lower())
+    tokens = re.findall(r"[0-9A-Za-z']{3,}|[\u00C0-\u00FF]{3,}|[\u0600-\u06FF]{2,}", value.lower())
     return [token.strip("'") for token in tokens if token not in STOPWORDS]
 
 
@@ -75,15 +75,17 @@ def corpus_status() -> dict:
 DOMAIN_ROUTE_PATTERNS = {
     "fiscalite": re.compile(
         r"\bfiscal(?:ite)?\b|fiscalit[eé]|\btva\b|irpp|\bis\b|impot|impôt|retenue a la source|retenue à la source|"
-        r"dividendes?|associe resident|associé résident|prestations de services|client etabli en france|client établi en france|"
+        r"dividendes?|associe resident|associé résident|associe non resident|associé non résident|"
+        r"prestations de services|prestation informatique|client etabli en france|client établi en france|client francais|client français|"
         r"procedure fiscale|procédure fiscale|procedures fiscales|procédures fiscales|loi de finances|"
         r"enregistrement|timbre|matricule fiscal|facturation electronique|facture electronique|"
         r"e-facturation|dette fiscale|dettes fiscales|redressement|controle fiscal|contrôle fiscal|"
-        r"taxe environnementale|vehicules hybrides|véhicules hybrides|non residents|non-résidents",
+        r"taxe environnementale|vehicules hybrides|véhicules hybrides|non residents|non-résidents|"
+        r"d[ée]ductible|d[ée]ductibilit[ée]|deductibilite|deductibile|provision pour cr[ée]ances douteuses|cr[ée]ances douteuses|creance douteuse",
         re.I,
     ),
     "audit": re.compile(
-        r"\baudit\b|commissaire aux comptes|isa|isre|isrs|isqc|ifac|controle interne|contrôle interne|"
+        r"\baudit\b|commissaire aux comptes|\bisa\b|\bisre\b|\bisrs\b|\bisqc\b|\bifac\b|controle interne|contrôle interne|"
         r"rapport general|rapport général|rapport special|rapport spécial|certification des comptes|"
         r"seuil de signification|dossier permanent|dossier annuel|planification d'audit",
         re.I,
@@ -92,7 +94,8 @@ DOMAIN_ROUTE_PATTERNS = {
         r"\bcompta|\bcomptable\b|comptabilite|comptabilité|loi comptable|norme comptable|normes comptables|"
         r"\bnc\b|\bias\b|\bifrs\b|etat financier|état financier|etats financiers|états financiers|"
         r"bilan|grand livre|journal comptable|consolidation|parties liees|parties liées|"
-        r"immobilisations|stocks|tableau des flux|resultat fiscal|résultat fiscal",
+        r"immobilisations|amortissement|amortissable|stocks|tableau des flux|resultat fiscal|résultat fiscal|"
+        r"provision pour cr[ée]ances douteuses|cr[ée]ances douteuses",
         re.I,
     ),
     "droit_affaires": re.compile(
@@ -674,11 +677,13 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 1.4
             elif record.get("doc_id") in {"code_societes_commerciales_2022", "guide_creation_sarl_tunisie"}:
                 score *= 0.45
-        if ("prestations de services" in query_text and ("france" in query_text or "client etabli" in query_text or "client établi" in query_text)):
+        if (("prestations de services" in query_text or "prestation informatique" in query_text) and ("france" in query_text or "client etabli" in query_text or "client établi" in query_text)):
             if record.get("doc_id") == "tva_droit_consommation":
                 score *= 5.6
             elif record.get("doc_id") == "procedures_fiscales_2026":
                 score *= 1.6
+            elif record.get("doc_id") == "code_irpp_is_2011":
+                score *= 0.28
             elif record.get("doc_id") in {"droits_taxes_hors_codes", "fiscalite_locale"}:
                 score *= 0.35
         if ("ias 11" in query_text or "contrats de construction" in query_text or "pourcentage d'avancement" in query_text or "pourcentage d’avancement" in query_text):
