@@ -130,7 +130,9 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["receivable_mentions_evidence"] = contains_any(normalized, ["justificatifs suffisants", "relances", "recouvrement", "balance agee"])
         checks["receivable_uses_accounting_and_tax_sources"] = ("code_irpp_is_2011" in docs and any(doc.startswith(("nc_", "ias_")) for doc in docs))
 
-    if "level3" in case_id or ("120 000" in question and "france" in question and "consultant" in question):
+    is_cross_border_level3 = "cross_border" in case_id or ("120 000" in question and "france" in question and "consultant" in question)
+
+    if is_cross_border_level3:
         checks["level3_not_generic_fallback_phrase"] = not contains_any(
             normalized,
             ["en premiere analyse, le point doit etre rattache principalement au cadre suivant"],
@@ -148,6 +150,51 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
             normalized,
             ["convention france-tunisie doit etre ajoutee", "convention france tunisie doit etre ajoutee", "n'est pas encore indexee"],
         )
+
+    if "mixed_dividends" in case_id:
+        checks["mixed_dividends_splits_physical_person"] = contains_any(normalized, ["personne physique residente", "300 000 tnd"])
+        checks["mixed_dividends_splits_tunisian_company"] = contains_any(normalized, ["societe tunisienne", "200 000 tnd"])
+        checks["mixed_dividends_splits_nonresident"] = contains_any(normalized, ["associe francais non-resident", "100 000 tnd", "non-resident"])
+        checks["mixed_dividends_mentions_treaty"] = contains_any(normalized, ["convention fiscale"])
+        checks["mixed_dividends_mentions_certificate"] = contains_any(normalized, ["certificat", "preuve de retenue"])
+
+    if "annual_maintenance" in case_id:
+        checks["maintenance_mentions_period_allocation"] = contains_any(normalized, ["periode de service", "ventiler le revenu", "part rattachee"])
+        checks["maintenance_mentions_deferred_income"] = contains_any(normalized, ["produit constate d'avance", "produits constates d'avance"])
+        checks["maintenance_mentions_tva"] = contains_any(normalized, ["tva", "code tva", "exigibilite"])
+        checks["maintenance_distinguishes_payment_service"] = contains_any(normalized, ["date de paiement", "date d'encaissement", "periode de couverture"])
+
+    if "recouvrement_post_cloture" in case_id:
+        checks["receivable_recovery_mentions_30000"] = contains_any(normalized, ["30 000 tnd", "30 000"])
+        checks["receivable_recovery_mentions_subsequent_event"] = contains_any(normalized, ["evenement posterieur", "apres cloture"])
+        checks["receivable_recovery_mentions_adjusting"] = contains_any(normalized, ["ajustant", "non ajustant"])
+        checks["receivable_recovery_mentions_remaining_exposure"] = contains_any(normalized, ["exposition restante", "provision"])
+
+    if "going_concern" in case_id:
+        checks["going_concern_not_cac_definition"] = "commissaire aux comptes, est" not in normalized
+        checks["going_concern_mentions_negative_equity"] = contains_any(normalized, ["capitaux propres negatifs"])
+        checks["going_concern_mentions_bank_financing"] = contains_any(normalized, ["financement bancaire non confirme", "accord est confirme"])
+        checks["going_concern_mentions_disclosures_opinion"] = contains_any(normalized, ["disclosures", "notes", "opinion"])
+        checks["going_concern_mentions_audit_procedures"] = contains_any(normalized, ["procedures", "elements probants", "confirmations bancaires"])
+
+    if "related_party_property" in case_id:
+        checks["related_party_mentions_fair_value"] = contains_any(normalized, ["valeur de marche", "juste valeur", "expertise independante"])
+        checks["related_party_mentions_disclosure"] = contains_any(normalized, ["parties liees", "information"])
+        checks["related_party_mentions_tax_risk"] = contains_any(normalized, ["acte anormal", "distribution dissimulee", "redressement"])
+        checks["related_party_mentions_approval"] = contains_any(normalized, ["convention reglementee", "autorisation", "approbation"])
+
+    if "consulting_cash" in case_id:
+        checks["consulting_not_treasury_route"] = "ias_7_tableau_flux_tresorerie" not in docs and "ias 7" not in normalized
+        checks["consulting_mentions_service_reality"] = contains_any(normalized, ["realite du service"])
+        checks["consulting_mentions_business_interest"] = contains_any(normalized, ["interet de l'entreprise"])
+        checks["consulting_mentions_supporting_docs"] = contains_any(normalized, ["contrat", "livrables", "rapport de mission"])
+        checks["consulting_prudent_conclusion"] = contains_any(normalized, ["ne peut pas etre confirmee", "sans preuves"])
+
+    if "accounting_provision_not_tax_deductible" in case_id:
+        checks["bridge_separates_accounting_tax"] = contains_any(normalized, ["separer le traitement comptable", "traitement fiscal"])
+        checks["bridge_mentions_reintegration"] = contains_any(normalized, ["reintegration extra-comptable"])
+        checks["bridge_mentions_deferred_tax"] = contains_any(normalized, ["impot differe"])
+        checks["bridge_no_unrelated_collection"] = not contains_any(normalized, ["encaissement posterieur"])
 
     passed = all(checks.values()) if checks else True
     return {
@@ -205,12 +252,18 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
         checks["fraud_has_audit_support"] = any(doc.startswith("audit_") for doc in docs)
         checks["fraud_support_classified"] = any(level in {"direct_passage", "framework_source"} for level in supports)
 
-    if "level3" in case_id or ("120 000" in question and "france" in question and "consultant" in question):
+    is_cross_border_level3 = "cross_border" in case_id or ("120 000" in question and "france" in question and "consultant" in question)
+
+    if is_cross_border_level3:
         checks["level3_has_tva_direct_or_framework"] = "tva_droit_consommation" in docs and any(
             level in {"direct_passage", "framework_source"} for level in supports
         )
         checks["level3_has_missing_treaty_source"] = "convention_fiscale_france_tunisie" in docs and "missing_source" in supports
         checks["level3_source_support_classified"] = bool(supports)
+
+    if "consulting_cash" in case_id:
+        checks["consulting_no_ias7_source"] = "ias_7_tableau_flux_tresorerie" not in docs
+        checks["consulting_has_tax_or_accounting_source"] = "code_irpp_is_2011" in docs or "loi_comptable" in docs
 
     return {
         "checks": checks,
