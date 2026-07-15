@@ -60,6 +60,13 @@ def match_key(value: str) -> str:
     text = unicodedata.normalize("NFKD", value or "")
     text = "".join(ch for ch in text if not unicodedata.combining(ch))
     text = text.lower().replace("’", "'").replace("-", " ")
+    # Some browser/console paths can arrive already mojibake-damaged, with
+    # accented letters replaced by "?". Keep matching resilient for routing.
+    text = text.replace("cr?ance", "creance").replace("soci?t?", "societe")
+    text = text.replace("cl?ture", "cloture").replace("r?cup?re", "recupere")
+    text = text.replace("d?ductibilit?", "deductibilite").replace("document?es", "documentees")
+    text = text.replace("apr?s", "apres").replace("ev?nement", "evenement")
+    text = re.sub(r"(?<=[a-z])\?+(?=[a-z])", "e", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -737,7 +744,7 @@ def is_receivable_subsequent_recovery_case(query: str) -> bool:
     return (
         ("creance douteuse" in query or "creances douteuses" in query)
         and ("30 000" in query or "30000" in query or "recouvrement partiel" in query or "encaisse" in query or "recupere" in query)
-        and ("cloture" in query or "post cloture" in query or "apres la cloture" in query)
+        and ("cloture" in query or "cleture" in query or "post cloture" in query or "apres la cloture" in query)
     )
 
 
