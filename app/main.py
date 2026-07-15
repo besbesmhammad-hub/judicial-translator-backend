@@ -2245,6 +2245,10 @@ def public_space_revision() -> str | None:
 
 
 def effective_app_revision() -> str:
+    if accounting_runtime_environment() != "local":
+        live_revision = public_space_revision()
+        if live_revision:
+            return live_revision
     if config.APP_REVISION and config.APP_REVISION != "unknown":
         return config.APP_REVISION
     return public_space_revision() or config.APP_REVISION or "unknown"
