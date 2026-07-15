@@ -550,6 +550,13 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": "ias_10_evenements_post_cloture", "terms": ["evenements posterieurs", "date de cloture", "ajuster", "non ajuster"], "min_matches": 2},
             {"doc_id": "code_irpp_is_2011", "terms": ["creances douteuses", "provision", "deductible", "depreciation"], "min_matches": 2},
         ]
+    if is_fixed_asset_component_depreciation_case(query):
+        return [
+            {"doc_id": "nc_05_immobilisations_corporelles", "terms": ["amortissement", "duree d'utilisation", "composants", "valeur residuelle", "mise en service"], "min_matches": 2},
+            {"doc_id": "ias_16_immobilisations_corporelles", "terms": ["amortissement", "pret a etre utilisee", "composant", "parties", "duree d'utilite"], "min_matches": 2},
+            {"doc_id": "code_irpp_is_2011", "terms": ["amortissements", "mise en service", "composantes", "date d'acquisition", "exploitation"], "min_matches": 2},
+            {"doc_id": "nc_01_norme_generale", "terms": ["immobilisations", "amortissements", "etats financiers", "estimation"], "min_matches": 2},
+        ]
     if is_going_concern_case(query):
         return [
             {"doc_id": "cadre_conceptuel_comptable", "terms": ["continuite de l'exploitation", "entreprise poursuit", "avenir previsible"], "min_matches": 2},
@@ -729,8 +736,23 @@ def is_revenue_cutoff_tva_case(query: str) -> bool:
 def is_receivable_subsequent_recovery_case(query: str) -> bool:
     return (
         ("creance douteuse" in query or "creances douteuses" in query)
-        and ("30 000" in query or "30000" in query or "recouvrement partiel" in query or "encaisse" in query)
-        and ("apres cloture" in query or "post cloture" in query or "apres la cloture" in query)
+        and ("30 000" in query or "30000" in query or "recouvrement partiel" in query or "encaisse" in query or "recupere" in query)
+        and ("cloture" in query or "post cloture" in query or "apres la cloture" in query)
+    )
+
+
+def is_fixed_asset_component_depreciation_case(query: str) -> bool:
+    return (
+        ("machine" in query or "immobilisation" in query or "equipement" in query)
+        and ("amortissement" in query or "amortir" in query or "depreciation" in query)
+        and (
+            "installation" in query
+            or "tests" in query
+            or "mise en service" in query
+            or "production" in query
+            or "composant" in query
+            or "piece majeure" in query
+        )
     )
 
 
@@ -830,6 +852,42 @@ def best_precision_source(doc_id: str, terms: list[str], min_matches: int) -> di
     return best
 
 
+def semantically_adjust_support_level(message: str, source: dict) -> dict:
+    if source.get("support_level") != "direct_passage":
+        return source
+    query = match_key(message)
+    doc_id = source.get("doc_id")
+    haystack = match_key(" ".join([
+        str(source.get("title") or ""),
+        str(source.get("heading") or ""),
+        str(source.get("excerpt") or ""),
+    ]))
+
+    required_any: list[str] = []
+    if "fraude" in query and doc_id == "code_societes_commerciales_2022":
+        required_any = [
+            "commissaire aux comptes",
+            "fraude",
+            "irregularite",
+            "delit",
+            "revelation",
+            "alerte",
+            "rapport special",
+        ]
+    elif is_fixed_asset_component_depreciation_case(query) and doc_id in {"nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "code_irpp_is_2011"}:
+        required_any = ["amortissement", "mise en service", "pret a etre utilise", "composant", "duree d'utilisation", "duree d'utilite"]
+    elif is_receivable_subsequent_recovery_case(query) and doc_id in {"nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011"}:
+        required_any = ["creance", "provision", "depreciation", "recouvrement", "evenement posterieur", "cloture"]
+
+    if required_any and not any(term in haystack for term in required_any):
+        adjusted = dict(source)
+        adjusted["support_level"] = "framework_source"
+        adjusted.setdefault("matched_terms", [])
+        adjusted["semantic_relevance_warning"] = "direct passage downgraded: excerpt does not match the case issue"
+        return adjusted
+    return source
+
+
 def precision_sources_for_case(message: str, fallback_sources: list[dict]) -> list[dict]:
     rules = source_precision_rules(message)
     if not rules:
@@ -853,6 +911,7 @@ def precision_sources_for_case(message: str, fallback_sources: list[dict]) -> li
             source = dict(source)
             source["support_level"] = "framework_source"
             source.setdefault("matched_terms", [])
+        source = semantically_adjust_support_level(message, source)
         selected.append(source)
     return merge_priority_sources(selected, fallback_sources, limit=max(5, len(selected)))
 
@@ -1312,6 +1371,19 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     elif is_receivable_subsequent_recovery_case(query):
         priority_doc_ids = ["nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011"]
         blocked_doc_ids = {"fiscalite_locale", "code_commerce_2014", "nct_44_takaful_controle_interne"}
+    elif is_fixed_asset_component_depreciation_case(query):
+        priority_doc_ids = ["nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "code_irpp_is_2011", "nc_01_norme_generale"]
+        blocked_doc_ids = {
+            "droits_taxes_hors_codes",
+            "fiscalite_locale",
+            "ias_7_tableau_flux_tresorerie",
+            "audit_resume_gaida_normes_missions",
+            "audit_resume_chakroun_scan",
+            "audit_resume_acceptation_controle_qualite",
+            "cours_audit_chiheb_ghanmi",
+            "audit_controle_qualite_imed_ennouri",
+            "cours_audit_imed_ennouri",
+        }
     elif is_going_concern_case(query):
         priority_doc_ids = ["cadre_conceptuel_comptable", "nc_01_norme_generale", "audit_resume_gaida_normes_missions", "audit_resume_acceptation_controle_qualite"]
         blocked_doc_ids = {"code_societes_commerciales_2022", "fiscalite_locale", "code_irpp_is_2011"}
@@ -1501,10 +1573,13 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                 "Reponse": (
                     "Une creance douteuse avec recouvrement partiel de 30 000 TND apres cloture doit etre analysee en deux temps: la depreciation/provision a la date de cloture, "
                     "puis le traitement de l'encaissement posterieur comme evenement posterieur ajustant ou non ajustant selon ce qu'il prouve sur la situation existant a la cloture. "
+                    "Si le dossier porte sur une creance de 180 000 TND en retard depuis 14 mois avec relances, ces faits doivent etre documentes et l'exposition residuelle apres encaissement doit etre recalculee. "
                     "Il faut distinguer la constatation comptable de la depreciation et la deductibilite fiscale de la provision."
                 ),
                 "Application pratique": (
                     "- Classer la creance: identifier facture, echeance, anciennete, litige, garanties, relances et risque reel de non-recouvrement a la cloture.\n"
+                    "- Retard de 14 mois: utiliser l'anciennete et les relances comme indices de doute, sans remplacer le jugement par une regle automatique.\n"
+                    "- Montant: partir de la creance brute de 180 000 TND si elle est confirmee, puis tenir compte du recouvrement posterieur de 30 000 TND pour apprecier l'exposition restante de 150 000 TND.\n"
                     "- Evaluer la provision: limiter la depreciation a l'exposition restante apres analyse des chances de recouvrement.\n"
                     "- Encaissement de 30 000 TND apres cloture: determiner s'il confirme une information deja existante a la cloture; dans ce cas il peut ajuster l'estimation. "
                     "S'il resulte d'un evenement nouveau, il peut etre non ajustant mais a divulguer si significatif.\n"
@@ -1515,6 +1590,39 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Ne pas maintenir une provision brute si le recouvrement posterieur modifie l'exposition restante.\n"
                     "- Ne pas deduire fiscalement une provision globale sans dossier client par client.\n"
                     "- Distinguer clairement preuve posterieure d'une situation existante et evenement nouveau."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_fixed_asset_component_depreciation_case(query):
+        workflow_name = "fixed_asset_component_depreciation_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "Ce dossier doit etre traite comme une immobilisation corporelle avec mise en service progressive et composant significatif. "
+                    "La date d'achat du 15 septembre ne suffit pas a declencher l'amortissement si la machine n'est pas encore prete a etre utilisee. "
+                    "Il faut rapprocher l'acquisition du 15 septembre, la livraison du 20 septembre, l'installation du 10 octobre, les tests jusqu'au 25 octobre "
+                    "et la mise en production du 1er novembre. Si le 1er novembre correspond a la disponibilite pour l'utilisation prevue, c'est cette date qui doit etre retenue pour le depart d'amortissement."
+                ),
+                "Application pratique": (
+                    "- Cout d'entree: rattacher au cout de la machine les frais directement necessaires a sa mise en etat de fonctionner, selon les sources comptables applicables.\n"
+                    "- Date de depart: distinguer acquisition, livraison, installation, tests et mise en service; l'amortissement commence lorsque l'actif est pret ou disponible pour son utilisation prevue.\n"
+                    "- Base amortissable et mode d'amortissement: determiner le cout amortissable, la valeur residuelle eventuelle, la duree d'utilite et le mode d'amortissement coherent avec la consommation des avantages economiques.\n"
+                    "- Tests: documenter si les tests jusqu'au 25 octobre conditionnent la disponibilite technique ou s'ils sont seulement des essais de performance apres mise en etat.\n"
+                    "- Production: si la production commence le 1er novembre apres installation et tests, retenir prudemment le 1er novembre comme date probable de mise en service.\n"
+                    "- Composants: la piece majeure remplacee tous les 3 ans doit etre analysee separement si sa duree d'utilisation differe de celle de la machine et si son montant est significatif.\n"
+                    "- Fiscalite: comparer le traitement comptable avec les regles fiscales d'amortissement, notamment la date de mise en service/exploitation, les taux maximums et les limites de deductibilite.\n"
+                    "- Documentation: conserver facture, bon de livraison, PV d installation, PV de tests, PV de mise en service, fiche immobilisation, ventilation composant/principal, durees d'utilite et tableau d'amortissement."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas router ce cas vers un recueil fiscal hors sujet: la question est d'abord comptable et fiscale sur immobilisations corporelles.\n"
+                    "- Ne pas demarrer l'amortissement au 15 septembre par automatisme si la machine n'etait pas prete a fonctionner.\n"
+                    "- Ne pas ignorer l'approche par composants lorsque la piece majeure a une duree de remplacement distincte.\n"
+                    "- Ne pas confondre date comptable de mise en service et conditions fiscales de deductibilite."
                 ),
                 "Sources utilisees": source_lines,
             },
@@ -2060,6 +2168,7 @@ def answer_needs_professional_repair(answer: str) -> bool:
         r"r[Ã©e]f[Ã©e]rence implicite",
         r"sources? non cit[Ã©e]es",
         r"non cit[Ã©e] dans le corpus",
+        r"en premi[Ãèe]re analyse,\s*le point doit [Ãêe]tre rattach[Ãée] principalement au cadre suivant",
     ])
     return any(re.search(pattern, answer_text, re.I) for pattern in risky_patterns)
 

@@ -123,6 +123,11 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["amortization_mentions_accounting_basis"] = contains_any(normalized, ["base amortissable", "duree d'utilite", "mode d'amortissement"])
         checks["amortization_uses_accounting_sources"] = "nc_05_immobilisations_corporelles" in docs or "ias_16_immobilisations_corporelles" in docs
         checks["amortization_no_audit_sources"] = not any("audit" in doc for doc in docs)
+        if "fixed_asset_component" in case_id:
+            checks["machine_mentions_all_dates"] = contains_any(normalized, ["15 september", "15 septembre"]) and contains_any(normalized, ["20 septembre"]) and contains_any(normalized, ["10 octobre"]) and contains_any(normalized, ["25 octobre"]) and contains_any(normalized, ["1er novembre", "1 novembre"])
+            checks["machine_mentions_component_approach"] = contains_any(normalized, ["composant", "composants", "piece majeure"])
+            checks["machine_mentions_accounting_tax_split"] = contains_any(normalized, ["traitement comptable", "fiscalite", "regles fiscales"])
+            checks["machine_blocks_wrong_tax_route"] = "droits_taxes_hors_codes" not in docs and "droits et taxes non incorpores" not in normalized
 
     if "creance" in case_id or "creances" in case_id or "creance douteuse" in question or "creances douteuses" in question:
         checks["receivable_distinguishes_accounting_tax"] = contains_any(normalized, ["distinguer la constatation comptable", "deductibilite fiscale", "traitement comptable"])
@@ -165,10 +170,17 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["maintenance_distinguishes_payment_service"] = contains_any(normalized, ["date de paiement", "date d'encaissement", "periode de couverture"])
 
     if "recouvrement_post_cloture" in case_id:
+        checks["receivable_recovery_not_generic_fallback_phrase"] = not contains_any(
+            normalized,
+            ["en premiere analyse, le point doit etre rattache principalement au cadre suivant"],
+        )
+        checks["receivable_recovery_mentions_180000_if_case"] = ("180 000" not in question and "180000" not in question) or contains_any(normalized, ["180 000 tnd", "180 000"])
+        checks["receivable_recovery_mentions_14_months_if_case"] = ("14 mois" not in question) or contains_any(normalized, ["14 mois"])
+        checks["receivable_recovery_mentions_reminders_if_case"] = ("relances" not in question) or contains_any(normalized, ["relances"])
         checks["receivable_recovery_mentions_30000"] = contains_any(normalized, ["30 000 tnd", "30 000"])
         checks["receivable_recovery_mentions_subsequent_event"] = contains_any(normalized, ["evenement posterieur", "apres cloture"])
         checks["receivable_recovery_mentions_adjusting"] = contains_any(normalized, ["ajustant", "non ajustant"])
-        checks["receivable_recovery_mentions_remaining_exposure"] = contains_any(normalized, ["exposition restante", "provision"])
+        checks["receivable_recovery_mentions_remaining_exposure"] = contains_any(normalized, ["exposition restante", "150 000", "provision"])
 
     if "going_concern" in case_id:
         checks["going_concern_not_cac_definition"] = "commissaire aux comptes, est" not in normalized
@@ -251,6 +263,12 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
     if "fraude" in case_id or "anomalie_apres_rapport" in case_id or "fraude" in question:
         checks["fraud_has_audit_support"] = any(doc.startswith("audit_") for doc in docs)
         checks["fraud_support_classified"] = any(level in {"direct_passage", "framework_source"} for level in supports)
+        checks["fraud_no_irrelevant_csc_article_416_direct"] = not any(
+            source.get("doc_id") == "code_societes_commerciales_2022"
+            and source.get("support_level") == "direct_passage"
+            and "article 416" in normalize_for_match(str(source.get("heading") or source.get("excerpt_preview") or ""))
+            for source in (debug_trace.get("selected_sources") or [])
+        )
 
     is_cross_border_level3 = "cross_border" in case_id or ("120 000" in question and "france" in question and "consultant" in question)
 
