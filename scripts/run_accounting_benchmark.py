@@ -314,6 +314,20 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
         workflow_match = True if not expected_workflow else debug_trace.get("workflow") == expected_workflow
         all_required_phrases_present = all(required_phrase_checks.values()) if required_phrase_checks else True
         no_forbidden_phrases = not any(forbidden_phrase_checks.values())
+        fallback_used = bool(debug_trace.get("fallback_used"))
+        guardrail_blocked = bool(debug_trace.get("guardrail_blocked"))
+        content_quality_pass = (
+            all_required_phrases_present
+            and no_forbidden_phrases
+            and substance["passed"]
+            and source_precision["passed"]
+            and workflow_match
+        )
+        # safe_pass means the response did not leak internals or invent an
+        # unsupported cabinet answer. A guardrail fallback can be safe, but it
+        # is not an expert answer for Level 3 case-analysis evaluation.
+        safe_pass = no_forbidden_phrases and (content_quality_pass or guardrail_blocked)
+        expert_pass = content_quality_pass and not fallback_used and not guardrail_blocked
         return {
             "id": case["id"],
             "question": case["question"],
@@ -343,7 +357,9 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             "source_precision_pass": source_precision["passed"],
             "source_support_levels": source_precision["support_levels"],
             "source_headings": source_precision["headings"],
-            "content_quality_pass": all_required_phrases_present and no_forbidden_phrases and substance["passed"] and source_precision["passed"] and workflow_match,
+            "safe_pass": safe_pass,
+            "expert_pass": expert_pass,
+            "content_quality_pass": content_quality_pass,
             "sources_count": len(response.get("sources") or []),
             "golden_kb_hits_count": len(response.get("golden_kb_hits") or []),
             "model": response.get("model"),
@@ -351,8 +367,8 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             "workflow": debug_trace.get("workflow"),
             "generator_path": debug_trace.get("generator_path"),
             "selected_sources": debug_trace.get("selected_sources") or [],
-            "fallback_used": debug_trace.get("fallback_used"),
-            "guardrail_blocked": debug_trace.get("guardrail_blocked"),
+            "fallback_used": fallback_used,
+            "guardrail_blocked": guardrail_blocked,
             "answer_preview": answer[:700],
             "warnings": response.get("warnings") or [],
             "assumptions": response.get("assumptions") or [],
@@ -384,6 +400,8 @@ def summarize(results: list[dict]) -> dict:
     style_match = sum(1 for row in results if row.get("response_style_match"))
     section_match = sum(1 for row in results if row.get("all_sections_present"))
     content_quality_match = sum(1 for row in results if row.get("content_quality_pass"))
+    safe_match = sum(1 for row in results if row.get("safe_pass"))
+    expert_match = sum(1 for row in results if row.get("expert_pass"))
     source_precision_match = sum(1 for row in results if row.get("source_precision_pass"))
     latencies = [row["latency_ms"] for row in results if row.get("ok") and isinstance(row.get("latency_ms"), (int, float))]
     return {
@@ -396,6 +414,10 @@ def summarize(results: list[dict]) -> dict:
         "all_sections_present_count": section_match,
         "source_precision_pass_count": source_precision_match,
         "source_precision_failure_count": total - source_precision_match,
+        "safe_pass_count": safe_match,
+        "safe_failure_count": total - safe_match,
+        "expert_pass_count": expert_match,
+        "expert_failure_count": total - expert_match,
         "content_quality_pass_count": content_quality_match,
         "content_quality_failure_count": total - content_quality_match,
         "avg_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else None,
@@ -418,6 +440,8 @@ def summarize_by_key(results: list[dict], key: str) -> dict[str, dict]:
             "preferred_source_match_count": sum(1 for row in ok_rows if row.get("preferred_source_match")),
             "response_style_match_count": sum(1 for row in ok_rows if row.get("response_style_match")),
             "all_sections_present_count": sum(1 for row in ok_rows if row.get("all_sections_present")),
+            "safe_pass_count": sum(1 for row in ok_rows if row.get("safe_pass")),
+            "expert_pass_count": sum(1 for row in ok_rows if row.get("expert_pass")),
             "avg_latency_ms": round(
                 sum(row["latency_ms"] for row in ok_rows if isinstance(row.get("latency_ms"), (int, float)))
                 / max(1, len([row for row in ok_rows if isinstance(row.get("latency_ms"), (int, float))])),
@@ -452,7 +476,7 @@ def main() -> int:
     output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     print(f"Results written to: {output_path}")
-    return 0 if summary["failed_cases"] == 0 and summary["content_quality_failure_count"] == 0 else 1
+    return 0 if summary["failed_cases"] == 0 and summary["expert_failure_count"] == 0 else 1
 
 
 if __name__ == "__main__":
