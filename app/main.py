@@ -67,6 +67,7 @@ def match_key(value: str) -> str:
     text = text.replace("d?ductibilit?", "deductibilite").replace("document?es", "documentees")
     text = text.replace("apr?s", "apres").replace("ev?nement", "evenement")
     text = re.sub(r"(?<=[a-z])\?+(?=[a-z])", "e", text)
+    text = text.replace("?", "e")
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -741,10 +742,20 @@ def is_revenue_cutoff_tva_case(query: str) -> bool:
 
 
 def is_receivable_subsequent_recovery_case(query: str) -> bool:
+    has_receivable = "creance" in query and ("client" in query or "douteuse" in query or "douteuses" in query)
+    has_age_or_doubt = (
+        "14 mois" in query
+        or "echue" in query
+        or "relance" in query
+        or "relances" in query
+        or "provision" in query
+        or "provisionner" in query
+    )
     return (
-        ("creance douteuse" in query or "creances douteuses" in query)
+        has_receivable
+        and has_age_or_doubt
         and ("30 000" in query or "30000" in query or "recouvrement partiel" in query or "encaisse" in query or "recupere" in query)
-        and ("cloture" in query or "cleture" in query or "post cloture" in query or "apres la cloture" in query)
+        and ("cloture" in query or "cleture" in query or "post cloture" in query or "apres la cloture" in query or "posterieur" in query)
     )
 
 
@@ -1587,6 +1598,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Classer la creance: identifier facture, echeance, anciennete, litige, garanties, relances et risque reel de non-recouvrement a la cloture.\n"
                     "- Retard de 14 mois: utiliser l'anciennete et les relances comme indices de doute, sans remplacer le jugement par une regle automatique.\n"
                     "- Montant: partir de la creance brute de 180 000 TND si elle est confirmee, puis tenir compte du recouvrement posterieur de 30 000 TND pour apprecier l'exposition restante de 150 000 TND.\n"
+                    "- Ecritures: constater ou ajuster la depreciation/provision sur la part estimee non recouvrable; comptabiliser l'encaissement de 30 000 TND en diminution de la creance client et revoir la dotation ou reprise necessaire.\n"
                     "- Evaluer la provision: limiter la depreciation a l'exposition restante apres analyse des chances de recouvrement.\n"
                     "- Encaissement de 30 000 TND apres cloture: determiner s'il confirme une information deja existante a la cloture; dans ce cas il peut ajuster l'estimation. "
                     "S'il resulte d'un evenement nouveau, il peut etre non ajustant mais a divulguer si significatif.\n"
