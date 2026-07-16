@@ -723,6 +723,27 @@ def source_precision_rules(message: str) -> list[dict]:
         ]
     coverage_workflow = detect_cabinet_workflow(query)
     if coverage_workflow:
+        if coverage_workflow.family == "paie_social":
+            social_rules: list[dict] = []
+            if any(term in query for term in ("deces", "décès", "survivant", "survivants", "orphelin", "orphelins", "capital deces", "pension")):
+                social_rules.extend([
+                    {"doc_id": "cnss_p57_demande_indemnite_deces", "terms": ["indemnite de deces", "acte de deces", "assure social", "conjoint"], "min_matches": 2},
+                    {"doc_id": "cnss_a144bis_pension_capital_deces_survivants", "terms": ["pension", "capital deces", "survivants", "conjoint survivant", "orphelins"], "min_matches": 2},
+                    {"doc_id": "cnss_p58_constat_medical_de_deces", "terms": ["constat medical de deces", "cause de deces", "medecin traitant", "accident"], "min_matches": 2},
+                ])
+            if "accident non professionnel" in query or ("accident" in query and "professionnel" in query):
+                social_rules.append({"doc_id": "cnss_n66_declaration_accident_non_professionnel", "terms": ["accident non professionnel", "declaration d accident", "temoins", "circonstances"], "min_matches": 2})
+            if "non salarie" in query or "non salaries" in query or "non salarié" in query or "non salariés" in query:
+                social_rules.append({"doc_id": "cnss_p212_affiliation_travailleurs_non_salaries", "terms": ["travailleurs non salaries", "secteurs agricole", "secteur non agricole", "affiliation"], "min_matches": 2})
+            if "etranger" in query or "étranger" in query:
+                social_rules.append({"doc_id": "cnss_p304_affiliation_travailleurs_tunisiens_etranger", "terms": ["travailleurs tunisiens a l etranger", "tunisiens a l etranger", "affiliation"], "min_matches": 2})
+            existing_doc_ids = {rule["doc_id"] for rule in social_rules}
+            social_rules.extend(
+                {"doc_id": doc_id, "terms": list(terms), "min_matches": min_matches}
+                for doc_id, terms, min_matches in coverage_workflow.source_terms
+                if doc_id not in existing_doc_ids
+            )
+            return social_rules
         return [
             {"doc_id": doc_id, "terms": list(terms), "min_matches": min_matches}
             for doc_id, terms, min_matches in coverage_workflow.source_terms
@@ -1497,6 +1518,22 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     elif coverage_workflow := detect_cabinet_workflow(query):
         priority_doc_ids = list(coverage_workflow.source_doc_ids)
         blocked_doc_ids = set()
+        if coverage_workflow.family == "paie_social":
+            social_priority: list[str] = []
+            if any(term in query for term in ("deces", "décès", "survivant", "survivants", "orphelin", "orphelins", "capital deces", "pension")):
+                social_priority.extend([
+                    "cnss_p57_demande_indemnite_deces",
+                    "cnss_a144bis_pension_capital_deces_survivants",
+                    "cnss_p58_constat_medical_de_deces",
+                ])
+            if "accident non professionnel" in query or ("accident" in query and "professionnel" in query):
+                social_priority.append("cnss_n66_declaration_accident_non_professionnel")
+            if "non salarie" in query or "non salaries" in query or "non salarié" in query or "non salariés" in query:
+                social_priority.append("cnss_p212_affiliation_travailleurs_non_salaries")
+            if "etranger" in query or "étranger" in query:
+                social_priority.append("cnss_p304_affiliation_travailleurs_tunisiens_etranger")
+            if social_priority:
+                priority_doc_ids = social_priority + [doc_id for doc_id in priority_doc_ids if doc_id not in set(social_priority)]
         if coverage_workflow.family == "tva":
             blocked_doc_ids = {"code_societes_commerciales_2022", "ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
         elif coverage_workflow.family == "fiscalite_directe":
