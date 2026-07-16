@@ -798,6 +798,12 @@ def source_precision_rules(message: str) -> list[dict]:
             if "presentation cnss" in query or "présentation cnss" in query or "missions de la cnss" in query or "caisse nationale de securite sociale" in query:
                 social_rules.append({"doc_id": "cnss_presentation_institutionnelle", "terms": ["caisse nationale de securite sociale", "loi n 60-30", "prestations familiales", "pensions"], "min_matches": 2})
             if "prets sociaux" in query or "prêts sociaux" in query:
+                if "2010" in query and "2020" in query:
+                    social_rules.append({"doc_id": "cnss_prets_sociaux_nombre_montants_2010_2020", "terms": ["prets sociaux", "nombre et montants", "2010", "2020"], "min_matches": 2})
+                if ("effectif" in query or "effectifs" in query or "beneficiaires" in query or "bénéficiaires" in query) and "2000" in query and "2020" in query:
+                    social_rules.append({"doc_id": "cnss_prets_sociaux_effectifs_nature_2000_2020", "terms": ["prets sociaux", "effectifs par nature", "pret personnel", "pret universitaire"], "min_matches": 2})
+                if ("montant" in query or "montants" in query or "depenses" in query or "dépenses" in query) and "2000" in query and "2020" in query:
+                    social_rules.append({"doc_id": "cnss_prets_sociaux_montants_nature_2000_2020", "terms": ["prets sociaux", "montants par nature", "pret voiture", "pret logement"], "min_matches": 2})
                 if "2000" in query:
                     social_rules.append({"doc_id": "cnss_prets_sociaux_effectifs_montants_2000", "terms": ["prets sociaux", "pret logement", "pret personnel", "pret universitaire", "annee 2000"], "min_matches": 2})
                 if "2020" in query:
@@ -813,12 +819,45 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_sommaire_statistique_2020", "terms": ["sommaire", "assures sociaux", "employeurs", "recettes", "depenses"], "min_matches": 2})
             if ("bilan" in query or "etat de resultat" in query or "état de résultat" in query or "flux de tresorerie" in query or "flux de trésorerie" in query) and "cnss" in query:
                 social_rules.append({"doc_id": "cnss_publication_financiere_2018", "terms": ["bilan", "etat de resultat", "flux de tresorerie", "capitaux propres", "2018"], "min_matches": 2})
-            existing_doc_ids = {rule["doc_id"] for rule in social_rules}
+            if ("evolution des cotisations" in query or "évolution des cotisations" in query or "cotisations cnss" in query) and ("2000" in query or "2020" in query):
+                social_rules.append({"doc_id": "cnss_evolution_cotisations_2000_2020", "terms": ["evolution des cotisations", "cotisations cnss", "ensemble des regimes", "2000", "2020"], "min_matches": 2})
+            if ("evolution des depenses" in query or "évolution des dépenses" in query or "depenses de prestations" in query or "dépenses de prestations" in query or "prestations servies" in query) and ("2000" in query or "2020" in query):
+                social_rules.append({"doc_id": "cnss_evolution_depenses_prestations_2000_2020", "terms": ["evolution des depenses", "prestations servies", "pensions", "prestations familiales", "2000"], "min_matches": 2})
+            if "prestations familiales" in query and "2020" in query:
+                social_rules.append({"doc_id": "cnss_prestations_familiales_2020", "terms": ["prestations familiales", "allocations familiales", "majoration pour salaire unique", "2020"], "min_matches": 2})
+            if ("prestations en especes" in query or "prestations en espèces" in query or "assurances sociales" in query or "capital deces" in query or "capital décès" in query) and "2020" in query:
+                social_rules.append({"doc_id": "cnss_prestations_assurances_sociales_especes_2020", "terms": ["prestations en especes", "assurances sociales", "indemnite de deces", "capital deces"], "min_matches": 2})
+            if ("depenses de pension" in query or "dépenses de pension" in query or "les pensions" in query) and "2020" in query:
+                social_rules.append({"doc_id": "cnss_depenses_pensions_regime_nature_2020", "terms": ["depenses de pension", "regime complementaire", "retraite", "survie conjoints"], "min_matches": 2})
+            explicit_doc_ids = {rule["doc_id"] for rule in social_rules}
+            existing_doc_ids = set(explicit_doc_ids)
             social_rules.extend(
                 {"doc_id": doc_id, "terms": list(terms), "min_matches": min_matches}
                 for doc_id, terms, min_matches in coverage_workflow.source_terms
                 if doc_id not in existing_doc_ids
             )
+            statistical_doc_ids = {
+                "cnss_evolution_cotisations_2000_2020",
+                "cnss_evolution_depenses_prestations_2000_2020",
+                "cnss_prestations_familiales_2020",
+                "cnss_prestations_assurances_sociales_especes_2020",
+                "cnss_depenses_pensions_regime_nature_2020",
+                "cnss_prets_sociaux_nombre_montants_2010_2020",
+                "cnss_prets_sociaux_effectifs_nature_2000_2020",
+                "cnss_prets_sociaux_montants_nature_2000_2020",
+                "cnss_prets_sociaux_effectifs_montants_2000",
+                "cnss_prets_sociaux_effectifs_montants_2020",
+                "cnss_fonds_garantie_pension_divorce_2015_2020",
+                "cnss_fonds_garantie_effectif_2017",
+                "cnss_fonds_garantie_montants_2017",
+                "cnss_sommaire_statistique_2020",
+                "cnss_publication_financiere_2018",
+            }
+            if "formulaire" not in query and "demande" not in query:
+                explicit_statistical_doc_ids = statistical_doc_ids.intersection(explicit_doc_ids)
+                social_rules = [rule for rule in social_rules if rule["doc_id"] in explicit_statistical_doc_ids] + [
+                    rule for rule in social_rules if rule["doc_id"] not in explicit_statistical_doc_ids
+                ]
             return social_rules
         return [
             {"doc_id": doc_id, "terms": list(terms), "min_matches": min_matches}
@@ -1669,6 +1708,12 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             if "presentation cnss" in query or "présentation cnss" in query or "missions de la cnss" in query or "caisse nationale de securite sociale" in query:
                 social_priority.append("cnss_presentation_institutionnelle")
             if "prets sociaux" in query or "prêts sociaux" in query:
+                if "2010" in query and "2020" in query:
+                    social_priority.append("cnss_prets_sociaux_nombre_montants_2010_2020")
+                if ("effectif" in query or "effectifs" in query or "beneficiaires" in query or "bénéficiaires" in query) and "2000" in query and "2020" in query:
+                    social_priority.append("cnss_prets_sociaux_effectifs_nature_2000_2020")
+                if ("montant" in query or "montants" in query or "depenses" in query or "dépenses" in query) and "2000" in query and "2020" in query:
+                    social_priority.append("cnss_prets_sociaux_montants_nature_2000_2020")
                 if "2000" in query:
                     social_priority.append("cnss_prets_sociaux_effectifs_montants_2000")
                 if "2020" in query:
@@ -1684,7 +1729,38 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_sommaire_statistique_2020")
             if ("bilan" in query or "etat de resultat" in query or "état de résultat" in query or "flux de tresorerie" in query or "flux de trésorerie" in query) and "cnss" in query:
                 social_priority.append("cnss_publication_financiere_2018")
+            if ("evolution des cotisations" in query or "évolution des cotisations" in query or "cotisations cnss" in query) and ("2000" in query or "2020" in query):
+                social_priority.append("cnss_evolution_cotisations_2000_2020")
+            if ("evolution des depenses" in query or "évolution des dépenses" in query or "depenses de prestations" in query or "dépenses de prestations" in query or "prestations servies" in query) and ("2000" in query or "2020" in query):
+                social_priority.append("cnss_evolution_depenses_prestations_2000_2020")
+            if "prestations familiales" in query and "2020" in query:
+                social_priority.append("cnss_prestations_familiales_2020")
+            if ("prestations en especes" in query or "prestations en espèces" in query or "assurances sociales" in query or "capital deces" in query or "capital décès" in query) and "2020" in query:
+                social_priority.append("cnss_prestations_assurances_sociales_especes_2020")
+            if ("depenses de pension" in query or "dépenses de pension" in query or "les pensions" in query) and "2020" in query:
+                social_priority.append("cnss_depenses_pensions_regime_nature_2020")
             if social_priority:
+                statistical_doc_ids = {
+                    "cnss_evolution_cotisations_2000_2020",
+                    "cnss_evolution_depenses_prestations_2000_2020",
+                    "cnss_prestations_familiales_2020",
+                    "cnss_prestations_assurances_sociales_especes_2020",
+                    "cnss_depenses_pensions_regime_nature_2020",
+                    "cnss_prets_sociaux_nombre_montants_2010_2020",
+                    "cnss_prets_sociaux_effectifs_nature_2000_2020",
+                    "cnss_prets_sociaux_montants_nature_2000_2020",
+                    "cnss_prets_sociaux_effectifs_montants_2000",
+                    "cnss_prets_sociaux_effectifs_montants_2020",
+                    "cnss_fonds_garantie_pension_divorce_2015_2020",
+                    "cnss_fonds_garantie_effectif_2017",
+                    "cnss_fonds_garantie_montants_2017",
+                    "cnss_sommaire_statistique_2020",
+                    "cnss_publication_financiere_2018",
+                }
+                if "formulaire" not in query and "demande" not in query:
+                    social_priority = [doc_id for doc_id in social_priority if doc_id in statistical_doc_ids] + [
+                        doc_id for doc_id in social_priority if doc_id not in statistical_doc_ids
+                    ]
                 priority_doc_ids = social_priority + [doc_id for doc_id in priority_doc_ids if doc_id not in set(social_priority)]
         if coverage_workflow.family == "tva":
             blocked_doc_ids = {"code_societes_commerciales_2022", "ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
