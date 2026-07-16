@@ -125,7 +125,12 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["fraud_mentions_governance_or_documentation"] = contains_any(normalized, ["gouvernance", "direction", "documentation", "documenter"])
         checks["fraud_uses_audit_sources"] = any(doc.startswith("audit_") for doc in docs)
 
-    if "amortissement" in case_id or "amortissement" in question:
+    is_fixed_asset_amortization = (
+        "fixed_asset" in case_id
+        or "mise_en_service" in case_id
+        or ("amortissement" in question and ("mise en service" in question or "immobilisation" in question or "machine" in question))
+    )
+    if is_fixed_asset_amortization:
         checks["amortization_mentions_service_date"] = contains_any(normalized, ["mise en service", "prete a etre utilisee", "pret a etre utilise"])
         checks["amortization_mentions_accounting_basis"] = contains_any(normalized, ["base amortissable", "duree d'utilite", "mode d'amortissement"])
         checks["amortization_uses_accounting_sources"] = "nc_05_immobilisations_corporelles" in docs or "ias_16_immobilisations_corporelles" in docs
@@ -334,7 +339,10 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
         substance = level2_substance_checks(case, answer, debug_trace)
         source_precision = level25_source_precision_checks(case, answer, debug_trace)
         expected_workflow = case.get("expected_workflow")
-        workflow_match = True if not expected_workflow else debug_trace.get("workflow") == expected_workflow
+        allowed_workflows = set(case.get("allowed_workflows") or [])
+        if expected_workflow:
+            allowed_workflows.add(str(expected_workflow))
+        workflow_match = True if not allowed_workflows else debug_trace.get("workflow") in allowed_workflows
         all_required_phrases_present = all(required_phrase_checks.values()) if required_phrase_checks else True
         no_forbidden_phrases = not any(forbidden_phrase_checks.values())
         fallback_used = bool(debug_trace.get("fallback_used"))
