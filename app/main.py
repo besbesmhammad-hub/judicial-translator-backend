@@ -744,7 +744,7 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_n102_declaration_orphelin_infirme", "terms": ["orphelin", "infirmit", "maladie incurable", "sans revenu"], "min_matches": 2})
             if "pret logement" in query or "prêt logement" in query:
                 social_rules.append({"doc_id": "cnss_f56bis_demande_pret_logement", "terms": ["pret logement", "construction", "acquisition", "terrain viabilise"], "min_matches": 2})
-            if "accident non professionnel" in query or ("accident" in query and "professionnel" in query):
+            if "accident non professionnel" in query or "accidents non professionnels" in query:
                 social_rules.append({"doc_id": "cnss_n66_declaration_accident_non_professionnel", "terms": ["accident non professionnel", "declaration d accident", "temoins", "circonstances"], "min_matches": 2})
             if "non salarie" in query or "non salaries" in query or "non salarié" in query or "non salariés" in query:
                 social_rules.append({"doc_id": "cnss_p212_affiliation_travailleurs_non_salaries", "terms": ["travailleurs non salaries", "secteurs agricole", "secteur non agricole", "affiliation"], "min_matches": 2})
@@ -779,6 +779,20 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_n124_attestation_non_assujettissement", "terms": ["attestation de non assujettissement", "non assujettissement", "identifiant fiscal", "registre de commerce"], "min_matches": 2})
             if "attestation de solde" in query:
                 social_rules.append({"doc_id": "cnss_n75_attestation_de_solde", "terms": ["attestation de solde", "numero d affiliation", "raison sociale", "exemplaires"], "min_matches": 2})
+            if "accident du travail" in query or "accidents du travail" in query or "maladie professionnelle" in query or "maladies professionnelles" in query:
+                social_rules.append({"doc_id": "cnss_accidents_travail_maladies_professionnelles", "terms": ["accidents du travail", "maladies professionnelles", "incapacite permanente", "cotisations"], "min_matches": 2})
+            if "guide de l employeur" in query or "guide de l'employeur" in query or ("secteur non agricole" in query and ("employeur" in query or "cotisation" in query or "declaration" in query)):
+                social_rules.append({"doc_id": "cnss_guide_employeur_secteur_non_agricole", "terms": ["guide de l employeur", "secteur non agricole", "declaration des salaires", "penalite de retard"], "min_matches": 2})
+            if "compte bancaire" in query or "comptes bancaires" in query or "rib" in query or "bureau regional" in query or "bureau local" in query:
+                social_rules.append({"doc_id": "cnss_liste_comptes_bancaires_bureaux_regionaux", "terms": ["comptes bancaires", "rib", "bureau regional", "stb"], "min_matches": 2})
+            if "autorisation de debit" in query or "autorisation de débit" in query or "prelevement" in query or "prélèvement" in query:
+                social_rules.append({"doc_id": "cnss_autorisation_debit_bancaire_postal", "terms": ["autorisation de debit", "compte bancaire", "compte postal", "prelevement"], "min_matches": 2})
+            if "regime complementaire des pensions" in query or "régime complémentaire des pensions" in query or "rcp" in query or "retraite complementaire" in query:
+                social_rules.append({"doc_id": "cnss_affiliation_regime_complementaire_pensions", "terms": ["regime complementaire des pensions", "rcp", "retraite complementaire", "smig"], "min_matches": 2})
+            if "service sms" in query or ("sms" in query and "cnss" in query):
+                social_rules.append({"doc_id": "cnss_flyer_sms", "terms": ["sms", "telephone portable", "service sms", "notification"], "min_matches": 2})
+            if "presentation cnss" in query or "présentation cnss" in query or "missions de la cnss" in query or "caisse nationale de securite sociale" in query:
+                social_rules.append({"doc_id": "cnss_presentation_institutionnelle", "terms": ["caisse nationale de securite sociale", "loi n 60-30", "prestations familiales", "pensions"], "min_matches": 2})
             existing_doc_ids = {rule["doc_id"] for rule in social_rules}
             social_rules.extend(
                 {"doc_id": doc_id, "terms": list(terms), "min_matches": min_matches}
@@ -1581,7 +1595,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_n102_declaration_orphelin_infirme")
             if "pret logement" in query or "prêt logement" in query:
                 social_priority.append("cnss_f56bis_demande_pret_logement")
-            if "accident non professionnel" in query or ("accident" in query and "professionnel" in query):
+            if "accident non professionnel" in query or "accidents non professionnels" in query:
                 social_priority.append("cnss_n66_declaration_accident_non_professionnel")
             if "non salarie" in query or "non salaries" in query or "non salarié" in query or "non salariés" in query:
                 social_priority.append("cnss_p212_affiliation_travailleurs_non_salaries")
@@ -1616,6 +1630,20 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_n124_attestation_non_assujettissement")
             if "attestation de solde" in query:
                 social_priority.append("cnss_n75_attestation_de_solde")
+            if "accident du travail" in query or "accidents du travail" in query or "maladie professionnelle" in query or "maladies professionnelles" in query:
+                social_priority.append("cnss_accidents_travail_maladies_professionnelles")
+            if "guide de l employeur" in query or "guide de l'employeur" in query or ("secteur non agricole" in query and ("employeur" in query or "cotisation" in query or "declaration" in query)):
+                social_priority.append("cnss_guide_employeur_secteur_non_agricole")
+            if "compte bancaire" in query or "comptes bancaires" in query or "rib" in query or "bureau regional" in query or "bureau local" in query:
+                social_priority.append("cnss_liste_comptes_bancaires_bureaux_regionaux")
+            if "autorisation de debit" in query or "autorisation de débit" in query or "prelevement" in query or "prélèvement" in query:
+                social_priority.append("cnss_autorisation_debit_bancaire_postal")
+            if "regime complementaire des pensions" in query or "régime complémentaire des pensions" in query or "rcp" in query or "retraite complementaire" in query:
+                social_priority.append("cnss_affiliation_regime_complementaire_pensions")
+            if "service sms" in query or ("sms" in query and "cnss" in query):
+                social_priority.append("cnss_flyer_sms")
+            if "presentation cnss" in query or "présentation cnss" in query or "missions de la cnss" in query or "caisse nationale de securite sociale" in query:
+                social_priority.append("cnss_presentation_institutionnelle")
             if social_priority:
                 priority_doc_ids = social_priority + [doc_id for doc_id in priority_doc_ids if doc_id not in set(social_priority)]
         if coverage_workflow.family == "tva":

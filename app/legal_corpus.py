@@ -36,6 +36,11 @@ SOURCE_TIER_WEIGHTS = {
     "institutional_report": 0.50,
     "social_security_form": 0.68,
     "administrative_attestation": 0.58,
+    "social_security_guide": 0.72,
+    "social_security_text_collection": 0.82,
+    "administrative_reference": 0.56,
+    "institutional_reference": 0.54,
+    "service_flyer": 0.36,
 }
 
 
@@ -256,6 +261,13 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "cnss_n74_attestation_contentieuse": r"\bcnss\b|attestation contentieuse|accord sur un litige|accord sur un conflit|solution d'un litige|contentieux|numero d'affiliation",
         "cnss_n124_attestation_non_assujettissement": r"\bcnss\b|attestation de non assujettissement|non assujettissement|non-assujettissement|profession|registre de commerce|identifiant fiscal",
         "cnss_n75_attestation_de_solde": r"\bcnss\b|attestation de solde|demande d'attestation de solde|certificat de solde|numero d'affiliation|nom ou raison sociale",
+        "cnss_presentation_institutionnelle": r"\bcnss\b|caisse nationale de securite sociale|loi n 60-30|prestations familiales|assurances sociales|pensions de vieillesse|conventions bilaterales",
+        "cnss_liste_comptes_bancaires_bureaux_regionaux": r"\bcnss\b|comptes bancaires|rib|bureau regional|bureau local|br|bl|stb|paiement bancaire",
+        "cnss_accidents_travail_maladies_professionnelles": r"\bcnss\b|accidents du travail|maladies professionnelles|incapacite permanente|réparation des prejudices|cotisations|prestations en nature|prestations en especes|prevention",
+        "cnss_guide_employeur_secteur_non_agricole": r"\bcnss\b|guide de l'employeur|secteur non agricole|declaration des salaires|quinzieme jour|cotisations dues|penalite de retard|employeur",
+        "cnss_flyer_sms": r"\bcnss\b|sms|service sms|notification sms|telephone portable|message court",
+        "cnss_autorisation_debit_bancaire_postal": r"\bcnss\b|autorisation de debit|debit bancaire|debit postal|prelevement|compte bancaire|compte postal|numero d'affiliation",
+        "cnss_affiliation_regime_complementaire_pensions": r"\bcnss\b|regime complementaire des pensions|régime complémentaire des pensions|rcp|affiliation au rcp|retraite complementaire|salaire minimum interprofessionnel garanti|smig",
         "attestation_activite_agricole": r"attestation|activite agricole|poursuite d'activite agricole|poursuite d activite agricole|agriculture|formation agricole",
         "note_generale_facturation_electronique_2026": r"facturation electronique|facture electronique|e-facturation|e facture|e-facture|plateforme facture|operations de services|obligation de facturation",
         "note_generale_non_residents_services_administratifs_2026": r"tunisien non resident|tunisiens non residents|non resident|services administratifs|article 109|certificat d'immatriculation|depot des declarations fiscales|dépôt des déclarations fiscales",
