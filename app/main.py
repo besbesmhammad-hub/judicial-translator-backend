@@ -725,12 +725,25 @@ def source_precision_rules(message: str) -> list[dict]:
     if coverage_workflow:
         if coverage_workflow.family == "paie_social":
             social_rules: list[dict] = []
-            if any(term in query for term in ("deces", "décès", "survivant", "survivants", "orphelin", "orphelins", "capital deces", "pension")):
+            if any(term in query for term in ("deces", "décès", "survivant", "survivants", "capital deces")):
                 social_rules.extend([
                     {"doc_id": "cnss_p57_demande_indemnite_deces", "terms": ["indemnite de deces", "acte de deces", "assure social", "conjoint"], "min_matches": 2},
                     {"doc_id": "cnss_a144bis_pension_capital_deces_survivants", "terms": ["pension", "capital deces", "survivants", "conjoint survivant", "orphelins"], "min_matches": 2},
                     {"doc_id": "cnss_p58_constat_medical_de_deces", "terms": ["constat medical de deces", "cause de deces", "medecin traitant", "accident"], "min_matches": 2},
                 ])
+            if ("pension alimentaire" in query or "rente de divorce" in query or "abandon de famille" in query) and "fonds" in query:
+                social_rules.extend([
+                    {"doc_id": "cnss_p314_fonds_garantie_pension_alimentaire", "terms": ["fonds de garantie", "pension alimentaire", "rente de divorce", "abandon de famille"], "min_matches": 2},
+                    {"doc_id": "cnss_p314bis_engagement_fonds_garantie_pension_alimentaire", "terms": ["fonds de garantie", "pension alimentaire", "rente de divorce", "engagement"], "min_matches": 2},
+                ])
+            elif "demande de pension" in query or "pension de retraite" in query or "vieillesse" in query or "invalidite" in query or "invalidité" in query or "retraite anticipee" in query or "retraite anticipée" in query:
+                social_rules.append({"doc_id": "cnss_a144_demande_pension", "terms": ["demande de pension", "vieillesse", "invalidite", "retraite anticipee"], "min_matches": 2})
+            if "fille orpheline" in query or ("orpheline" in query and "sans revenu" in query):
+                social_rules.append({"doc_id": "cnss_n104_declaration_fille_orpheline", "terms": ["fille orpheline", "non mariee", "sans revenu", "defunt"], "min_matches": 2})
+            if "orphelin" in query and ("infirmit" in query or "maladie incurable" in query):
+                social_rules.append({"doc_id": "cnss_n102_declaration_orphelin_infirme", "terms": ["orphelin", "infirmit", "maladie incurable", "sans revenu"], "min_matches": 2})
+            if "pret logement" in query or "prêt logement" in query:
+                social_rules.append({"doc_id": "cnss_f56bis_demande_pret_logement", "terms": ["pret logement", "construction", "acquisition", "terrain viabilise"], "min_matches": 2})
             if "accident non professionnel" in query or ("accident" in query and "professionnel" in query):
                 social_rules.append({"doc_id": "cnss_n66_declaration_accident_non_professionnel", "terms": ["accident non professionnel", "declaration d accident", "temoins", "circonstances"], "min_matches": 2})
             if "non salarie" in query or "non salaries" in query or "non salarié" in query or "non salariés" in query:
@@ -1549,12 +1562,25 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
         blocked_doc_ids = set()
         if coverage_workflow.family == "paie_social":
             social_priority: list[str] = []
-            if any(term in query for term in ("deces", "décès", "survivant", "survivants", "orphelin", "orphelins", "capital deces", "pension")):
+            if any(term in query for term in ("deces", "décès", "survivant", "survivants", "capital deces")):
                 social_priority.extend([
                     "cnss_p57_demande_indemnite_deces",
                     "cnss_a144bis_pension_capital_deces_survivants",
                     "cnss_p58_constat_medical_de_deces",
                 ])
+            if ("pension alimentaire" in query or "rente de divorce" in query or "abandon de famille" in query) and "fonds" in query:
+                social_priority.extend([
+                    "cnss_p314_fonds_garantie_pension_alimentaire",
+                    "cnss_p314bis_engagement_fonds_garantie_pension_alimentaire",
+                ])
+            elif "demande de pension" in query or "pension de retraite" in query or "vieillesse" in query or "invalidite" in query or "invalidité" in query or "retraite anticipee" in query or "retraite anticipée" in query:
+                social_priority.append("cnss_a144_demande_pension")
+            if "fille orpheline" in query or ("orpheline" in query and "sans revenu" in query):
+                social_priority.append("cnss_n104_declaration_fille_orpheline")
+            if "orphelin" in query and ("infirmit" in query or "maladie incurable" in query):
+                social_priority.append("cnss_n102_declaration_orphelin_infirme")
+            if "pret logement" in query or "prêt logement" in query:
+                social_priority.append("cnss_f56bis_demande_pret_logement")
             if "accident non professionnel" in query or ("accident" in query and "professionnel" in query):
                 social_priority.append("cnss_n66_declaration_accident_non_professionnel")
             if "non salarie" in query or "non salaries" in query or "non salarié" in query or "non salariés" in query:
