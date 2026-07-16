@@ -94,6 +94,13 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
     ]
     checks["not_generic_fallback"] = not contains_any(normalized, generic_forbidden)
     checks["no_guardrail_block"] = not bool(debug_trace.get("guardrail_blocked"))
+    for doc_id in case.get("expected_selected_doc_ids", []):
+        checks[f"expected_doc_{doc_id}"] = doc_id in docs
+    for doc_id in case.get("forbidden_selected_doc_ids", []):
+        checks[f"forbidden_doc_{doc_id}"] = doc_id not in docs
+    for phrase in case.get("expected_missing_info_contains", []):
+        key = normalize_for_match(phrase).replace(" ", "_")[:60]
+        checks[f"missing_info_{key}"] = contains_any(normalized, [phrase])
 
     if "dividende" in case_id or "dividende" in question:
         checks["dividends_mentions_withholding"] = contains_any(normalized, ["retenue a la source", "retenue operee"])
@@ -151,7 +158,10 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["level3_mentions_missing_facts"] = contains_any(normalized, ["informations manquantes", "statut tva du client", "ventilation du prix"])
         checks["level3_uses_tva_source"] = "tva_droit_consommation" in docs
         checks["level3_uses_irpp_source"] = "code_irpp_is_2011" in docs
-        checks["level3_uses_treaty_source"] = "convention_fiscale_france_tunisie" in docs
+        checks["level3_uses_treaty_source"] = (
+            "convention_fiscale_france_tunisie" in docs
+            or "convention_fiscale_applicable" in docs
+        )
 
     if "mixed_dividends" in case_id:
         checks["mixed_dividends_splits_physical_person"] = contains_any(normalized, ["personne physique residente", "300 000 tnd"])
@@ -234,6 +244,13 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
         normalized,
         ["passage cible", "source-cadre", "source manquante", "article precis a verifier", "niveau d'appui", "limite:"],
     )
+    for doc_id in case.get("expected_direct_or_framework_doc_ids", []):
+        matching = [
+            source
+            for source in (debug_trace.get("selected_sources") or [])
+            if source.get("doc_id") == doc_id and source.get("support_level") in {"direct_passage", "framework_source"}
+        ]
+        checks[f"{doc_id}_direct_or_framework"] = bool(matching)
 
     if "amortissement" in case_id or "amortissement" in question:
         checks["amortization_has_direct_passage"] = "direct_passage" in supports
@@ -273,8 +290,15 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
         checks["level3_has_tva_direct_or_framework"] = "tva_droit_consommation" in docs and any(
             level in {"direct_passage", "framework_source"} for level in supports
         )
-        checks["level3_has_treaty_direct_or_framework"] = "convention_fiscale_france_tunisie" in docs and any(
-            level in {"direct_passage", "framework_source"} for level in supports
+        checks["level3_has_treaty_direct_or_framework"] = (
+            (
+                "convention_fiscale_france_tunisie" in docs
+                and any(level in {"direct_passage", "framework_source"} for level in supports)
+            )
+            or (
+                "convention_fiscale_applicable" in docs
+                and "missing_source" in supports
+            )
         )
         checks["level3_source_support_classified"] = bool(supports)
 

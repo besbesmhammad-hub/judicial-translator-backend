@@ -498,8 +498,9 @@ def legal_sources_by_doc_ids(doc_ids: list[str]) -> list[dict]:
 
 def source_precision_rules(message: str) -> list[dict]:
     query = match_key(message)
+    france_case = "france" in query or "francais" in query or "francaise" in query
     if is_cross_border_service_case(query):
-        return [
+        rules = [
             {
                 "doc_id": "tva_droit_consommation",
                 "terms": [
@@ -529,19 +530,35 @@ def source_precision_rules(message: str) -> list[dict]:
                 "terms": ["loi de finances", "2026", "retenue", "tva", "الأداء على القيمة المضافة"],
                 "min_matches": 2,
             },
-            {
+        ]
+        if france_case:
+            rules.append({
                 "doc_id": "convention_fiscale_france_tunisie",
                 "terms": ["etablissement stable", "chantier", "montage", "benefices des entreprises", "redevances"],
                 "min_matches": 2,
-            },
-        ]
+            })
+        else:
+            rules.append({
+                "doc_id": "convention_fiscale_applicable",
+                "title": "Convention fiscale applicable au pays du client",
+                "missing": True,
+            })
+        return rules
     if is_mixed_dividends_case(query):
-        return [
+        rules = [
             {"doc_id": "code_irpp_is_2011", "terms": ["article 52", "c bis", "revenus distribues", "10%"], "min_matches": 2},
             {"doc_id": "loi_finances_2026", "terms": ["dividende", "retenue", "2026"], "min_matches": 2},
             {"doc_id": "procedures_fiscales_2026", "terms": ["declaration", "reversement", "certificat", "retenue"], "min_matches": 2},
-            {"doc_id": "convention_fiscale_france_tunisie", "terms": ["dividendes", "resident", "etat contractant", "retenue"], "min_matches": 2},
         ]
+        if france_case:
+            rules.append({"doc_id": "convention_fiscale_france_tunisie", "terms": ["dividendes", "resident", "etat contractant", "retenue"], "min_matches": 2})
+        elif "non resident" in query or "non-resident" in query:
+            rules.append({
+                "doc_id": "convention_fiscale_applicable",
+                "title": "Convention fiscale applicable a l'associe non-resident",
+                "missing": True,
+            })
+        return rules
     if is_revenue_cutoff_tva_case(query):
         return [
             {"doc_id": "nc_03_revenus", "terms": ["revenu", "prestation de services", "realisation", "exercice"], "min_matches": 2},
@@ -707,108 +724,165 @@ def source_precision_rules(message: str) -> list[dict]:
 
 
 def is_cross_border_service_case(query: str) -> bool:
+    foreign_markers = [
+        "france", "francais", "italie", "italien", "allemagne", "allemand",
+        "emirats", "dubai", "uae", "algerie", "algerien", "client etranger",
+        "societe algerienne", "societe allemande", "societe italienne",
+        "non resident", "hors de tunisie", "eur", "euro",
+    ]
+    service_markers = [
+        "prestation", "services", "informatique", "logiciel", "installation",
+        "formation", "licence", "redevance", "assistance", "support",
+        "parametrage", "maintenance", "consultants",
+    ]
+    tunisian_markers = ["societe tunisienne", "tunisie", "prestataire tunisien"]
     return (
-        ("france" in query or "client francais" in query or "client etabli en france" in query)
-        and ("120 000" in query or "120000" in query or "eur" in query or "euro" in query or "consultant" in query or "20 jours" in query)
+        any(marker in query for marker in foreign_markers)
+        and any(marker in query for marker in service_markers)
         and (
-            "prestation" in query
-            or "services" in query
-            or "informatique" in query
-            or "installation" in query
-            or "formation" in query
-            or "logiciel" in query
+            any(marker in query for marker in tunisian_markers)
+            or ("regime fiscal" in query and ("facture" in query or "facturee" in query))
         )
     )
 
 
 def is_mixed_dividends_case(query: str) -> bool:
+    distribution_markers = ["dividende", "dividendes", "benefices distribues", "revenus distribues", "distribution"]
+    profile_markers = [
+        "personne physique", "societe tunisienne", "personne morale", "associe",
+        "actionnaire", "non resident", "resident", "beneficiaire", "certificat",
+        "retenue", "reserves", "trois", "profils",
+    ]
     return (
-        ("dividende" in query or "dividendes" in query)
-        and ("300 000" in query or "300000" in query)
-        and ("200 000" in query or "200000" in query)
-        and ("100 000" in query or "100000" in query)
-        and ("francais" in query or "france" in query or "non resident" in query)
+        (any(marker in query for marker in distribution_markers) and sum(1 for marker in profile_markers if marker in query) >= 2)
+        or ("reserves" in query and "benefices distribues" in query)
     )
 
 
 def is_revenue_cutoff_tva_case(query: str) -> bool:
+    service_markers = ["maintenance", "contrat annuel", "abonnement", "support", "service annuel", "assistance", "prestation annuelle"]
+    timing_markers = ["avance", "upfront", "paye", "payee", "facture", "encaisse", "12 mois", "annuel"]
+    cutoff_markers = ["2025", "2026", "cloture", "cut off", "cut-off", "produit constate d'avance", "rattachement", "periode"]
     return (
-        ("maintenance" in query or "contrat annuel" in query or "abonnement" in query)
-        and ("avance" in query or "upfront" in query or "paye" in query or "payee" in query or "facture" in query)
-        and ("2025" in query and "2026" in query)
+        any(marker in query for marker in service_markers)
+        and any(marker in query for marker in timing_markers)
+        and sum(1 for marker in cutoff_markers if marker in query) >= 1
     )
 
 
 def is_receivable_subsequent_recovery_case(query: str) -> bool:
-    has_receivable = "creance" in query and ("client" in query or "douteuse" in query or "douteuses" in query)
+    has_receivable = (
+        ("creance" in query and ("client" in query or "douteuse" in query or "douteuses" in query))
+        or "facture client" in query
+        or "client doit" in query
+        or "client conteste" in query
+        or "client est en retard" in query
+        or ("client" in query and "solde" in query and "provision" in query)
+        or ("client" in query and "impayee" in query and "provision" in query)
+    )
     has_age_or_doubt = (
         "14 mois" in query
+        or "11 mois" in query
+        or "8 mois" in query
         or "echue" in query
+        or "impayee" in query
+        or "en retard" in query
+        or "conteste" in query
         or "relance" in query
         or "relances" in query
         or "provision" in query
         or "provisionner" in query
+        or "depreciation" in query
+        or "balance agee" in query
     )
     return (
         has_receivable
         and has_age_or_doubt
-        and ("30 000" in query or "30000" in query or "recouvrement partiel" in query or "encaisse" in query or "recupere" in query)
-        and ("cloture" in query or "cleture" in query or "post cloture" in query or "apres la cloture" in query or "posterieur" in query)
+        and (
+            "cloture" in query
+            or "cleture" in query
+            or "post cloture" in query
+            or "apres la cloture" in query
+            or "posterieur" in query
+            or "deductibilite" in query
+            or "deductible" in query
+            or "deduire" in query
+            or "fiscal" in query
+        )
     )
 
 
 def is_fixed_asset_component_depreciation_case(query: str) -> bool:
-    return (
-        ("machine" in query or "immobilisation" in query or "equipement" in query)
-        and ("amortissement" in query or "amortir" in query or "depreciation" in query)
-        and (
-            "installation" in query
-            or "tests" in query
-            or "mise en service" in query
-            or "production" in query
-            or "composant" in query
-            or "piece majeure" in query
-        )
-    )
+    asset_markers = ["machine", "immobilisation", "equipement", "ligne de production", "actif", "moteur"]
+    issue_markers = [
+        "amortissement", "amortir", "depreciation", "installation", "tests",
+        "mise en service", "mise en production", "pret a fonctionner", "pret a etre utilise",
+        "production", "composant", "piece majeure", "taux fiscal", "duree comptable",
+    ]
+    return any(marker in query for marker in asset_markers) and sum(1 for marker in issue_markers if marker in query) >= 2
 
 
 def is_going_concern_case(query: str) -> bool:
     return (
         "continuite" in query
         or "going concern" in query
+        or "cessation d activite" in query
+        or "continuer son exploitation" in query
+        or "risque de cessation" in query
+        or ("tresorerie" in query and ("insuffisante" in query or "negative" in query or "rupture" in query))
+        or ("fournisseurs" in query and ("impayes" in query or "retard" in query))
         or ("capitaux propres" in query and ("negatifs" in query or "negative" in query))
         or ("financement bancaire" in query and "non confirme" in query)
+        or ("soutien bancaire" in query and "non confirme" in query)
+        or ("budget de tresorerie" in query and ("conclure" in query or "hypothese" in query))
     )
 
 
 def is_related_party_property_case(query: str) -> bool:
+    property_markers = ["immeuble", "bien immobilier", "propriete", "terrain", "local", "actif immobilier", "vehicule", "actif"]
+    related_markers = ["gerant", "dirigeant", "associe", "actionnaire", "partie liee", "administrateur", "societe soeur"]
+    risk_markers = [
+        "valeur de marche", "dessous", "inferieur", "prix bas", "prix tres bas",
+        "rabais", "expertise", "convention reglementee", "autorisation",
+        "approbation", "loyer superieur", "marche", "validation comptable",
+    ]
     return (
-        ("immeuble" in query or "bien immobilier" in query or "propriete" in query or "terrain" in query)
-        and ("gerant" in query or "dirigeant" in query or "associe" in query or "actionnaire" in query)
-        and ("valeur de marche" in query or "dessous" in query or "inferieur" in query or "prix bas" in query)
+        (any(marker in query for marker in property_markers) or "convention" in query or "vente" in query)
+        and (any(marker in query for marker in related_markers) or "partie liee" in query)
+        and any(marker in query for marker in risk_markers)
     )
 
 
 def is_cash_consulting_evidence_case(query: str) -> bool:
+    service_markers = ["consulting", "consultant", "conseil", "honoraires", "prestation externe", "mission", "service"]
+    evidence_markers = ["facture", "contrat", "livrable", "rapport", "justificatif", "preuve", "bon de commande"]
+    payment_markers = ["especes", "cash", "liquide", "virement", "paiement", "banque"]
+    issue_markers = ["deduire", "deductible", "deductibilite", "risque", "controle", "repondre"]
     return (
-        ("consulting" in query or "consultant" in query or "conseil" in query or "honoraires" in query)
-        and ("especes" in query or "cash" in query or "liquide" in query)
-        and ("facture" in query or "justificatif" in query or "preuve" in query)
+        any(marker in query for marker in service_markers)
+        and any(marker in query for marker in evidence_markers)
+        and (any(marker in query for marker in payment_markers) or any(marker in query for marker in issue_markers))
     )
 
 
 def is_accounting_tax_bridge_case(query: str) -> bool:
     return (
-        "provision" in query
-        and ("comptable" in query or "comptabilisee" in query)
+        ("provision" in query or "charge" in query)
+        and ("comptable" in query or "comptabilisee" in query or "comptabilite" in query or "ecritures" in query or "traitement" in query)
         and (
             "non deductible" in query
             or "non deductibilite" in query
             or "pas deductible" in query
             or "pas fiscalement deductible" in query
             or "fiscalement deductible" in query
+            or "deduction" in query
+            or "deductibilite" in query
+            or "base fiscale" in query
+            or "difference temporaire" in query
+            or "impot differe" in query
+            or "reintegr" in query
         )
-        and ("fiscal" in query or "fiscalement" in query)
+        and ("fiscal" in query or "fiscalement" in query or "fiscaux" in query or "fiscales" in query or "fiscaliste" in query)
     )
 
 
@@ -1474,6 +1548,10 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
     returned_intent = intent
     returned_domain = legal_domain
     workflow_name = "case_analysis_fastpath"
+    facts_summary = compact_excerpt(message, 520)
+    france_case = "france" in query or "francais" in query or "francaise" in query
+    treaty_label = "convention fiscale France-Tunisie" if france_case else "convention fiscale applicable au pays du client"
+    foreign_client_label = "francais" if france_case else "etranger"
 
     if is_cross_border_service_case(query):
         workflow_name = "level3_multi_domain_case_analysis"
@@ -1484,10 +1562,9 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             {
                 "Reponse": (
                     "Ce dossier doit etre traite comme une analyse fiscale transfrontaliere multi-issues, et non comme une simple question IRPP/IS. "
-                    "Les faits a qualifier sont les suivants: societe tunisienne de services informatiques, facture de 120 000 EUR a une societe francaise, "
-                    "travaux realises en partie depuis la Tunisie, deux consultants tunisiens presents en France, installation et formation en France, "
-                    "duree de presence annoncee de 20 jours. L'analyse doit separer au minimum la TVA tunisienne, la retenue a la source ou le risque d'imposition "
-                    "sur le paiement transfrontalier, la convention fiscale France-Tunisie, le risque d'etablissement stable, la facturation et les justificatifs."
+                    f"Les faits transmis doivent etre qualifies sans les remplacer par un cas standard: {facts_summary}. "
+                    "L'analyse doit separer au minimum la TVA tunisienne, la retenue a la source ou le risque d'imposition "
+                    f"sur le paiement transfrontalier, la {treaty_label}, le risque d'etablissement stable, la facturation et les justificatifs."
                 ),
                 "Application pratique": (
                     "- TVA: verifier dans le Code de la taxe sur la valeur ajoutee si la prestation est localisee, utilisee ou exploitee en Tunisie ou hors de Tunisie, "
@@ -1496,21 +1573,22 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "licence de logiciel ou redevance. La qualification peut changer le traitement fiscal.\n"
                     "- Retenue a la source: verifier dans le Code de l'IRPP et de l'IS si le paiement a un non-resident ou la remuneration d'une prestation technique, "
                     "d'une licence ou d'une redevance declenche une retenue; ne pas conclure sur un taux sans article direct.\n"
-                    "- Convention fiscale: verifier obligatoirement la convention France-Tunisie avant toute conclusion sur retenue, redevances, benefices d'entreprise "
-                    "ou etablissement stable. Cette convention n'est pas encore indexee dans le corpus actuel.\n"
-                    "- Etablissement stable: analyser la presence de 20 jours en France, la nature de l'installation/formation, les pouvoirs des consultants, "
-                    "l'existence d'un chantier ou d'une installation fixe, et les seuils conventionnels applicables. Les 20 jours ne suffisent pas seuls pour conclure.\n"
+                    f"- Convention fiscale: verifier obligatoirement la {treaty_label} avant toute conclusion sur retenue, redevances, benefices d'entreprise "
+                    "ou etablissement stable.\n"
+                    "- Etablissement stable: analyser la duree de presence a l'etranger, la nature de l'installation/formation, les pouvoirs des consultants, "
+                    "l'existence d'un chantier ou d'une installation fixe, et les seuils conventionnels applicables. La seule duree indiquee dans le dossier ne suffit pas pour conclure.\n"
                     "- Facturation: verifier les mentions de facture, devise, client etranger, lieu d'execution, description detaillee des prestations, traitement TVA retenu "
                     "et reference documentaire justifiant l'exoneration ou le regime applique.\n"
-                    "- Justificatifs: conserver contrat, commande, facture, preuve du statut et de l'etablissement du client francais, preuves de paiement, feuilles de mission, "
+                    f"- Justificatifs: conserver contrat, commande, facture, preuve du statut et de l'etablissement du client {foreign_client_label}, preuves de paiement, feuilles de mission, "
                     "dates de deplacement, livrables, PV d'installation/formation et ventilation du prix par nature de prestation.\n"
                     "- Informations manquantes: statut TVA du client, clauses contractuelles, propriete ou licence du logiciel, lieu d'utilisation effective, ventilation du prix, "
-                    "pouvoirs des consultants, pays de paiement, existence d'un avenant de maintenance et texte exact de la convention fiscale applicable."
+                    "pouvoirs des consultants, pays de paiement, existence d'un avenant de maintenance et texte exact de la convention fiscale applicable. "
+                    "Sans contrat, lieu d'execution, duree de presence ou nature exacte des services, le cabinet ne peut pas conclure le regime fiscal."
                 ),
                 "Points de vigilance": (
                     "- Ne pas repondre par un cadre IRPP/IS unique: la TVA, la convention fiscale, l'etablissement stable, la facturation et les justificatifs sont des issues distinctes.\n"
-                    "- Ne pas affirmer un taux de retenue, une absence de TVA ou une absence d'etablissement stable sans passage direct du Code TVA, du Code IRPP/IS et de la convention France-Tunisie.\n"
-                    "- La convention France-Tunisie doit etre ajoutee au corpus; tant qu'elle manque, la conclusion sur etablissement stable, redevances et retenue reste une reserve professionnelle.\n"
+                    f"- Ne pas affirmer un taux de retenue, une absence de TVA ou une absence d'etablissement stable sans passage direct du Code TVA, du Code IRPP/IS et de la {treaty_label}.\n"
+                    "- Si la convention applicable n'est pas indexee ou si le passage exact manque, la conclusion sur etablissement stable, redevances et retenue doit rester sous reserve professionnelle.\n"
                     "- Si une partie du prix correspond a une licence ou a une redevance logicielle, l'analyse peut differer d'une prestation de services pure."
                 ),
                 "Sources utilisees": source_lines,
@@ -1525,26 +1603,26 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             "practical_analysis",
             {
                 "Reponse": (
-                    "Cette distribution doit etre analysee beneficiaire par beneficiaire. Le dossier ne peut pas recevoir une reponse globale, car les trois profils "
-                    "ne portent pas le meme risque fiscal: 300 000 TND a une personne physique residente, 200 000 TND a une societe tunisienne, et 100 000 TND "
-                    "a un associe francais non-resident. Pour chacun, il faut verifier la retenue a la source, la declaration et le reversement, le certificat ou "
-                    "la preuve de retenue, et pour le non-resident la convention fiscale France-Tunisie."
+                    f"Cette distribution doit etre analysee beneficiaire par beneficiaire. Faits transmis: {facts_summary}. "
+                    "Le dossier ne peut pas recevoir une reponse globale, car les profils de beneficiaires ne portent pas le meme risque fiscal. "
+                    "Pour chacun, il faut verifier la retenue a la source, la declaration et le reversement, le certificat ou "
+                    f"la preuve de retenue, et pour un non-resident la {treaty_label}."
                 ),
                 "Application pratique": (
-                    "- Personne physique residente - 300 000 TND: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues, la retenue a la source applicable, "
+                    "- Personne physique residente: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues, la retenue a la source applicable, "
                     "son caractere eventuellement liberatoire ou imputable, et la justification remise au beneficiaire.\n"
-                    "- Societe tunisienne - 200 000 TND: verifier si le regime differe selon la qualite de personne morale residente, le traitement dans le resultat fiscal, "
+                    "- Societe tunisienne ou personne morale residente: verifier si le regime differe selon la qualite de personne morale residente, le traitement dans le resultat fiscal, "
                     "et l'existence d'une retenue ou d'une dispense documentee.\n"
-                    "- Associe francais non-resident - 100 000 TND: verifier la retenue interne tunisienne, puis la convention fiscale France-Tunisie avant de retenir un taux, "
+                    f"- Associe non-resident: verifier la retenue interne tunisienne, puis la {treaty_label} avant de retenir un taux, "
                     "une limitation ou une condition de residence beneficiale.\n"
                     "- Declaration et reversement: identifier l'obligation declarative, la periode de reversement et les pieces a conserver pour chaque beneficiaire.\n"
                     "- Certificats et justificatifs: conserver decision de distribution, PV, identite fiscale des beneficiaires, preuve de residence du non-resident, calcul brut/retenue/net et certificat de retenue.\n"
-                    "- Informations manquantes: forme exacte des associes, residence fiscale, beneficiaire effectif, convention applicable, article/taux direct et echeance declarative."
+                    "- Informations manquantes: forme exacte des associes, residence fiscale, beneficiaire effectif, convention applicable, article/taux direct, echeance declarative et origine des reserves distribuees."
                 ),
                 "Points de vigilance": (
                     "- Ne pas appliquer le meme traitement aux trois associes.\n"
                     "- Ne pas affirmer de taux ou d'article tant que le passage direct sur dividendes n'est pas indexe.\n"
-                    "- La convention France-Tunisie manque encore au corpus: le cas non-resident doit rester sous reserve jusqu'a ingestion du traite."
+                    f"- La {treaty_label} doit etre verifiee pour tout beneficiaire non-resident avant d'arreter une conclusion client."
                 ),
                 "Sources utilisees": source_lines,
             },
@@ -1559,6 +1637,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             {
                 "Reponse": (
                     "Un contrat annuel de maintenance paye d'avance doit etre analyse comme un cas de cut-off comptable et fiscal, pas comme une simple definition de TVA. "
+                    f"Faits transmis: {facts_summary}. "
                     "Il faut distinguer la date de facturation ou d'encaissement, la periode de service, la part rattachee a 2025, la part rattachee a 2026, "
                     "les produits constates d'avance le cas echeant, le resultat fiscal et l'exigibilite TVA."
                 ),
@@ -1568,7 +1647,8 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Fiscalite: verifier si le resultat fiscal suit le rattachement comptable ou si une regle fiscale specifique modifie le traitement.\n"
                     "- TVA: verifier le fait generateur et l'exigibilite selon facture, encaissement ou execution du service d'apres le Code TVA applicable.\n"
                     "- Facturation: rapprocher contrat, facture, periode de couverture, date d'encaissement, conditions de remboursement et obligations de service restantes.\n"
-                    "- Informations manquantes: date de debut/fin du contrat, date de facture, date d'encaissement, montant HT/TVA, conditions de resiliation et prestations deja effectuees."
+                    "- Informations manquantes: date de debut/fin du contrat, date de facture, date d'encaissement, montant HT/TVA, conditions de resiliation et prestations deja effectuees. "
+                    "Si la periode couverte ou la facture manque, ou si la facture est non payee sans information d'exigibilite, le cabinet ne peut pas conclure prudemment sur la ventilation definitive."
                 ),
                 "Points de vigilance": (
                     "- Ne pas comptabiliser tout le montant en produit de 2025 si une partie remunere des services 2026.\n"
@@ -1587,24 +1667,26 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             "practical_analysis",
             {
                 "Reponse": (
-                    "Une creance douteuse avec recouvrement partiel de 30 000 TND apres cloture doit etre analysee en deux temps: la depreciation/provision a la date de cloture, "
+                    f"Une creance client impayee ou douteuse doit etre analysee en deux temps. Faits transmis: {facts_summary}. "
+                    "Il faut d'abord traiter la depreciation/provision a la date de cloture, "
                     "puis le traitement de l'encaissement posterieur comme evenement posterieur ajustant ou non ajustant selon ce qu'il prouve sur la situation existant a la cloture. "
-                    "Si le dossier porte sur une creance de 180 000 TND en retard depuis 14 mois avec relances, ces faits doivent etre documentes et l'exposition residuelle apres encaissement doit etre recalculee. "
+                    "Si un recouvrement posterieur existe, l'exposition residuelle doit etre recalculee; s'il n'existe pas, l'estimation repose davantage sur les indices de recouvrabilite disponibles. "
                     "Il faut distinguer la constatation comptable de la depreciation et la deductibilite fiscale de la provision."
                 ),
                 "Application pratique": (
                     "- Classer la creance: identifier facture, echeance, anciennete, litige, garanties, relances et risque reel de non-recouvrement a la cloture.\n"
-                    "- Retard de 14 mois: utiliser l'anciennete et les relances comme indices de doute, sans remplacer le jugement par une regle automatique.\n"
-                    "- Montant: partir de la creance brute de 180 000 TND si elle est confirmee, puis tenir compte du recouvrement posterieur de 30 000 TND pour apprecier l'exposition restante de 150 000 TND.\n"
-                    "- Ecritures: constater ou ajuster la depreciation/provision sur la part estimee non recouvrable; comptabiliser l'encaissement de 30 000 TND en diminution de la creance client et revoir la dotation ou reprise necessaire.\n"
+                    "- Anciennete: utiliser le retard, les relances et les litiges comme indices de doute, sans remplacer le jugement par une regle automatique.\n"
+                    "- Montant: partir de la creance brute confirmee, tenir compte des encaissements posterieurs eventuels et calculer l'exposition restante avant de chiffrer la depreciation.\n"
+                    "- Ecritures: constater ou ajuster la depreciation/provision sur la part estimee non recouvrable; comptabiliser tout encaissement posterieur en diminution de la creance client et revoir la dotation ou reprise necessaire.\n"
                     "- Evaluer la provision: limiter la depreciation a l'exposition restante apres analyse des chances de recouvrement.\n"
-                    "- Encaissement de 30 000 TND apres cloture: determiner s'il confirme une information deja existante a la cloture; dans ce cas il peut ajuster l'estimation. "
+                    "- Encaissement apres cloture: determiner s'il confirme une information deja existante a la cloture; dans ce cas il peut ajuster l'estimation. "
                     "S'il resulte d'un evenement nouveau, il peut etre non ajustant mais a divulguer si significatif.\n"
                     "- Fiscalite: verifier les conditions de deductibilite, l'individualisation de la creance, les justificatifs, les actions de recouvrement et le calcul conserve au dossier.\n"
-                    "- Documentation: balance agee, relances, correspondances, accord de paiement, preuve d'encaissement posterieur et note de jugement de direction."
+                    "- Documentation: balance agee, relances, correspondances, accord de paiement, preuve d'encaissement posterieur et note de jugement de direction. "
+                    "Sans solde exact, balance agee, relances ou actions de recouvrement, le cabinet ne peut pas conclure a une provision fiscalement deductible."
                 ),
                 "Points de vigilance": (
-                    "- Ne pas maintenir une provision brute si le recouvrement posterieur modifie l'exposition restante.\n"
+                    "- Ne pas maintenir une provision brute si un recouvrement posterieur modifie l'exposition restante.\n"
                     "- Ne pas deduire fiscalement une provision globale sans dossier client par client.\n"
                     "- Distinguer clairement preuve posterieure d'une situation existante et evenement nouveau."
                 ),
@@ -1621,23 +1703,25 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             {
                 "Reponse": (
                     "Ce dossier doit etre traite comme une immobilisation corporelle avec mise en service progressive et composant significatif. "
-                    "La date d'achat du 15 septembre ne suffit pas a declencher l'amortissement si la machine n'est pas encore prete a etre utilisee. "
-                    "Il faut rapprocher l'acquisition du 15 septembre, la livraison du 20 septembre, l'installation du 10 octobre, les tests jusqu'au 25 octobre "
-                    "et la mise en production du 1er novembre. Si le 1er novembre correspond a la disponibilite pour l'utilisation prevue, c'est cette date qui doit etre retenue pour le depart d'amortissement."
+                    f"Faits transmis: {facts_summary}. "
+                    "La date d'achat ou de facture ne suffit pas a declencher l'amortissement si la machine n'est pas encore prete a etre utilisee. "
+                    "Il faut rapprocher acquisition, livraison, installation, tests et mise en production. "
+                    "Si la date de production ou de disponibilite correspond a l'utilisation prevue, c'est cette date qui doit etre retenue pour le depart d'amortissement."
                 ),
                 "Application pratique": (
                     "- Cout d'entree: rattacher au cout de la machine les frais directement necessaires a sa mise en etat de fonctionner, selon les sources comptables applicables.\n"
                     "- Date de depart: distinguer acquisition, livraison, installation, tests et mise en service; l'amortissement commence lorsque l'actif est pret ou disponible pour son utilisation prevue.\n"
                     "- Base amortissable et mode d'amortissement: determiner le cout amortissable, la valeur residuelle eventuelle, la duree d'utilite et le mode d'amortissement coherent avec la consommation des avantages economiques.\n"
                     "- Tests: documenter si les tests jusqu'au 25 octobre conditionnent la disponibilite technique ou s'ils sont seulement des essais de performance apres mise en etat.\n"
-                    "- Production: si la production commence le 1er novembre apres installation et tests, retenir prudemment le 1er novembre comme date probable de mise en service.\n"
+                    "- Production: si la production commence seulement apres installation et tests, retenir prudemment cette date comme date probable de mise en service.\n"
                     "- Composants: la piece majeure remplacee tous les 3 ans doit etre analysee separement si sa duree d'utilisation differe de celle de la machine et si son montant est significatif.\n"
                     "- Fiscalite: comparer le traitement comptable avec les regles fiscales d'amortissement, notamment la date de mise en service/exploitation, les taux maximums et les limites de deductibilite.\n"
-                    "- Documentation: conserver facture, bon de livraison, PV d installation, PV de tests, PV de mise en service, fiche immobilisation, ventilation composant/principal, durees d'utilite et tableau d'amortissement."
+                    "- Documentation: conserver facture, bon de livraison, PV d installation, PV de tests, PV de mise en service, fiche immobilisation, ventilation composant/principal, durees d'utilite et tableau d'amortissement. "
+                    "Sans PV de mise en service, rapport de tests ou preuve que l'actif est pret a fonctionner, le cabinet ne peut pas fixer definitivement le debut d'amortissement."
                 ),
                 "Points de vigilance": (
                     "- Ne pas router ce cas vers un recueil fiscal hors sujet: la question est d'abord comptable et fiscale sur immobilisations corporelles.\n"
-                    "- Ne pas demarrer l'amortissement au 15 septembre par automatisme si la machine n'etait pas prete a fonctionner.\n"
+                    "- Ne pas demarrer l'amortissement a la date d'achat par automatisme si la machine n'etait pas prete a fonctionner.\n"
                     "- Ne pas ignorer l'approche par composants lorsque la piece majeure a une duree de remplacement distincte.\n"
                     "- Ne pas confondre date comptable de mise en service et conditions fiscales de deductibilite."
                 ),
@@ -1653,7 +1737,8 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             "practical_analysis",
             {
                 "Reponse": (
-                    "Ce cas concerne la continuite d'exploitation, pas une definition du commissaire aux comptes. Des capitaux propres negatifs, des retards de paiement fournisseurs "
+                    f"Ce cas concerne la continuite d'exploitation, pas une definition du commissaire aux comptes. Faits transmis: {facts_summary}. "
+                    "Des capitaux propres negatifs, des retards de paiement fournisseurs "
                     "et un financement bancaire non confirme constituent des signaux d'incertitude qui doivent etre analyses par la direction puis audites."
                 ),
                 "Application pratique": (
@@ -1661,8 +1746,9 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Financement bancaire: verifier si l'accord est confirme, conditionnel ou seulement verbal; une promesse non confirmee ne suffit pas.\n"
                     "- Fournisseurs: analyser l'anciennete des dettes, les plans d'echelonnement et les risques de rupture d'approvisionnement.\n"
                     "- Etats financiers: verifier si les notes decrivent correctement les incertitudes significatives et les hypotheses retenues.\n"
+                    "- Refus ou absence d'information: si la direction refuse les disclosures, ne fournit pas de budget de tresorerie ou ne produit pas de preuves suffisantes, l'auditeur ne peut pas conclure sans diligences complementaires.\n"
                     "- Audit: effectuer des procedures sur flux de tresorerie, evenements posterieurs, confirmations bancaires, covenants, plans de direction et coherence des hypotheses.\n"
-                    "- Opinion: si les informations sont insuffisantes ou trompeuses, analyser l'impact possible sur le rapport et l'opinion."
+                    "- Opinion: si les informations sont insuffisantes ou trompeuses, analyser l'impact possible sur le rapport et l'opinion avant de signer."
                 ),
                 "Points de vigilance": (
                     "- Ne pas conclure a la continuite seulement parce que la direction espere un financement.\n"
@@ -1681,7 +1767,8 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             "practical_analysis",
             {
                 "Reponse": (
-                    "La vente d'un bien immobilier a un gerant, associe ou actionnaire a un prix inferieur a la valeur de marche doit etre analysee comme une transaction avec partie liee "
+                    f"La transaction avec un gerant, associe, actionnaire ou autre partie liee doit etre analysee selon ses faits reels: {facts_summary}. "
+                    "Une vente, location ou cession a un prix different de la valeur de marche doit etre analysee comme une transaction avec partie liee "
                     "et comme un risque fiscal potentiel. L'analyse doit couvrir la valeur de marche, l'information sur parties liees, l'acte anormal de gestion ou distribution dissimulee, "
                     "les autorisations societaires, le risque de redressement et les diligences d'audit."
                 ),
@@ -1690,7 +1777,8 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Parties liees: identifier la relation, les conditions de la transaction et l'information a fournir dans les etats financiers.\n"
                     "- Fiscalite: verifier le risque de rehaussement, avantage occulte, acte anormal de gestion ou distribution dissimulee si l'ecart de prix n'est pas justifie.\n"
                     "- Droit des societes: verifier l'approbation, la procedure de convention reglementee ou l'autorisation applicable selon la forme sociale.\n"
-                    "- Audit/gouvernance: communiquer le risque, evaluer l'incidence sur les comptes, les disclosures et l'opinion si l'operation est significative."
+                    "- Audit/gouvernance: communiquer le risque, evaluer l'incidence sur les comptes, les disclosures et l'opinion si l'operation est significative.\n"
+                    "- Conclusion: sans documentation de prix, expertise, contrat, autorisation ou approbation lorsque requis, le cabinet ne peut pas valider l'operation comme une transaction ordinaire."
                 ),
                 "Points de vigilance": (
                     "- Ne pas accepter le prix contractuel sans preuve de juste valeur.\n"
@@ -1709,6 +1797,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             "practical_analysis",
             {
                 "Reponse": (
+                    f"Pour une charge de conseil, honoraires ou prestation externe, il faut partir des faits transmis: {facts_summary}. "
                     "Avec seulement une facture de consulting et un paiement en especes, la deductibilite ne peut pas etre confirmee prudemment. "
                     "Il faut prouver la realite du service, l'interet de l'entreprise, la documentation contractuelle, les livrables et la tracabilite du paiement."
                 ),
@@ -1716,7 +1805,8 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Realite du service: demander contrat, bon de commande, rapport de mission, livrables, emails, planning, preuve d'intervention et validation interne.\n"
                     "- Interet de l'entreprise: rattacher la charge a l'activite, au besoin economique et au benefice attendu.\n"
                     "- Facture: verifier l'identite du prestataire, matricule fiscal, description precise, date, montant, TVA et coherence avec les livrables.\n"
-                    "- Paiement en especes: traiter comme facteur de risque; verifier les restrictions et seuils applicables seulement si un passage source les confirme.\n"
+                    "- Paiement: distinguer paiement en especes, liquide, cash, virement bancaire ou paiement bancaire; le cash augmente le risque de rejet, alors qu'un virement bancaire ne remplace pas les preuves de service.\n"
+                    "- Partie liee et prix: si le prestataire est une partie liee, verifier en plus le prix de marche, l'interet social et les autorisations applicables.\n"
                     "- Fiscalite: examiner la deductibilite dans le Code de l'IRPP/IS, les conditions de justification et les risques de rejet en controle.\n"
                     "- Conclusion prudente: sans preuves autres que la facture et le cash, preparer une reserve et demander les justificatifs avant deduction."
                 ),
@@ -1737,13 +1827,16 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             "practical_analysis",
             {
                 "Reponse": (
-                    "Une provision peut etre comptabilisee tout en n'etant pas fiscalement deductible. Il faut separer le traitement comptable, fonde sur l'existence d'une obligation "
+                    f"Une provision ou charge comptable doit etre analysee en pont comptabilite-fiscalite selon les faits transmis: {facts_summary}. "
+                    "Elle peut etre comptabilisee tout en n'etant pas fiscalement deductible. Il faut separer le traitement comptable, fonde sur l'existence d'une obligation "
                     "ou d'un risque estimable, du traitement fiscal, qui peut imposer une reintegration extra-comptable."
                 ),
                 "Application pratique": (
                     "- Comptabilite: verifier si la provision repond aux criteres de reconnaissance, d'estimation fiable et de rattachement a l'exercice.\n"
                     "- Fiscalite: verifier si la provision entre dans une categorie deductible; sinon elle doit etre reintegree extra-comptablement dans le resultat fiscal.\n"
                     "- Impot differe: analyser seulement si le referentiel applique et les sources disponibles permettent de traiter une difference temporaire.\n"
+                    "- Base fiscale: si la direction ne fournit aucune base fiscale ou si la deduction n'est pas documentee, le cabinet ne peut pas accepter le traitement fiscal comme acquis.\n"
+                    "- Nature du risque: distinguer litige, garantie, charge estimee, difference temporaire et reintegration definitive, car les consequences comptables et fiscales ne sont pas les memes.\n"
                     "- Documentation: conserver note de calcul, fait generateur, estimation, decision de direction, traitement fiscal retenu et justification de la reintegration.\n"
                     "- Informations manquantes: nature de la provision, exercice, base de calcul, texte fiscal applicable et referentiel comptable utilise."
                 ),
