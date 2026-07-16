@@ -107,7 +107,7 @@ Coverage:
 - CNSS, retenues salariales, charges sociales, declarations employeur, avantages en nature.
 
 Priority sources:
-- CNSS F1, I3, I16, I27, I28, N40, N41, N42, N43, N44, N54, N66, N101, C084, P57, P58, P212, P304, A144 bis and P326 administrative forms.
+- CNSS F1, F52, I3, I16, I27, I28, N40, N41, N42, N43, N44, N45, N54, N66, N74, N75, N101, N124, C084, P57, P58, P100, P112, P212, P304, A144 bis and P326 administrative forms.
 - IRPP/IS and procedures fiscales for salary withholding, declarations and control issues.
 
 Current limitation:
