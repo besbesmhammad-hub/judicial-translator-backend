@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
 from . import config
+from .cabinet_coverage import cabinet_coverage_status, detect_cabinet_workflow
 from .financial_glossary import search_financial_glossary
 from .golden_kb import classify_query_intent, golden_kb_status, retrieve_golden_kb
 from .legal_corpus import corpus_status, infer_query_domain, load_corpus, retrieve_legal_context
@@ -720,6 +721,12 @@ def source_precision_rules(message: str) -> list[dict]:
                 "min_matches": 2,
             },
         ]
+    coverage_workflow = detect_cabinet_workflow(query)
+    if coverage_workflow:
+        return [
+            {"doc_id": doc_id, "terms": list(terms), "min_matches": min_matches}
+            for doc_id, terms, min_matches in coverage_workflow.source_terms
+        ]
     return []
 
 
@@ -862,6 +869,7 @@ def is_cash_consulting_evidence_case(query: str) -> bool:
         any(marker in query for marker in service_markers)
         and any(marker in query for marker in evidence_markers)
         and (any(marker in query for marker in payment_markers) or any(marker in query for marker in issue_markers))
+        and not ("retenue a la source" in query and ("non resident" in query or "irpp" in query))
     )
 
 
@@ -1486,6 +1494,19 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     elif is_accounting_tax_bridge_case(query):
         priority_doc_ids = ["ias_37_provisions_passifs_actifs_eventuels", "nc_14_eventualites_post_cloture", "code_irpp_is_2011", "ias_12_impots_resultat"]
         blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale", "code_commerce_2014"}
+    elif coverage_workflow := detect_cabinet_workflow(query):
+        priority_doc_ids = list(coverage_workflow.source_doc_ids)
+        blocked_doc_ids = set()
+        if coverage_workflow.family == "tva":
+            blocked_doc_ids = {"code_societes_commerciales_2022", "ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
+        elif coverage_workflow.family == "fiscalite_directe":
+            blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
+        elif coverage_workflow.family == "comptabilite":
+            blocked_doc_ids = {"fiscalite_locale", "code_commerce_2014"}
+        elif coverage_workflow.family == "audit_cac":
+            blocked_doc_ids = {"fiscalite_locale", "tva_droit_consommation"}
+        elif coverage_workflow.family == "droit_societes":
+            blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
     elif "dividende" in query or "dividendes" in query:
         priority_doc_ids = ["code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026"]
         blocked_doc_ids = {
@@ -1746,7 +1767,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Financement bancaire: verifier si l'accord est confirme, conditionnel ou seulement verbal; une promesse non confirmee ne suffit pas.\n"
                     "- Fournisseurs: analyser l'anciennete des dettes, les plans d'echelonnement et les risques de rupture d'approvisionnement.\n"
                     "- Etats financiers: verifier si les notes decrivent correctement les incertitudes significatives et les hypotheses retenues.\n"
-                    "- Refus ou absence d'information: si la direction refuse les disclosures, ne fournit pas de budget de tresorerie ou ne produit pas de preuves suffisantes, l'auditeur ne peut pas conclure sans diligences complementaires.\n"
+                    "- Refus ou absence d'information: si la direction refuse les disclosures, ne fournit pas de budget de tresorerie, de piece justificative ou de preuves suffisantes, l'auditeur ne peut pas conclure sans diligences complementaires.\n"
                     "- Audit: effectuer des procedures sur flux de tresorerie, evenements posterieurs, confirmations bancaires, covenants, plans de direction et coherence des hypotheses.\n"
                     "- Opinion: si les informations sont insuffisantes ou trompeuses, analyser l'impact possible sur le rapport et l'opinion avant de signer."
                 ),
@@ -1835,15 +1856,49 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Comptabilite: verifier si la provision repond aux criteres de reconnaissance, d'estimation fiable et de rattachement a l'exercice.\n"
                     "- Fiscalite: verifier si la provision entre dans une categorie deductible; sinon elle doit etre reintegree extra-comptablement dans le resultat fiscal.\n"
                     "- Impot differe: analyser seulement si le referentiel applique et les sources disponibles permettent de traiter une difference temporaire.\n"
-                    "- Base fiscale: si la direction ne fournit aucune base fiscale ou si la deduction n'est pas documentee, le cabinet ne peut pas accepter le traitement fiscal comme acquis.\n"
+                    "- Base fiscale: si la direction ne fournit aucune base fiscale, aucun article fiscal direct ou si la deduction n'est pas documentee, le cabinet ne peut pas accepter le traitement fiscal comme acquis.\n"
                     "- Nature du risque: distinguer litige, garantie, charge estimee, difference temporaire et reintegration definitive, car les consequences comptables et fiscales ne sont pas les memes.\n"
-                    "- Documentation: conserver note de calcul, fait generateur, estimation, decision de direction, traitement fiscal retenu et justification de la reintegration.\n"
+                    "- Documentation: conserver note de calcul, fait generateur, estimation, decision de direction, pieces justificatives, traitement fiscal retenu et justification de la reintegration.\n"
                     "- Informations manquantes: nature de la provision, exercice, base de calcul, texte fiscal applicable et referentiel comptable utilise."
                 ),
                 "Points de vigilance": (
                     "- Ne pas confondre comptabilisation et deductibilite fiscale.\n"
                     "- Rester strictement sur le pont comptabilite-fiscalite de la provision traitee.\n"
                     "- Toute conclusion fiscale doit etre rattachee a l'article applicable."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif coverage_workflow := detect_cabinet_workflow(query):
+        workflow_name = coverage_workflow.id
+        returned_intent = coverage_workflow.intent
+        returned_domain = coverage_workflow.legal_domain
+        issues = "\n".join(f"- {item}" for item in coverage_workflow.issue_split)
+        missing = "\n".join(f"- {item}" for item in coverage_workflow.missing_facts)
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Ce dossier releve de la famille cabinet suivante: {coverage_workflow.title}. "
+                    f"Faits transmis: {facts_summary}. "
+                    "La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, "
+                    "rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct."
+                ),
+                "Application pratique": (
+                    "Issues a traiter:\n"
+                    f"{issues}\n\n"
+                    "Faits et pieces a completer avant conclusion client:\n"
+                    f"{missing}\n\n"
+                    "Methode de reponse: appliquer les sources prioritaires de la famille, distinguer les impacts comptables, fiscaux, "
+                    "societaires, audit ou procedure selon le cas, puis indiquer ce qui est directement supporte par un passage direct et ce qui reste source-cadre. "
+                    "Les justificatifs doivent etre controles avant toute conclusion client."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas inventer de taux, delai, article, seuil ou conclusion juridique sans passage direct.\n"
+                    "- Si les faits sont incomplets, conclure prudemment: le cabinet ne peut pas trancher sans les informations manquantes.\n"
+                    "- Si une source exacte manque, marquer la limite comme source-cadre ou source manquante au lieu de presenter une certitude.\n"
+                    "- Adapter la reponse au profil du contribuable, au resident/non-resident, aux dates, montants, pieces et contradictions du dossier."
                 ),
                 "Sources utilisees": source_lines,
             },
@@ -2656,6 +2711,7 @@ async def health() -> dict:
         "active_skills": ACTIVE_SKILLS,
         "legal_corpus": corpus_status(),
         "golden_kb": golden_kb_status(),
+        "cabinet_coverage": cabinet_coverage_status(),
     }
 
 
