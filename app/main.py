@@ -737,6 +737,21 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_p212_affiliation_travailleurs_non_salaries", "terms": ["travailleurs non salaries", "secteurs agricole", "secteur non agricole", "affiliation"], "min_matches": 2})
             if "etranger" in query or "étranger" in query:
                 social_rules.append({"doc_id": "cnss_p304_affiliation_travailleurs_tunisiens_etranger", "terms": ["travailleurs tunisiens a l etranger", "tunisiens a l etranger", "affiliation"], "min_matches": 2})
+            if "declaration trimestrielle" in query or "déclaration trimestrielle" in query or "salaires declares" in query or "salaires déclarés" in query:
+                if "agricole" in query:
+                    social_rules.extend([
+                        {"doc_id": "cnss_i27_declaration_trimestrielle_salaries_agricoles", "terms": ["declaration trimestrielle", "secteur agricole", "salaries", "qualification professionnelle"], "min_matches": 2},
+                        {"doc_id": "cnss_i28_etat_recapitulatif_salaires_agricoles", "terms": ["etat recapitulatif", "salaires declares", "secteur agricole", "cotisations"], "min_matches": 2},
+                    ])
+                else:
+                    social_rules.extend([
+                        {"doc_id": "cnss_i16_declaration_trimestrielle_salaires", "terms": ["declaration trimestrielle", "remuneration mensuelle", "salaires declares", "trimestre"], "min_matches": 2},
+                        {"doc_id": "cnss_i3_etat_recapitulatif_salaires_declares", "terms": ["etat recapitulatif", "salaires declares", "cotisations", "penalites de retard"], "min_matches": 2},
+                    ])
+            if "salaire unique" in query or "majoration" in query:
+                social_rules.append({"doc_id": "cnss_c084_majoration_salaire_unique", "terms": ["majoration pour salaire unique", "salaire unique", "conjoint", "engagement"], "min_matches": 2})
+            if "enfant handicape" in query or "enfant handicapé" in query or "maladie incurable" in query or "infirmit" in query:
+                social_rules.append({"doc_id": "cnss_n101_declaration_enfant_handicape", "terms": ["enfant handicape", "infirmit", "maladie incurable", "declaration sur l honneur"], "min_matches": 2})
             existing_doc_ids = {rule["doc_id"] for rule in social_rules}
             social_rules.extend(
                 {"doc_id": doc_id, "terms": list(terms), "min_matches": min_matches}
@@ -1532,6 +1547,21 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_p212_affiliation_travailleurs_non_salaries")
             if "etranger" in query or "étranger" in query:
                 social_priority.append("cnss_p304_affiliation_travailleurs_tunisiens_etranger")
+            if "declaration trimestrielle" in query or "déclaration trimestrielle" in query or "salaires declares" in query or "salaires déclarés" in query:
+                if "agricole" in query:
+                    social_priority.extend([
+                        "cnss_i27_declaration_trimestrielle_salaries_agricoles",
+                        "cnss_i28_etat_recapitulatif_salaires_agricoles",
+                    ])
+                else:
+                    social_priority.extend([
+                        "cnss_i16_declaration_trimestrielle_salaires",
+                        "cnss_i3_etat_recapitulatif_salaires_declares",
+                    ])
+            if "salaire unique" in query or "majoration" in query:
+                social_priority.append("cnss_c084_majoration_salaire_unique")
+            if "enfant handicape" in query or "enfant handicapé" in query or "maladie incurable" in query or "infirmit" in query:
+                social_priority.append("cnss_n101_declaration_enfant_handicape")
             if social_priority:
                 priority_doc_ids = social_priority + [doc_id for doc_id in priority_doc_ids if doc_id not in set(social_priority)]
         if coverage_workflow.family == "tva":
