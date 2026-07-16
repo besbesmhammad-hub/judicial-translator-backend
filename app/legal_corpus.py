@@ -34,6 +34,8 @@ SOURCE_TIER_WEIGHTS = {
     "policy_strategy": 0.34,
     "external_report": 0.26,
     "institutional_report": 0.50,
+    "social_security_form": 0.68,
+    "administrative_attestation": 0.58,
 }
 
 
@@ -114,6 +116,8 @@ DOMAIN_ROUTE_PATTERNS = {
 
 def infer_query_domain(query: str) -> str:
     query_text = (query or "").lower()
+    if DOMAIN_ROUTE_PATTERNS["social"].search(query_text):
+        return "social"
     for route in ("fiscalite", "audit", "comptabilite", "droit_affaires", "social"):
         if DOMAIN_ROUTE_PATTERNS[route].search(query_text):
             return route
@@ -219,6 +223,15 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "fiscalite_locale": r"fiscalite locale|taxe sur les immeubles|tcl|collectivite|commune|municipal",
         "loi_finances_2026": r"loi de finances|finance 2026|budget 2026|mesures fiscales 2026|mesure fiscale|dispositions fiscales nouvelles",
         "note_generale_contribution_solidarite_2026": r"contribution sociale solidaire|contribution sociale solidarite|mcss|cotisation sociale solidaire|contribution exceptionnelle",
+        "cnss_f1_demande_affiliation_employeur": r"\bcnss\b|caisse nationale de securite sociale|demande d'affiliation|demande d affiliation|affiliation employeur|representant legal|entreprise|employeur",
+        "cnss_n43_liste_nominative_personnel": r"\bcnss\b|liste nominative du personnel|personnel|salaire mensuel|date de recrutement|numero assure social|qualification professionnelle|employeur",
+        "cnss_p326_prise_en_charge_indemnites_licenciement": r"\bcnss\b|indemnites de licenciement|indemnites de licenciement|droits legaux|licenciement economique|raisons economiques|raisons technologiques|fermeture definitive",
+        "cnss_n44_affiliation_independants": r"\bcnss\b|travailleur pour son propre compte|personnes travaillant pour leur propre compte|secteur agricole|secteur non agricole|independant|affiliation",
+        "cnss_n40_affiliation_employes_maison": r"\bcnss\b|employes de maison|aide de menage|jardinier|chauffeur|affiliation employes de maison",
+        "cnss_n54_affiliation_artistes_createurs": r"\bcnss\b|artistes|createurs|intellectuels|regime de securite sociale des artistes|affiliation artistes",
+        "cnss_n42_affiliation_petits_armateurs": r"\bcnss\b|petits armateurs|bateaux|jauge brute|armateurs|affiliation",
+        "cnss_n41_affiliation_organismes_publics": r"\bcnss\b|etat|collectivites locales|etablissements publics|organisme employeur|affiliation",
+        "attestation_activite_agricole": r"attestation|activite agricole|poursuite d'activite agricole|poursuite d activite agricole|agriculture|formation agricole",
         "note_generale_facturation_electronique_2026": r"facturation electronique|facture electronique|e-facturation|e facture|e-facture|plateforme facture|operations de services|obligation de facturation",
         "note_generale_non_residents_services_administratifs_2026": r"tunisien non resident|tunisiens non residents|non resident|services administratifs|article 109|certificat d'immatriculation|depot des declarations fiscales|dépôt des déclarations fiscales",
         "note_generale_regularisation_dettes_fiscales_2026": r"regularisation des dettes fiscales|régularisation des dettes fiscales|dettes fiscales|dettes fiscales admin|penalites fiscales|pénalités fiscales|remise des penalites|remise des pénalités|echeancier fiscal|échéancier fiscal|roznam|roseman|30 juin 2026",
