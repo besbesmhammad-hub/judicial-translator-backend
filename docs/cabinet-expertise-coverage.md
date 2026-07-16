@@ -108,10 +108,11 @@ Coverage:
 
 Priority sources:
 - CNSS F1, F52, F56 bis, I3, I16, I27, I28, N40, N41, N42, N43, N44, N45, N54, N66, N74, N75, N101, N102, N104, N124, C084, P57, P58, P100, P112, P212, P304, P314, P314 bis, A144, A144 bis and P326 administrative forms.
+- CNSS institutional presentation, employer guide for the non-agricultural sector, regional/local bank account list, direct debit authorization, RCP affiliation request, SMS service flyer, and the accident-at-work / occupational-disease text collection.
 - IRPP/IS and procedures fiscales for salary withholding, declarations and control issues.
 
 Current limitation:
-- The corpus now includes direct CNSS forms and attestations, but exact CNSS rates, deadlines or regime tables must still be treated as source-cadre unless a direct rate/deadline passage is retrieved.
+- The corpus now includes direct CNSS forms, attestations, employer guidance, payment references, RCP affiliation material and accident-at-work / occupational-disease texts, but exact CNSS rates, deadlines or regime tables must still be treated as source-cadre unless a direct rate/deadline passage is retrieved.
 
 Required reasoning:
 - Mark CNSS rates/deadlines as source-cadre or source manquante unless a direct CNSS rate/deadline text is retrieved.
