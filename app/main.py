@@ -752,6 +752,20 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_c084_majoration_salaire_unique", "terms": ["majoration pour salaire unique", "salaire unique", "conjoint", "engagement"], "min_matches": 2})
             if "enfant handicape" in query or "enfant handicapé" in query or "maladie incurable" in query or "infirmit" in query:
                 social_rules.append({"doc_id": "cnss_n101_declaration_enfant_handicape", "terms": ["enfant handicape", "infirmit", "maladie incurable", "declaration sur l honneur"], "min_matches": 2})
+            if "pret universitaire" in query or "prêt universitaire" in query:
+                social_rules.append({"doc_id": "cnss_f52_demande_pret_universitaire", "terms": ["pret universitaire", "etudiant", "inscription", "delai de 30 jours"], "min_matches": 2})
+            if "ayant droit" in query or "ayants droit" in query or "enfants a charge" in query or "parents a charge" in query:
+                social_rules.append({"doc_id": "cnss_p100_inscription_ayants_droit", "terms": ["ayants droit", "conjoint", "enfants a charge", "parents a charge"], "min_matches": 2})
+            if "immatriculation" in query and ("etudiant" in query or "étudiant" in query or "stagiaire" in query or "diplome" in query or "diplômé" in query):
+                social_rules.append({"doc_id": "cnss_p112_immatriculation_etudiant_stagiaire_diplome", "terms": ["immatriculation", "etudiant", "stagiaire", "diplome"], "min_matches": 2})
+            if "inscription" in query and ("travailleur salarie" in query or "travailleur salarié" in query or "salarie" in query or "salarié" in query):
+                social_rules.append({"doc_id": "cnss_n45_inscription_travailleur_salarie", "terms": ["inscription", "travailleur salarie", "employeur", "secteur agricole"], "min_matches": 2})
+            if "attestation contentieuse" in query or ("contentieux" in query and "attestation" in query):
+                social_rules.append({"doc_id": "cnss_n74_attestation_contentieuse", "terms": ["attestation contentieuse", "contentieux", "litige", "numero d affiliation"], "min_matches": 2})
+            if "non assujettissement" in query or "non-assujettissement" in query:
+                social_rules.append({"doc_id": "cnss_n124_attestation_non_assujettissement", "terms": ["attestation de non assujettissement", "non assujettissement", "identifiant fiscal", "registre de commerce"], "min_matches": 2})
+            if "attestation de solde" in query:
+                social_rules.append({"doc_id": "cnss_n75_attestation_de_solde", "terms": ["attestation de solde", "numero d affiliation", "raison sociale", "exemplaires"], "min_matches": 2})
             existing_doc_ids = {rule["doc_id"] for rule in social_rules}
             social_rules.extend(
                 {"doc_id": doc_id, "terms": list(terms), "min_matches": min_matches}
@@ -1562,6 +1576,20 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_c084_majoration_salaire_unique")
             if "enfant handicape" in query or "enfant handicapé" in query or "maladie incurable" in query or "infirmit" in query:
                 social_priority.append("cnss_n101_declaration_enfant_handicape")
+            if "pret universitaire" in query or "prêt universitaire" in query:
+                social_priority.append("cnss_f52_demande_pret_universitaire")
+            if "ayant droit" in query or "ayants droit" in query or "enfants a charge" in query or "parents a charge" in query:
+                social_priority.append("cnss_p100_inscription_ayants_droit")
+            if "immatriculation" in query and ("etudiant" in query or "étudiant" in query or "stagiaire" in query or "diplome" in query or "diplômé" in query):
+                social_priority.append("cnss_p112_immatriculation_etudiant_stagiaire_diplome")
+            if "inscription" in query and ("travailleur salarie" in query or "travailleur salarié" in query or "salarie" in query or "salarié" in query):
+                social_priority.append("cnss_n45_inscription_travailleur_salarie")
+            if "attestation contentieuse" in query or ("contentieux" in query and "attestation" in query):
+                social_priority.append("cnss_n74_attestation_contentieuse")
+            if "non assujettissement" in query or "non-assujettissement" in query:
+                social_priority.append("cnss_n124_attestation_non_assujettissement")
+            if "attestation de solde" in query:
+                social_priority.append("cnss_n75_attestation_de_solde")
             if social_priority:
                 priority_doc_ids = social_priority + [doc_id for doc_id in priority_doc_ids if doc_id not in set(social_priority)]
         if coverage_workflow.family == "tva":
