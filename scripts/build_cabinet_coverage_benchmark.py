@@ -279,9 +279,9 @@ CASES += [
         "Un avantage en nature est accorde a un salarie. Comment analyser paie, IRPP salarial, CNSS et justificatifs ?",
         "payroll_social_case",
         "legal_basis",
-        ["Paie/social", "IRPP salarial", "CNSS", "texte CNSS direct"],
-        docs=["code_irpp_is_2011", "procedures_fiscales_2026"],
-        missing=["texte CNSS direct"],
+        ["Paie/social", "IRPP salarial", "CNSS", "justificatifs"],
+        docs=["cnss_f1_demande_affiliation_employeur", "code_irpp_is_2011", "procedures_fiscales_2026"],
+        missing=["bulletin de paie"],
     ),
     case(
         "coverage_social_missing_payslip",
@@ -289,7 +289,7 @@ CASES += [
         "payroll_social_case",
         "legal_basis",
         ["bulletin de paie", "retenues", "ne peut pas", "charges sociales"],
-        docs=["code_irpp_is_2011"],
+        docs=["cnss_n43_liste_nominative_personnel", "code_irpp_is_2011"],
         missing=["bulletin de paie"],
     ),
     case(
@@ -298,7 +298,7 @@ CASES += [
         "payroll_social_case",
         "legal_basis",
         ["declarations", "employeur", "periode", "delai"],
-        docs=["procedures_fiscales_2026", "code_irpp_is_2011"],
+        docs=["cnss_f1_demande_affiliation_employeur", "procedures_fiscales_2026", "code_irpp_is_2011"],
     ),
     case(
         "coverage_social_nonresident_employee",
@@ -306,16 +306,16 @@ CASES += [
         "payroll_social_case",
         "legal_basis",
         ["non resident", "retenue", "convention", "source-cadre"],
-        docs=["code_irpp_is_2011"],
+        docs=["cnss_f1_demande_affiliation_employeur", "code_irpp_is_2011"],
     ),
     case(
-        "coverage_social_cnss_source_gap",
-        "Le client demande le taux CNSS exact applicable. Le corpus contient-il assez de sources pour donner un taux ?",
+        "coverage_social_cnss_rate_guardrail",
+        "Le client demande le taux CNSS exact applicable. Les formulaires d affiliation suffisent-ils pour donner un taux ?",
         "payroll_social_case",
         "legal_basis",
-        ["CNSS", "taux", "ne pas inventer", "texte CNSS direct"],
-        docs=["code_irpp_is_2011"],
-        missing=["texte CNSS direct"],
+        ["CNSS", "taux", "ne pas inventer", "source-cadre"],
+        docs=["cnss_f1_demande_affiliation_employeur"],
+        missing=["taux"],
     ),
 ]
 

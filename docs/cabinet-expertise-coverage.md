@@ -106,11 +106,15 @@ Workflow: `payroll_social_case`
 Coverage:
 - CNSS, retenues salariales, charges sociales, declarations employeur, avantages en nature.
 
+Priority sources:
+- CNSS F1, N40, N41, N42, N43, N44, N54 and P326 administrative forms.
+- IRPP/IS and procedures fiscales for salary withholding, declarations and control issues.
+
 Current limitation:
-- The corpus has tax/procedure support for salary withholding, but lacks full direct CNSS primary sources.
+- The corpus now includes direct CNSS forms and attestations, but exact CNSS rates, deadlines or regime tables must still be treated as source-cadre unless a direct rate/deadline passage is retrieved.
 
 Required reasoning:
-- Mark CNSS rates/deadlines as source-cadre or source manquante unless direct CNSS texts are indexed.
+- Mark CNSS rates/deadlines as source-cadre or source manquante unless a direct CNSS rate/deadline text is retrieved.
 - Separate payroll, IRPP salary withholding, social contributions and employer declarations.
 
 ### 7. Procedure fiscale
@@ -140,4 +144,3 @@ Generator:
 - `scripts/build_cabinet_coverage_benchmark.py`
 
 It includes 35 cases: 7 families x 5 variants with changed wording, amounts, dates, taxpayer profiles, missing documents, conflicting facts and missing legal sources.
-
