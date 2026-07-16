@@ -151,10 +151,7 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["level3_mentions_missing_facts"] = contains_any(normalized, ["informations manquantes", "statut tva du client", "ventilation du prix"])
         checks["level3_uses_tva_source"] = "tva_droit_consommation" in docs
         checks["level3_uses_irpp_source"] = "code_irpp_is_2011" in docs
-        checks["level3_flags_treaty_gap"] = "convention_fiscale_france_tunisie" in docs and contains_any(
-            normalized,
-            ["convention france-tunisie doit etre ajoutee", "convention france tunisie doit etre ajoutee", "n'est pas encore indexee"],
-        )
+        checks["level3_uses_treaty_source"] = "convention_fiscale_france_tunisie" in docs
 
     if "mixed_dividends" in case_id:
         checks["mixed_dividends_splits_physical_person"] = contains_any(normalized, ["personne physique residente", "300 000 tnd"])
@@ -276,7 +273,9 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
         checks["level3_has_tva_direct_or_framework"] = "tva_droit_consommation" in docs and any(
             level in {"direct_passage", "framework_source"} for level in supports
         )
-        checks["level3_has_missing_treaty_source"] = "convention_fiscale_france_tunisie" in docs and "missing_source" in supports
+        checks["level3_has_treaty_direct_or_framework"] = "convention_fiscale_france_tunisie" in docs and any(
+            level in {"direct_passage", "framework_source"} for level in supports
+        )
         checks["level3_source_support_classified"] = bool(supports)
 
     if "consulting_cash" in case_id:

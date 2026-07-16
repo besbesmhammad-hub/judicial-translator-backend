@@ -531,18 +531,16 @@ def source_precision_rules(message: str) -> list[dict]:
             },
             {
                 "doc_id": "convention_fiscale_france_tunisie",
-                "missing": True,
-                "title": "Convention fiscale France-Tunisie contre les doubles impositions",
-                "terms": ["convention fiscale", "france", "tunisie", "etablissement stable"],
-                "min_matches": 1,
+                "terms": ["etablissement stable", "chantier", "montage", "benefices des entreprises", "redevances"],
+                "min_matches": 2,
             },
         ]
     if is_mixed_dividends_case(query):
         return [
-            {"doc_id": "code_irpp_is_2011", "terms": ["dividende", "revenus distribues", "retenue a la source", "beneficiaire"], "min_matches": 2},
+            {"doc_id": "code_irpp_is_2011", "terms": ["article 52", "c bis", "revenus distribues", "10%"], "min_matches": 2},
             {"doc_id": "loi_finances_2026", "terms": ["dividende", "retenue", "2026"], "min_matches": 2},
             {"doc_id": "procedures_fiscales_2026", "terms": ["declaration", "reversement", "certificat", "retenue"], "min_matches": 2},
-            {"doc_id": "convention_fiscale_france_tunisie", "missing": True, "title": "Convention fiscale France-Tunisie contre les doubles impositions", "terms": ["convention fiscale", "france", "tunisie"], "min_matches": 1},
+            {"doc_id": "convention_fiscale_france_tunisie", "terms": ["dividendes", "resident", "etat contractant", "retenue"], "min_matches": 2},
         ]
     if is_revenue_cutoff_tva_case(query):
         return [
@@ -597,7 +595,7 @@ def source_precision_rules(message: str) -> list[dict]:
         return [
             {
                 "doc_id": "code_irpp_is_2011",
-                "terms": ["dividende", "revenus distribues", "retenue a la source", "distribution", "beneficiaire"],
+                "terms": ["article 52", "c bis", "revenus distribues", "10%"],
                 "min_matches": 2,
             },
             {
