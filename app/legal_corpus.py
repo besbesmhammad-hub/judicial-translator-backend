@@ -41,6 +41,8 @@ SOURCE_TIER_WEIGHTS = {
     "administrative_reference": 0.56,
     "institutional_reference": 0.54,
     "service_flyer": 0.36,
+    "social_security_statistics": 0.44,
+    "institutional_financial_statement": 0.48,
 }
 
 
@@ -268,6 +270,13 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "cnss_flyer_sms": r"\bcnss\b|sms|service sms|notification sms|telephone portable|message court",
         "cnss_autorisation_debit_bancaire_postal": r"\bcnss\b|autorisation de debit|debit bancaire|debit postal|prelevement|compte bancaire|compte postal|numero d'affiliation",
         "cnss_affiliation_regime_complementaire_pensions": r"\bcnss\b|regime complementaire des pensions|régime complémentaire des pensions|rcp|affiliation au rcp|retraite complementaire|salaire minimum interprofessionnel garanti|smig",
+        "cnss_prets_sociaux_effectifs_montants_2000": r"\bcnss\b|prets sociaux|prêts sociaux|pret voiture|pret logement|pret personnel|pret universitaire|beneficiaires|année 2000|annee 2000|montants",
+        "cnss_prets_sociaux_effectifs_montants_2020": r"\bcnss\b|prets sociaux|prêts sociaux|pret voiture|pret logement|pret personnel|pret universitaire|projets de sante|beneficiaires|année 2020|annee 2020|montants",
+        "cnss_fonds_garantie_pension_divorce_2015_2020": r"\bcnss\b|fonds de garantie|pension alimentaire|rente de divorce|familles beneficiaires|dépenses annuelles|depenses annuelles|2015|2020",
+        "cnss_fonds_garantie_effectif_2017": r"\bcnss\b|fonds de garantie|pension alimentaire|rente de divorce|effectif|beneficiaires|femmes divorcees|enfants|2017",
+        "cnss_fonds_garantie_montants_2017": r"\bcnss\b|fonds de garantie|pension alimentaire|rente de divorce|depenses|dépenses|montants|femmes divorcees|enfants|2017",
+        "cnss_sommaire_statistique_2020": r"\bcnss\b|sommaire|assures sociaux|pensionnes|employeurs|recettes|depenses|prestations familiales|prets sociaux|2020",
+        "cnss_publication_financiere_2018": r"\bcnss\b|bilan|etat de resultat|état de résultat|flux de tresorerie|cotisants|assures sociaux|actifs courants|capitaux propres|2018",
         "attestation_activite_agricole": r"attestation|activite agricole|poursuite d'activite agricole|poursuite d activite agricole|agriculture|formation agricole",
         "note_generale_facturation_electronique_2026": r"facturation electronique|facture electronique|e-facturation|e facture|e-facture|plateforme facture|operations de services|obligation de facturation",
         "note_generale_non_residents_services_administratifs_2026": r"tunisien non resident|tunisiens non residents|non resident|services administratifs|article 109|certificat d'immatriculation|depot des declarations fiscales|dépôt des déclarations fiscales",

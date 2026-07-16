@@ -731,7 +731,11 @@ def source_precision_rules(message: str) -> list[dict]:
                     {"doc_id": "cnss_a144bis_pension_capital_deces_survivants", "terms": ["pension", "capital deces", "survivants", "conjoint survivant", "orphelins"], "min_matches": 2},
                     {"doc_id": "cnss_p58_constat_medical_de_deces", "terms": ["constat medical de deces", "cause de deces", "medecin traitant", "accident"], "min_matches": 2},
                 ])
-            if ("pension alimentaire" in query or "rente de divorce" in query or "abandon de famille" in query) and "fonds" in query:
+            if (
+                ("pension alimentaire" in query or "rente de divorce" in query or "abandon de famille" in query)
+                and "fonds" in query
+                and not any(term in query for term in ("effectif", "beneficiaires", "bénéficiaires", "montant", "montants", "depenses", "dépenses", "evolution", "évolution", "2015", "2017", "2020"))
+            ):
                 social_rules.extend([
                     {"doc_id": "cnss_p314_fonds_garantie_pension_alimentaire", "terms": ["fonds de garantie", "pension alimentaire", "rente de divorce", "abandon de famille"], "min_matches": 2},
                     {"doc_id": "cnss_p314bis_engagement_fonds_garantie_pension_alimentaire", "terms": ["fonds de garantie", "pension alimentaire", "rente de divorce", "engagement"], "min_matches": 2},
@@ -793,6 +797,22 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_flyer_sms", "terms": ["sms", "telephone portable", "service sms", "notification"], "min_matches": 2})
             if "presentation cnss" in query or "présentation cnss" in query or "missions de la cnss" in query or "caisse nationale de securite sociale" in query:
                 social_rules.append({"doc_id": "cnss_presentation_institutionnelle", "terms": ["caisse nationale de securite sociale", "loi n 60-30", "prestations familiales", "pensions"], "min_matches": 2})
+            if "prets sociaux" in query or "prêts sociaux" in query:
+                if "2000" in query:
+                    social_rules.append({"doc_id": "cnss_prets_sociaux_effectifs_montants_2000", "terms": ["prets sociaux", "pret logement", "pret personnel", "pret universitaire", "annee 2000"], "min_matches": 2})
+                if "2020" in query:
+                    social_rules.append({"doc_id": "cnss_prets_sociaux_effectifs_montants_2020", "terms": ["prets sociaux", "pret logement", "pret personnel", "pret universitaire", "annee 2020"], "min_matches": 2})
+            if "fonds de garantie" in query and ("pension alimentaire" in query or "rente de divorce" in query or "divorce" in query):
+                if "2015" in query or "2020" in query or "evolution" in query or "évolution" in query:
+                    social_rules.append({"doc_id": "cnss_fonds_garantie_pension_divorce_2015_2020", "terms": ["fonds de garantie", "pension alimentaire", "rente de divorce", "2015", "2020"], "min_matches": 2})
+                if "effectif" in query or "beneficiaires" in query or "bénéficiaires" in query:
+                    social_rules.append({"doc_id": "cnss_fonds_garantie_effectif_2017", "terms": ["fonds de garantie", "effectif", "beneficiaires", "pension alimentaire", "2017"], "min_matches": 2})
+                if "montant" in query or "montants" in query or "depenses" in query or "dépenses" in query:
+                    social_rules.append({"doc_id": "cnss_fonds_garantie_montants_2017", "terms": ["fonds de garantie", "montants", "depenses", "pension alimentaire", "2017"], "min_matches": 2})
+            if ("sommaire" in query and "2020" in query and "cnss" in query) or ("statistiques" in query and "2020" in query and "cnss" in query):
+                social_rules.append({"doc_id": "cnss_sommaire_statistique_2020", "terms": ["sommaire", "assures sociaux", "employeurs", "recettes", "depenses"], "min_matches": 2})
+            if ("bilan" in query or "etat de resultat" in query or "état de résultat" in query or "flux de tresorerie" in query or "flux de trésorerie" in query) and "cnss" in query:
+                social_rules.append({"doc_id": "cnss_publication_financiere_2018", "terms": ["bilan", "etat de resultat", "flux de tresorerie", "capitaux propres", "2018"], "min_matches": 2})
             existing_doc_ids = {rule["doc_id"] for rule in social_rules}
             social_rules.extend(
                 {"doc_id": doc_id, "terms": list(terms), "min_matches": min_matches}
@@ -1582,7 +1602,11 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                     "cnss_a144bis_pension_capital_deces_survivants",
                     "cnss_p58_constat_medical_de_deces",
                 ])
-            if ("pension alimentaire" in query or "rente de divorce" in query or "abandon de famille" in query) and "fonds" in query:
+            if (
+                ("pension alimentaire" in query or "rente de divorce" in query or "abandon de famille" in query)
+                and "fonds" in query
+                and not any(term in query for term in ("effectif", "beneficiaires", "bénéficiaires", "montant", "montants", "depenses", "dépenses", "evolution", "évolution", "2015", "2017", "2020"))
+            ):
                 social_priority.extend([
                     "cnss_p314_fonds_garantie_pension_alimentaire",
                     "cnss_p314bis_engagement_fonds_garantie_pension_alimentaire",
@@ -1644,6 +1668,22 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_flyer_sms")
             if "presentation cnss" in query or "présentation cnss" in query or "missions de la cnss" in query or "caisse nationale de securite sociale" in query:
                 social_priority.append("cnss_presentation_institutionnelle")
+            if "prets sociaux" in query or "prêts sociaux" in query:
+                if "2000" in query:
+                    social_priority.append("cnss_prets_sociaux_effectifs_montants_2000")
+                if "2020" in query:
+                    social_priority.append("cnss_prets_sociaux_effectifs_montants_2020")
+            if "fonds de garantie" in query and ("pension alimentaire" in query or "rente de divorce" in query or "divorce" in query):
+                if "2015" in query or "2020" in query or "evolution" in query or "évolution" in query:
+                    social_priority.append("cnss_fonds_garantie_pension_divorce_2015_2020")
+                if "effectif" in query or "beneficiaires" in query or "bénéficiaires" in query:
+                    social_priority.append("cnss_fonds_garantie_effectif_2017")
+                if "montant" in query or "montants" in query or "depenses" in query or "dépenses" in query:
+                    social_priority.append("cnss_fonds_garantie_montants_2017")
+            if ("sommaire" in query and "2020" in query and "cnss" in query) or ("statistiques" in query and "2020" in query and "cnss" in query):
+                social_priority.append("cnss_sommaire_statistique_2020")
+            if ("bilan" in query or "etat de resultat" in query or "état de résultat" in query or "flux de tresorerie" in query or "flux de trésorerie" in query) and "cnss" in query:
+                social_priority.append("cnss_publication_financiere_2018")
             if social_priority:
                 priority_doc_ids = social_priority + [doc_id for doc_id in priority_doc_ids if doc_id not in set(social_priority)]
         if coverage_workflow.family == "tva":
