@@ -170,6 +170,16 @@ def record_matches_domain(record: dict, route: str) -> bool:
                 "convention_fiscale_tunisie_syrie",
                 "convention_fiscale_tunisie_turquie",
                 "convention_fiscale_union_maghreb_arabe",
+                "convention_fiscale_tunisie_pays_bas",
+                "convention_fiscale_tunisie_pologne",
+                "convention_fiscale_tunisie_portugal",
+                "convention_fiscale_tunisie_qatar",
+                "convention_fiscale_tunisie_republique_tcheque",
+                "convention_fiscale_tunisie_roumanie",
+                "convention_fiscale_tunisie_royaume_uni",
+                "convention_fiscale_tunisie_senegal",
+                "convention_fiscale_tunisie_serbie",
+                "convention_fiscale_tunisie_singapour",
             }
             or domain.startswith((
                 "fiscalite_",
@@ -347,7 +357,17 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "convention_fiscale_tunisie_oman": r"convention tunisie oman|sultanat d'oman|sultanat d oman|oman|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
         "convention_fiscale_tunisie_syrie": r"convention tunisie syrie|syrie|republique arabe syrienne|république arabe syrienne|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
         "convention_fiscale_tunisie_turquie": r"accord tunisie turquie|convention tunisie turquie|turquie|double imposition|impots sur le revenu|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
-        "convention_fiscale_union_maghreb_arabe": r"union du maghreb arabe|u\\.m\\.a|uma|algerie|maroc|libye|mauritanie|etats de l'union du maghreb arabe|double imposition|assistance mutuelle",
+        "convention_fiscale_union_maghreb_arabe": r"union du maghreb arabe|u\\.m\\.a|algerie|maroc|libye|mauritanie|etats de l'union du maghreb arabe|double imposition|assistance mutuelle",
+        "convention_fiscale_tunisie_pays_bas": r"convention tunisie pays-bas|convention tunisie pays bas|pays-bas|pays bas|royaume des pays-bas|royaume des pays bas|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_pologne": r"convention tunisie pologne|pologne|republique de pologne|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_portugal": r"convention tunisie portugal|portugal|republique portugaise|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_qatar": r"convention tunisie qatar|qatar|etat du qatar|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_republique_tcheque": r"convention tunisie republique tcheque|convention tunisie république tchèque|republique tcheque|république tchèque|tcheque|tchèque|double imposition|impots sur le revenu|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_roumanie": r"convention tunisie roumanie|roumanie|republique socialiste de roumanie|double imposition|impots sur le revenu|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_royaume_uni": r"convention tunisie royaume-uni|convention tunisie royaume uni|royaume-uni|royaume uni|grande bretagne|bretagne|irlande du nord|united kingdom|uk|double imposition|impots sur le revenu|gains en capital|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_senegal": r"convention tunisie senegal|convention tunisie sénégal|senegal|sénégal|double imposition|assistance administrative|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_serbie": r"convention tunisie serbie|convention tunisie serbie|serbie|republique de serbie|double imposition|impots sur le revenu|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_singapour": r"convention tunisie singapour|singapour|singapore|republique de singapour|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
         "loi_comptable": r"loi comptable|systeme comptable|normes comptables|etats financiers",
         "cadre_conceptuel_comptable": r"cadre conceptuel|qualitative|hypothese sous-jacente|information financiere",
         "ifrs_cadre_conceptuel_information_financiere": r"cadre conceptuel|ifrs|iasb|information financiere|caracteristiques qualitatives|image fidele|pertinence|representation fidele",
@@ -833,7 +853,27 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 5.6
             elif "turquie" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_turquie":
                 score *= 5.6
-            elif any(term in query_text for term in ("union du maghreb arabe", "u.m.a", "uma", "maghreb", "maroc", "algerie", "algérie", "libye", "mauritanie")) and record.get("doc_id") == "convention_fiscale_union_maghreb_arabe":
+            elif any(term in query_text for term in ("union du maghreb arabe", "u.m.a", "maghreb", "maroc", "algerie", "algérie", "libye", "mauritanie")) and record.get("doc_id") == "convention_fiscale_union_maghreb_arabe":
+                score *= 5.6
+            elif any(term in query_text for term in ("pays-bas", "pays bas", "netherlands", "hollande")) and record.get("doc_id") == "convention_fiscale_tunisie_pays_bas":
+                score *= 5.6
+            elif "pologne" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_pologne":
+                score *= 5.6
+            elif "portugal" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_portugal":
+                score *= 5.6
+            elif "qatar" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_qatar":
+                score *= 5.6
+            elif any(term in query_text for term in ("republique tcheque", "république tchèque", "tcheque", "tchèque")) and record.get("doc_id") == "convention_fiscale_tunisie_republique_tcheque":
+                score *= 5.6
+            elif "roumanie" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_roumanie":
+                score *= 5.6
+            elif any(term in query_text for term in ("royaume-uni", "royaume uni", "grande bretagne", "bretagne", "irlande du nord", "united kingdom", "uk")) and record.get("doc_id") == "convention_fiscale_tunisie_royaume_uni":
+                score *= 5.6
+            elif ("senegal" in query_text or "sénégal" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_senegal":
+                score *= 5.6
+            elif "serbie" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_serbie":
+                score *= 5.6
+            elif ("singapour" in query_text or "singapore" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_singapour":
                 score *= 5.6
         if ("ias 11" in query_text or "contrats de construction" in query_text or "pourcentage d'avancement" in query_text or "pourcentage d’avancement" in query_text):
             if record.get("doc_id") == "ias_11_contrats_construction":
