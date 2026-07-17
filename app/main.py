@@ -849,7 +849,7 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_budget_2022", "terms": ["budget 2022", "produits techniques", "charges techniques", "resultat technique"], "min_matches": 2})
             tender_exact_01ca = "tuneps" in query or "climatiseur" in query or "01/ca/2020" in query or "01 ca 2020" in query
             tender_exact_it = ("oracle" in query or "systeme d information" in query or "système d information" in query or "pmsi" in query or "informatique" in query) and "cnss" in query
-            tender_exact_works = ("travaux" in query or "construction" in query or "amenagement" in query or "aménagement" in query or "bureau regional" in query) and ("appel" in query or "marches" in query or "marchés" in query) and "cnss" in query
+            tender_exact_works = ("travaux" in query or "construction" in query or "amenagement" in query or "aménagement" in query or "bureau regional" in query) and "cnss" in query
             if ("appel d offres" in query or "appels d offres" in query or "appel d'offre" in query or "appels d'offre" in query or "appel d’offres" in query or "appels d’offres" in query or "marches publics" in query or "marchés publics" in query or "طلب العروض" in query) and ("cnss" in query or "الصندوق" in query) and not (tender_exact_01ca or tender_exact_it or tender_exact_works):
                 social_rules.extend([
                     {"doc_id": "cnss_appels_offres_resultats_ar_2016_2017", "terms": ["طلب العروض", "اسناد الصفقة", "غير مثمر", "اقتناء"], "min_matches": 2},
@@ -1806,7 +1806,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_budget_2022")
             tender_exact_01ca = "tuneps" in query or "climatiseur" in query or "01/ca/2020" in query or "01 ca 2020" in query
             tender_exact_it = ("oracle" in query or "systeme d information" in query or "système d information" in query or "pmsi" in query or "informatique" in query) and "cnss" in query
-            tender_exact_works = ("travaux" in query or "construction" in query or "amenagement" in query or "aménagement" in query or "bureau regional" in query) and ("appel" in query or "marches" in query or "marchés" in query) and "cnss" in query
+            tender_exact_works = ("travaux" in query or "construction" in query or "amenagement" in query or "aménagement" in query or "bureau regional" in query) and "cnss" in query
             if ("appel d offres" in query or "appels d offres" in query or "appel d'offre" in query or "appels d'offre" in query or "appel d’offres" in query or "appels d’offres" in query or "marches publics" in query or "marchés publics" in query or "طلب العروض" in query) and ("cnss" in query or "الصندوق" in query) and not (tender_exact_01ca or tender_exact_it or tender_exact_works):
                 social_priority.extend([
                     "cnss_appels_offres_resultats_ar_2016_2017",
