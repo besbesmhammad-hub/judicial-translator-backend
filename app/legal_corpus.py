@@ -147,9 +147,17 @@ def record_matches_domain(record: dict, route: str) -> bool:
                 "code_irpp_is_2011",
                 "tva_droit_consommation",
                 "procedures_fiscales_2026",
+                "procedures_fiscales_2025",
+                "procedures_fiscales_2024",
+                "procedures_fiscales_2023",
                 "enregistrement_timbre",
                 "fiscalite_locale",
                 "droits_taxes_hors_codes",
+                "droits_taxes_hors_codes_2026",
+                "droits_taxes_hors_codes_2025",
+                "droits_taxes_hors_codes_2023",
+                "loi_investissement_2016_71",
+                "loi_avantages_fiscaux_2017_8",
                 "loi_finances_2026",
                 "note_generale_contribution_solidarite_2026",
                 "note_generale_facturation_electronique_2026",
@@ -302,6 +310,9 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "code_irpp_is_2011": r"\birpp\b|\bis\b|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés|benefice imposable|bénéfice imposable|retenue a la source|retenue à la source|plus-value|plus value",
         "tva_droit_consommation": r"\btva\b|taxe sur la valeur ajout|valeur ajoutee|droit de consommation|assujetti|deduction|deductions|exoner|restitution de la taxe",
         "procedures_fiscales_2026": r"procedure fiscale|procédure fiscale|procedures fiscales|procédures fiscales|controle fiscal|contrôle fiscal|verification fiscale|vérification fiscale|contentieux fiscal|recouvrement|redressement fiscal|droit de reprise|taxation d'office|taxation d’office|reclamation fiscale|réclamation fiscale",
+        "procedures_fiscales_2025": r"procedure fiscale 2025|procédure fiscale 2025|procedures fiscales 2025|procédures fiscales 2025|controle fiscal 2025|contentieux fiscal 2025|cdpf 2025|mis a jour au 1er janvier 2025",
+        "procedures_fiscales_2024": r"procedure fiscale 2024|procédure fiscale 2024|procedures fiscales 2024|procédures fiscales 2024|controle fiscal 2024|contentieux fiscal 2024|cdpf 2024|mis a jour au 1er janvier 2024",
+        "procedures_fiscales_2023": r"procedure fiscale 2023|procédure fiscale 2023|procedures fiscales 2023|procédures fiscales 2023|controle fiscal 2023|contentieux fiscal 2023|cdpf 2023|mis a jour au 1er janvier 2023",
         "enregistrement_timbre": r"enregistrement|timbre|mutation|acte|donation|succession|bail|vente immobili",
         "fiscalite_locale": r"fiscalite locale|taxe sur les immeubles|tcl|collectivite|commune|municipal",
         "loi_finances_2026": r"loi de finances|finance 2026|budget 2026|mesures fiscales 2026|mesure fiscale|dispositions fiscales nouvelles",
@@ -520,6 +531,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "cours_audit_chiheb_ghanmi": r"cours d'audit|cours d’audit|audit financier|chiheb ghanmi|revision comptable|révision comptable",
         "cours_audit_imed_ennouri": r"cours d'audit financier|cours d’audit financier|imed ennouri|revsion comptable|révision comptable|audit financier",
         "droits_taxes_hors_codes": r"taxes non incorporees|circulation|voyage|assurance|telecommunication|hotel",
+        "droits_taxes_hors_codes_2026": r"droits et taxes non incorpores 2026|droits et taxes non incorporés 2026|المعاليم غير المدرجة|taxes de circulation|taxes sur les formalites administratives|taxes non incorporees|taxes non incorporées",
+        "droits_taxes_hors_codes_2025": r"droits et taxes non incorpores 2025|droits et taxes non incorporés 2025|taxes de circulation 2025|taxes sur les formalites administratives 2025|taxes non incorporees 2025|taxes non incorporées 2025",
+        "droits_taxes_hors_codes_2023": r"droits et taxes non incorpores 2023|droits et taxes non incorporés 2023|taxes de circulation 2023|taxes sur les formalites administratives 2023|taxes non incorporees 2023|taxes non incorporées 2023",
+        "loi_investissement_2016_71": r"loi investissement 2016|loi n 2016-71|loi 2016-71|investissement|declaration d'investissement|instance tunisienne de l'investissement|liberte d'investissement",
+        "loi_avantages_fiscaux_2017_8": r"loi 2017-8|loi n 2017-8|avantages fiscaux|developpement regional|développement régional|deduction investissement|refonte du dispositif des avantages fiscaux",
         "nc_01_norme_generale": r"\bnc 01\b|norme comptable generale|presentation des etats financiers|organisation comptable",
         "nc_02_capitaux_propres": r"\bnc 02\b|capitaux propres|reserve|dividende|resultat reporte",
         "nc_03_revenus": r"\bnc 03\b|revenus|produits|prestations de services|vente de biens|interets|redevances",
@@ -918,6 +934,29 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 1.4
             elif record.get("doc_id") in {"code_societes_commerciales_2022", "guide_creation_sarl_tunisie"}:
                 score *= 0.45
+        if re.search(r"procedures? fiscales?|proc[eé]dures? fiscales?|controle fiscal|contr[oô]le fiscal|contentieux fiscal|recouvrement|cdpf", query_text, re.I):
+            if "2025" in query_text and record.get("doc_id") == "procedures_fiscales_2025":
+                score = (score * 5.4) + 32.0
+            elif "2024" in query_text and record.get("doc_id") == "procedures_fiscales_2024":
+                score = (score * 5.4) + 32.0
+            elif "2023" in query_text and record.get("doc_id") == "procedures_fiscales_2023":
+                score = (score * 5.4) + 32.0
+            elif record.get("doc_id") == "procedures_fiscales_2026":
+                score = (score * 3.8) + 18.0
+        if re.search(r"taxes? non incorpor|droits et taxes non incorpor|taxes? de circulation|formalites administratives|formalités administratives|المعاليم غير المدرجة", query_text, re.I):
+            if "2025" in query_text and record.get("doc_id") == "droits_taxes_hors_codes_2025":
+                score = (score * 5.2) + 30.0
+            elif "2023" in query_text and record.get("doc_id") == "droits_taxes_hors_codes_2023":
+                score = (score * 5.2) + 30.0
+            elif not any(year in query_text for year in ("2025", "2023", "2017")) and record.get("doc_id") == "droits_taxes_hors_codes_2026":
+                score = (score * 5.2) + 30.0
+            elif record.get("doc_id") == "droits_taxes_hors_codes":
+                score *= 0.8
+        if re.search(r"investissement|avantages fiscaux|developpement regional|développement régional|loi 2016-71|loi 2017-8", query_text, re.I):
+            if record.get("doc_id") in {"loi_investissement_2016_71", "loi_avantages_fiscaux_2017_8"}:
+                score = (score * 5.0) + 28.0
+            elif record.get("doc_id") in {"code_irpp_is_2011", "loi_finances_2026"}:
+                score *= 1.35
         if (("prestations de services" in query_text or "prestation informatique" in query_text) and ("france" in query_text or "client etabli" in query_text or "client établi" in query_text)):
             if record.get("doc_id") == "tva_droit_consommation":
                 score *= 5.6
@@ -1450,9 +1489,17 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 "code_irpp_is_2011",
                 "tva_droit_consommation",
                 "procedures_fiscales_2026",
+                "procedures_fiscales_2025",
+                "procedures_fiscales_2024",
+                "procedures_fiscales_2023",
                 "enregistrement_timbre",
                 "fiscalite_locale",
                 "droits_taxes_hors_codes",
+                "droits_taxes_hors_codes_2026",
+                "droits_taxes_hors_codes_2025",
+                "droits_taxes_hors_codes_2023",
+                "loi_investissement_2016_71",
+                "loi_avantages_fiscaux_2017_8",
                 "loi_finances_2026",
                 "note_generale_contribution_solidarite_2026",
             }:
@@ -1478,7 +1525,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 "enregistrement_timbre",
             }:
                 score += 60.0
-            elif record.get("doc_id") in {"fiscalite_locale", "droits_taxes_hors_codes"}:
+            elif record.get("doc_id") in {"fiscalite_locale", "droits_taxes_hors_codes", "droits_taxes_hors_codes_2026", "droits_taxes_hors_codes_2025", "droits_taxes_hors_codes_2023"}:
                 score *= 0.4
             if record.get("doc_id") == "loi_finances_2026":
                 score *= 1.35

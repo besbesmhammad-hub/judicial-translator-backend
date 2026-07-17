@@ -76,14 +76,30 @@ CLIENT_SOURCE_TITLES = {
     "code_irpp_is_2011": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS)",
     "tva_droit_consommation": "Code de la taxe sur la valeur ajoutée (loi n° 88-61 du 2 juin 1988), recueil officiel mis à jour au 1er janvier 2026",
     "procedures_fiscales_2026": "Code des droits et procédures fiscaux, édition 2026",
+    "procedures_fiscales_2025": "Code des droits et procédures fiscaux, édition 2025",
+    "procedures_fiscales_2024": "Code des droits et procédures fiscaux, édition 2024",
+    "procedures_fiscales_2023": "Code des droits et procédures fiscaux, édition 2023",
     "enregistrement_timbre": "Code des droits d'enregistrement et de timbre, édition 2026",
     "fiscalite_locale": "Code de la fiscalité locale",
+    "droits_taxes_hors_codes_2026": "Recueil des droits et taxes non incorporés dans les codes fiscaux, édition 2026",
+    "droits_taxes_hors_codes_2025": "Recueil des droits et taxes non incorporés dans les codes fiscaux, édition 2025",
+    "droits_taxes_hors_codes_2023": "Recueil des droits et taxes non incorporés dans les codes fiscaux, édition 2023",
+    "loi_investissement_2016_71": "Loi n° 2016-71 portant loi de l'investissement",
+    "loi_avantages_fiscaux_2017_8": "Loi n° 2017-8 portant refonte du dispositif des avantages fiscaux",
     "loi_finances_2026": "Loi de finances pour 2026",
 }
 CLIENT_SOURCE_TITLE_ALIASES = {
     "Code de l IRPP et de l IS": CLIENT_SOURCE_TITLES["code_irpp_is_2011"],
     "Code TVA et droit de consommation 2026": CLIENT_SOURCE_TITLES["tva_droit_consommation"],
     "Code des droits et procedures fiscaux 2026": CLIENT_SOURCE_TITLES["procedures_fiscales_2026"],
+    "Code des droits et procedures fiscaux 2025": CLIENT_SOURCE_TITLES["procedures_fiscales_2025"],
+    "Code des droits et procedures fiscaux 2024": CLIENT_SOURCE_TITLES["procedures_fiscales_2024"],
+    "Code des droits et procedures fiscaux 2023": CLIENT_SOURCE_TITLES["procedures_fiscales_2023"],
+    "Recueil des droits et taxes non incorpores dans les codes fiscaux 2026": CLIENT_SOURCE_TITLES["droits_taxes_hors_codes_2026"],
+    "Recueil des droits et taxes non incorpores dans les codes fiscaux 2025": CLIENT_SOURCE_TITLES["droits_taxes_hors_codes_2025"],
+    "Recueil des droits et taxes non incorpores dans les codes fiscaux 2023": CLIENT_SOURCE_TITLES["droits_taxes_hors_codes_2023"],
+    "Loi n 2016-71 portant loi de l investissement": CLIENT_SOURCE_TITLES["loi_investissement_2016_71"],
+    "Loi n 2017-8 portant refonte du dispositif des avantages fiscaux": CLIENT_SOURCE_TITLES["loi_avantages_fiscaux_2017_8"],
     "Code des droits d enregistrement et du timbre 2026": CLIENT_SOURCE_TITLES["enregistrement_timbre"],
     "Code de la fiscalite locale 2017": CLIENT_SOURCE_TITLES["fiscalite_locale"],
     "Loi de finances 2026": CLIENT_SOURCE_TITLES["loi_finances_2026"],
@@ -1167,6 +1183,32 @@ def treaty_precision_rules(doc_ids: list[str]) -> list[dict]:
 
 def tax_procedure_precision_rules(query: str) -> list[dict]:
     rules: list[dict] = []
+    if (
+        "cdpf" in query
+        or "code des droits et procedures fiscaux" in query
+        or "code des droits et procédures fiscaux" in query
+        or "procedure fiscale" in query
+        or "procédure fiscale" in query
+        or "procedures fiscales" in query
+        or "procédures fiscales" in query
+        or "controle fiscal" in query
+        or "contrôle fiscal" in query
+        or "contentieux fiscal" in query
+    ):
+        procedure_doc_id = "procedures_fiscales_2026"
+        if "2025" in query:
+            procedure_doc_id = "procedures_fiscales_2025"
+        elif "2024" in query:
+            procedure_doc_id = "procedures_fiscales_2024"
+        elif "2023" in query:
+            procedure_doc_id = "procedures_fiscales_2023"
+        return [
+            {
+                "doc_id": procedure_doc_id,
+                "terms": ["controle", "contentieux", "recouvrement", "declaration", "taxation", "reclamation"],
+                "min_matches": 2,
+            }
+        ]
     if "licoba" in query or "comptes bancaires" in query or "comptes postaux" in query or "listecomptes" in query:
         if "xsd" in query or "schema" in query:
             rules.append({
