@@ -2749,6 +2749,8 @@ def accounting_runtime_environment() -> str:
 
 
 def public_space_revision() -> str | None:
+    if not (os.getenv("SPACE_ID") or os.getenv("HF_SPACE_ID") or os.getenv("SPACE_REPOSITORY")):
+        return None
     cached = SPACE_REVISION_CACHE.get("value")
     cached_at = float(SPACE_REVISION_CACHE.get("ts") or 0)
     if cached and time.time() - cached_at < 300:
@@ -2775,13 +2777,13 @@ def public_space_revision() -> str | None:
 
 
 def effective_app_revision() -> str:
-    if accounting_runtime_environment() != "local":
+    if config.APP_REVISION and config.APP_REVISION != "unknown":
+        return config.APP_REVISION
+    if os.getenv("SPACE_ID") or os.getenv("HF_SPACE_ID") or os.getenv("SPACE_REPOSITORY"):
         live_revision = public_space_revision()
         if live_revision:
             return live_revision
-    if config.APP_REVISION and config.APP_REVISION != "unknown":
-        return config.APP_REVISION
-    return public_space_revision() or config.APP_REVISION or "unknown"
+    return config.APP_REVISION or "unknown"
 
 
 def version_payload() -> dict:

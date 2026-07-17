@@ -3,9 +3,17 @@ import subprocess
 
 
 def current_revision() -> str:
-    explicit = os.getenv("APP_REVISION") or os.getenv("SPACE_VERSION")
+    explicit = (
+        os.getenv("APP_REVISION")
+        or os.getenv("RENDER_GIT_COMMIT")
+        or os.getenv("RENDER_COMMIT")
+        or os.getenv("COMMIT_SHA")
+        or os.getenv("GIT_COMMIT")
+        or os.getenv("SOURCE_VERSION")
+        or os.getenv("SPACE_VERSION")
+    )
     if explicit:
-        return explicit
+        return explicit[:12]
     try:
         return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
     except Exception:
