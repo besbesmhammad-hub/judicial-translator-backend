@@ -180,12 +180,23 @@ def record_matches_domain(record: dict, route: str) -> bool:
                 "convention_fiscale_tunisie_senegal",
                 "convention_fiscale_tunisie_serbie",
                 "convention_fiscale_tunisie_singapour",
+                "formulaire_declaration_mensuelle_ar_2025",
+                "formulaire_impot_fortune_2026",
+                "formulaire_declaration_is_2026",
+                "formulaire_declaration_mensuelle_ar_2026",
+                "formulaire_adhesion_teleliquidation_impots",
+                "formulaire_declaration_employeur_2025",
+                "schema_licoba_liste_comptes_trimestrielle_2026",
+                "cahier_charges_licoba_depot_trimestriel_comptes_2026",
+                "formulaire_plus_value_actions_ar_2025",
+                "formulaire_declaration_irpp_ar_2025",
             }
             or domain.startswith((
                 "fiscalite_",
                 "tva_",
                 "enregistrement_",
                 "procedures_",
+                "procedure_fiscale_",
                 "taxe_",
                 "convention_fiscale_",
                 "facturation_",
@@ -368,6 +379,16 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "convention_fiscale_tunisie_senegal": r"convention tunisie senegal|convention tunisie sénégal|senegal|sénégal|double imposition|assistance administrative|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
         "convention_fiscale_tunisie_serbie": r"convention tunisie serbie|convention tunisie serbie|serbie|republique de serbie|double imposition|impots sur le revenu|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
         "convention_fiscale_tunisie_singapour": r"convention tunisie singapour|singapour|singapore|republique de singapour|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "formulaire_declaration_mensuelle_ar_2025": r"declaration mensuelle|mensuelle|retenue a la source|tva|droit de consommation|2025",
+        "formulaire_declaration_mensuelle_ar_2026": r"declaration mensuelle|mensuelle|retenue a la source|tva|droit de consommation|2026",
+        "formulaire_impot_fortune_2026": r"impot sur la fortune|declaration impot fortune|fortune|article 88|loi de finances 2026",
+        "formulaire_declaration_is_2026": r"declaration impot sur les societes|declaration is|impot sur les societes|is 2026",
+        "formulaire_adhesion_teleliquidation_impots": r"teleliquidation|adhesion teleliquidation|paiement a distance|impots finances",
+        "formulaire_declaration_employeur_2025": r"declaration employeur|employeur|declaration de l employeur|salaires|retenue|honoraires|2025",
+        "schema_licoba_liste_comptes_trimestrielle_2026": r"licoba|liste comptes|comptes bancaires|comptes postaux|xsd|rib|matricule fiscal banque|trimestre|listecomptes|comptesbancaires",
+        "cahier_charges_licoba_depot_trimestriel_comptes_2026": r"licoba|depot trimestriel|listes de numeros de comptes bancaires|comptes bancaires et postaux|article 53|loi des finances 2019|periodicite|echeances|fichier xml|xsd",
+        "formulaire_plus_value_actions_ar_2025": r"plus-value|plus value|cession d actions|cession actions|actions|parts sociales|valeur mobiliere|2025",
+        "formulaire_declaration_irpp_ar_2025": r"declaration impot sur le revenu|irpp|personnes physiques|revenu|2025",
         "loi_comptable": r"loi comptable|systeme comptable|normes comptables|etats financiers",
         "cadre_conceptuel_comptable": r"cadre conceptuel|qualitative|hypothese sous-jacente|information financiere",
         "ifrs_cadre_conceptuel_information_financiere": r"cadre conceptuel|ifrs|iasb|information financiere|caracteristiques qualitatives|image fidele|pertinence|representation fidele",
@@ -875,6 +896,22 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 5.6
             elif ("singapour" in query_text or "singapore" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_singapour":
                 score *= 5.6
+        if ("declaration mensuelle" in query_text or "déclaration mensuelle" in query_text or "mensuelle" in query_text) and record.get("doc_id") in {"formulaire_declaration_mensuelle_ar_2025", "formulaire_declaration_mensuelle_ar_2026"}:
+            score *= 4.8
+        if ("impot sur la fortune" in query_text or "impôt sur la fortune" in query_text or "fortune" in query_text) and record.get("doc_id") == "formulaire_impot_fortune_2026":
+            score *= 5.2
+        if ("declaration is" in query_text or "déclaration is" in query_text or "impot sur les societes" in query_text or "impôt sur les sociétés" in query_text) and record.get("doc_id") == "formulaire_declaration_is_2026":
+            score *= 5.2
+        if ("teleliquidation" in query_text or "téléliquidation" in query_text or "adhesion" in query_text or "adhésion" in query_text) and record.get("doc_id") == "formulaire_adhesion_teleliquidation_impots":
+            score *= 5.0
+        if ("declaration employeur" in query_text or "déclaration employeur" in query_text or "employeur" in query_text) and record.get("doc_id") == "formulaire_declaration_employeur_2025":
+            score *= 4.8
+        if ("licoba" in query_text or "comptes bancaires" in query_text or "comptes postaux" in query_text or "listecomptes" in query_text or "xsd" in query_text) and record.get("doc_id") in {"schema_licoba_liste_comptes_trimestrielle_2026", "cahier_charges_licoba_depot_trimestriel_comptes_2026"}:
+            score *= 5.4
+        if ("plus-value" in query_text or "plus value" in query_text or "cession d actions" in query_text or "cession actions" in query_text) and record.get("doc_id") == "formulaire_plus_value_actions_ar_2025":
+            score *= 5.0
+        if ("declaration impot sur le revenu" in query_text or "déclaration impôt sur le revenu" in query_text or "irpp" in query_text) and record.get("doc_id") == "formulaire_declaration_irpp_ar_2025":
+            score *= 4.8
         if ("ias 11" in query_text or "contrats de construction" in query_text or "pourcentage d'avancement" in query_text or "pourcentage d’avancement" in query_text):
             if record.get("doc_id") == "ias_11_contrats_construction":
                 score *= 4.2

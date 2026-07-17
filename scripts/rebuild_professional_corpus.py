@@ -1384,6 +1384,118 @@ DOCS = [
         "chunk_limit": 3200,
     },
     {
+        "filename": None,
+        "filename_size": 1823423,
+        "doc_id": "formulaire_declaration_mensuelle_ar_2025",
+        "title": "Formulaire arabe declaration mensuelle des impots 2025",
+        "authority": "Ministere des Finances - Tunisie",
+        "source_tier": "tax_form",
+        "year": 2025,
+        "domain": "procedure_fiscale_declaration_mensuelle",
+        "max_pages": 12,
+        "chunk_limit": 3000,
+    },
+    {
+        "filename": "impotFortune.pdf",
+        "doc_id": "formulaire_impot_fortune_2026",
+        "title": "Formulaire declaration impot sur la fortune 2026",
+        "authority": "Ministere des Finances - Tunisie",
+        "source_tier": "tax_form",
+        "year": 2026,
+        "domain": "procedure_fiscale_impot_fortune",
+        "max_pages": 8,
+        "chunk_limit": 3000,
+    },
+    {
+        "filename": "IS_2026.pdf",
+        "doc_id": "formulaire_declaration_is_2026",
+        "title": "Formulaire declaration impot sur les societes 2026",
+        "authority": "Ministere des Finances - Tunisie",
+        "source_tier": "tax_form",
+        "year": 2026,
+        "domain": "procedure_fiscale_is",
+        "max_pages": 9,
+        "chunk_limit": 3000,
+    },
+    {
+        "filename": "mensuelle2026.pdf",
+        "doc_id": "formulaire_declaration_mensuelle_ar_2026",
+        "title": "Formulaire arabe declaration mensuelle des impots 2026",
+        "authority": "Ministere des Finances - Tunisie",
+        "source_tier": "tax_form",
+        "year": 2026,
+        "domain": "procedure_fiscale_declaration_mensuelle",
+        "max_pages": 12,
+        "chunk_limit": 3000,
+    },
+    {
+        "filename": "maj_dde_adh_teleliquidation.pdf",
+        "doc_id": "formulaire_adhesion_teleliquidation_impots",
+        "title": "Formulaire adhesion et mise a jour teleliquidation des impots",
+        "authority": "Ministere des Finances - Tunisie",
+        "source_tier": "tax_form",
+        "year": 0,
+        "domain": "procedure_fiscale_teleliquidation",
+        "max_pages": 1,
+        "chunk_limit": 3000,
+    },
+    {
+        "filename": "Imprime-DEC-EMPL-2025.pdf",
+        "doc_id": "formulaire_declaration_employeur_2025",
+        "title": "Formulaire declaration de l employeur 2025",
+        "authority": "Ministere des Finances - Tunisie",
+        "source_tier": "tax_form",
+        "year": 2025,
+        "domain": "procedure_fiscale_declaration_employeur",
+        "max_pages": 26,
+        "chunk_limit": 3000,
+    },
+    {
+        "filename": "ListeComptes_Trim_V1.0.xsd",
+        "doc_id": "schema_licoba_liste_comptes_trimestrielle_2026",
+        "title": "Schema XSD depot trimestriel listes comptes bancaires et postaux",
+        "authority": "Ministere des Finances - Tunisie",
+        "source_tier": "technical_tax_schema",
+        "year": 2026,
+        "domain": "procedure_fiscale_licoba_comptes_bancaires",
+        "chunk_limit": 3000,
+    },
+    {
+        "filename": "Depot-trimestriel-des-listes-de-numeros-de-Comptes-Bancaires-Et-Postaux.pdf",
+        "doc_id": "cahier_charges_licoba_depot_trimestriel_comptes_2026",
+        "title": "Cahier des charges depot trimestriel des listes de comptes bancaires et postaux 2026",
+        "authority": "Ministere des Finances - Tunisie",
+        "source_tier": "technical_tax_guidance",
+        "year": 2026,
+        "domain": "procedure_fiscale_licoba_comptes_bancaires",
+        "max_pages": 38,
+        "chunk_limit": 3200,
+    },
+    {
+        "filename": None,
+        "filename_size": 596727,
+        "doc_id": "formulaire_plus_value_actions_ar_2025",
+        "title": "Formulaire arabe declaration plus-value sur cession d actions 2025",
+        "authority": "Ministere des Finances - Tunisie",
+        "source_tier": "tax_form",
+        "year": 2025,
+        "domain": "procedure_fiscale_plus_value_actions",
+        "max_pages": 4,
+        "chunk_limit": 3000,
+    },
+    {
+        "filename": None,
+        "filename_size": 2024394,
+        "doc_id": "formulaire_declaration_irpp_ar_2025",
+        "title": "Formulaire arabe declaration impot sur le revenu des personnes physiques 2025",
+        "authority": "Ministere des Finances - Tunisie",
+        "source_tier": "tax_form",
+        "year": 2025,
+        "domain": "procedure_fiscale_irpp",
+        "max_pages": 12,
+        "chunk_limit": 3000,
+    },
+    {
         "filename": "Guide-inscription-personnes-morales-societes-2026.pdf",
         "doc_id": "guide_inscription_personnes_morales_2026",
         "title": "Guide inscription personnes morales et societes 2026",
@@ -2362,6 +2474,12 @@ HEADING_RE = re.compile(
 def resolve_filename(meta: dict) -> str:
     if meta["filename"]:
         return meta["filename"]
+    if meta.get("filename_size"):
+        expected_size = int(meta["filename_size"])
+        for path in DOWNLOADS.iterdir():
+            if path.is_file() and path.stat().st_size == expected_size:
+                return path.name
+        raise FileNotFoundError(f"File with size {expected_size} not found for {meta['doc_id']}.")
     for path in DOWNLOADS.iterdir():
         if path.suffix.lower() == ".pdf" and not path.name.isascii() and path.stat().st_size == 1_196_628:
             return path.name
@@ -2470,6 +2588,31 @@ def build_records(meta: dict) -> list[dict]:
         if not text:
             return records
         for local_index, (heading, chunk) in enumerate(chunk_text(text), start=1):
+            digest = hashlib.blake2b(
+                f"{meta['doc_id']}|1|{local_index}|{chunk[:200]}".encode("utf-8"),
+                digest_size=8,
+            ).hexdigest()
+            records.append({
+                "id": digest,
+                "doc_id": meta["doc_id"],
+                "title": meta["title"],
+                "filename": path.name,
+                "page": 1,
+                "heading": heading,
+                "text": chunk,
+                "authority": meta["authority"],
+                "source_tier": meta["source_tier"],
+                "year": meta["year"],
+                "domain": meta["domain"],
+            })
+        return records
+
+    if path.suffix.lower() in {".xsd", ".xml", ".txt"}:
+        text = normalize_text(path.read_text(encoding="utf-8", errors="replace"))
+        if not text:
+            return records
+        chunk_limit = int(meta.get("chunk_limit", 1800) or 1800)
+        for local_index, (heading, chunk) in enumerate(chunk_text(text, limit=chunk_limit), start=1):
             digest = hashlib.blake2b(
                 f"{meta['doc_id']}|1|{local_index}|{chunk[:200]}".encode("utf-8"),
                 digest_size=8,

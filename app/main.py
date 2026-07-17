@@ -503,6 +503,9 @@ def source_precision_rules(message: str) -> list[dict]:
     treaty_doc_ids = detected_treaty_doc_ids(query)
     if is_treaty_overview_query(query) and treaty_doc_ids:
         return treaty_precision_rules(treaty_doc_ids)
+    procedure_rules = tax_procedure_precision_rules(query)
+    if procedure_rules:
+        return procedure_rules
     if is_cross_border_service_case(query):
         rules = [
             {
@@ -1082,6 +1085,87 @@ def treaty_precision_rules(doc_ids: list[str]) -> list[dict]:
         }
         for doc_id in doc_ids
     ]
+
+
+def tax_procedure_precision_rules(query: str) -> list[dict]:
+    rules: list[dict] = []
+    if "licoba" in query or "comptes bancaires" in query or "comptes postaux" in query or "listecomptes" in query:
+        if "xsd" in query or "schema" in query:
+            rules.append({
+                "doc_id": "schema_licoba_liste_comptes_trimestrielle_2026",
+                "terms": ["ComptesBancaires", "ListeComptes", "RIB", "Trimestre"],
+                "min_matches": 2,
+            })
+        rules.append({
+            "doc_id": "cahier_charges_licoba_depot_trimestriel_comptes_2026",
+            "terms": ["LICOBA", "DEPOT TRIMESTRIEL", "COMPTES BANCAIRES", "PERIODICITE"],
+            "min_matches": 2,
+        })
+        return rules
+    if "declaration mensuelle" in query or "mensuelle" in query:
+        if "2025" in query:
+            rules.append({
+                "doc_id": "formulaire_declaration_mensuelle_ar_2025",
+                "terms": ["التصريح الشهري", "الأداءات", "الشهر", "السنة"],
+                "min_matches": 2,
+            })
+        if "2026" in query:
+            rules.append({
+                "doc_id": "formulaire_declaration_mensuelle_ar_2026",
+                "terms": ["التصريح الشهري", "الأداءات", "الشهر", "السنة"],
+                "min_matches": 2,
+            })
+        if not rules:
+            rules.extend([
+                {
+                    "doc_id": "formulaire_declaration_mensuelle_ar_2026",
+                    "terms": ["التصريح الشهري", "الأداءات", "الشهر", "السنة"],
+                    "min_matches": 2,
+                },
+                {
+                    "doc_id": "formulaire_declaration_mensuelle_ar_2025",
+                    "terms": ["التصريح الشهري", "الأداءات", "الشهر", "السنة"],
+                    "min_matches": 2,
+                },
+            ])
+        return rules
+    if "impot sur la fortune" in query or "impÃ´t sur la fortune" in query or "fortune" in query:
+        return [{
+            "doc_id": "formulaire_impot_fortune_2026",
+            "terms": ["الضريبة على الثروة", "الفصل 88", "قانون المالية", "المكاسب"],
+            "min_matches": 2,
+        }]
+    if "declaration is" in query or "impot sur les societes" in query or "impÃ´t sur les sociÃ©tÃ©s" in query:
+        return [{
+            "doc_id": "formulaire_declaration_is_2026",
+            "terms": ["الضريبة على الشركات", "نتائج سنة", "السنة المالية", "الاسم الاجتماعي"],
+            "min_matches": 2,
+        }]
+    if "teleliquidation" in query or "tÃ©lÃ©liquidation" in query or "adhesion" in query or "adhÃ©sion" in query:
+        return [{
+            "doc_id": "formulaire_adhesion_teleliquidation_impots",
+            "terms": ["اﻻﺗﺤﻴﻴﻦ", "اﺣﺘﺴﺎب", "دﻓﻌ", "impots"],
+            "min_matches": 1,
+        }]
+    if "declaration employeur" in query or "employeur" in query:
+        return [{
+            "doc_id": "formulaire_declaration_employeur_2025",
+            "terms": ["تصريح", "المؤجر", "السنة", "الملاحق"],
+            "min_matches": 2,
+        }]
+    if "plus-value" in query or "plus value" in query or "cession d actions" in query or "cession actions" in query:
+        return [{
+            "doc_id": "formulaire_plus_value_actions_ar_2025",
+            "terms": ["القيمة الزائدة", "التفويت", "الأسهم", "المنابات الاجتماعية"],
+            "min_matches": 2,
+        }]
+    if "declaration impot sur le revenu" in query or "irpp" in query:
+        return [{
+            "doc_id": "formulaire_declaration_irpp_ar_2025",
+            "terms": ["الضريبة على دخل", "الأشخاص الطبيعيين", "المعرف الجبائي", "السنة المالية"],
+            "min_matches": 2,
+        }]
+    return []
 
 
 def is_cross_border_service_case(query: str) -> bool:
@@ -1896,6 +1980,36 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             if treaty_doc_id not in priority_doc_ids:
                 priority_doc_ids.insert(0, treaty_doc_id)
         blocked_doc_ids = set()
+        if coverage_workflow.family == "procedure_fiscale":
+            procedure_priority: list[str] = []
+            if "licoba" in query or "comptes bancaires" in query or "comptes postaux" in query or "listecomptes" in query or "xsd" in query:
+                procedure_priority.extend([
+                    "cahier_charges_licoba_depot_trimestriel_comptes_2026",
+                    "schema_licoba_liste_comptes_trimestrielle_2026",
+                ])
+            if "declaration mensuelle" in query or "mensuelle" in query:
+                if "2025" in query:
+                    procedure_priority.append("formulaire_declaration_mensuelle_ar_2025")
+                if "2026" in query:
+                    procedure_priority.append("formulaire_declaration_mensuelle_ar_2026")
+                if not any(doc_id.startswith("formulaire_declaration_mensuelle") for doc_id in procedure_priority):
+                    procedure_priority.extend(["formulaire_declaration_mensuelle_ar_2026", "formulaire_declaration_mensuelle_ar_2025"])
+            if "impot sur la fortune" in query or "impÃ´t sur la fortune" in query or "fortune" in query:
+                procedure_priority.append("formulaire_impot_fortune_2026")
+            if "declaration is" in query or "impot sur les societes" in query or "impÃ´t sur les sociÃ©tÃ©s" in query:
+                procedure_priority.append("formulaire_declaration_is_2026")
+            if "teleliquidation" in query or "tÃ©lÃ©liquidation" in query or "adhesion" in query or "adhÃ©sion" in query:
+                procedure_priority.append("formulaire_adhesion_teleliquidation_impots")
+            if "declaration employeur" in query or "employeur" in query:
+                procedure_priority.append("formulaire_declaration_employeur_2025")
+            if "plus-value" in query or "plus value" in query or "cession d actions" in query or "cession actions" in query:
+                procedure_priority.append("formulaire_plus_value_actions_ar_2025")
+            if "declaration impot sur le revenu" in query or "irpp" in query:
+                procedure_priority.append("formulaire_declaration_irpp_ar_2025")
+            for doc_id in reversed(procedure_priority):
+                if doc_id in priority_doc_ids:
+                    priority_doc_ids.remove(doc_id)
+                priority_doc_ids.insert(0, doc_id)
         if coverage_workflow.family == "paie_social":
             social_priority: list[str] = []
             if any(term in query for term in ("deces", "décès", "survivant", "survivants", "capital deces")):
