@@ -190,6 +190,16 @@ def record_matches_domain(record: dict, route: str) -> bool:
                 "convention_fiscale_tunisie_mauritanie",
                 "convention_fiscale_tunisie_norvege",
                 "convention_fiscale_tunisie_pakistan",
+                "convention_fiscale_tunisie_koweit",
+                "convention_fiscale_tunisie_ethiopie",
+                "convention_fiscale_tunisie_france_local",
+                "convention_fiscale_tunisie_grece",
+                "convention_fiscale_tunisie_hongrie",
+                "convention_fiscale_tunisie_ile_maurice",
+                "convention_fiscale_tunisie_indonesie",
+                "convention_fiscale_tunisie_iran",
+                "convention_fiscale_tunisie_italie",
+                "convention_fiscale_tunisie_jordanie",
                 "formulaire_declaration_mensuelle_ar_2025",
                 "formulaire_impot_fortune_2026",
                 "formulaire_declaration_is_2026",
@@ -399,6 +409,16 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "convention_fiscale_tunisie_mauritanie": r"convention tunisie mauritanie|mauritanie|republique islamique mauritanienne|non double imposition|impots sur les revenus|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
         "convention_fiscale_tunisie_norvege": r"convention tunisie norvege|convention tunisie norvège|norvege|norvège|royaume de norvege|double imposition|impots sur le revenu|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
         "convention_fiscale_tunisie_pakistan": r"convention tunisie pakistan|pakistan|republique islamique du pakistan|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_koweit": r"convention tunisie koweit|convention tunisie koweït|koweit|koweït|etat du koweit|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_ethiopie": r"convention tunisie ethiopie|convention tunisie ethioupie|ethiopie|ethioupie|republique federale democratique ethiopienne|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_france_local": r"convention tunisie france|france|republique francaise|republique française|elimination des doubles impositions|assistance mutuelle administrative|etablissement stable|revenus non commerciaux|redevances",
+        "convention_fiscale_tunisie_grece": r"convention tunisie grece|convention tunisie grèce|grece|grèce|republique hellenique|république hellénique|double imposition|impots sur le revenu|gains en capital|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_hongrie": r"convention tunisie hongrie|hongrie|republique de hongrie|double imposition|impot sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_ile_maurice": r"convention tunisie ile maurice|convention tunisie île maurice|ile de maurice|île de maurice|maurice|republique de maurice|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_indonesie": r"convention tunisie indonesie|convention tunisie indonésie|indonesie|indonésie|republique d'indonesie|republique d indonesie|double imposition|impot sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_iran": r"convention tunisie iran|iran|republique islamique d'iran|republique islamique d iran|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_italie": r"convention tunisie italie|italie|republique italienne|double imposition|impots sur le revenu|evasion fiscale|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_jordanie": r"convention tunisie jordanie|jordanie|royaume hachemite de jordanie|double imposition|impots sur le revenu|capital|etablissement stable|dividendes|interets|redevances",
         "formulaire_declaration_mensuelle_ar_2025": r"declaration mensuelle|mensuelle|retenue a la source|tva|droit de consommation|2025",
         "formulaire_declaration_mensuelle_ar_2026": r"declaration mensuelle|mensuelle|retenue a la source|tva|droit de consommation|2026",
         "formulaire_impot_fortune_2026": r"impot sur la fortune|declaration impot fortune|fortune|article 88|loi de finances 2026",
@@ -933,6 +953,26 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             elif ("norvege" in query_text or "norvège" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_norvege":
                 score *= 5.6
             elif "pakistan" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_pakistan":
+                score *= 5.6
+            elif ("koweit" in query_text or "koweït" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_koweit":
+                score *= 5.6
+            elif ("ethiopie" in query_text or "ethioupie" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_ethiopie":
+                score *= 5.6
+            elif "france" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_france_local":
+                score *= 5.6
+            elif ("grece" in query_text or "grèce" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_grece":
+                score *= 5.6
+            elif "hongrie" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_hongrie":
+                score *= 5.6
+            elif any(term in query_text for term in ("ile maurice", "île maurice", "ile-de-maurice", "maurice")) and record.get("doc_id") == "convention_fiscale_tunisie_ile_maurice":
+                score *= 5.6
+            elif ("indonesie" in query_text or "indonésie" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_indonesie":
+                score *= 5.6
+            elif "iran" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_iran":
+                score *= 5.6
+            elif "italie" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_italie":
+                score *= 5.6
+            elif "jordanie" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_jordanie":
                 score *= 5.6
         if ("declaration mensuelle" in query_text or "déclaration mensuelle" in query_text or "mensuelle" in query_text) and record.get("doc_id") in {"formulaire_declaration_mensuelle_ar_2025", "formulaire_declaration_mensuelle_ar_2026"}:
             score *= 4.8
