@@ -232,6 +232,12 @@ CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
             "cnss_service_sms",
             "cnss_communique_prets_universitaires_2017",
             "cnss_appels_offres_equipements_informatiques_videosurveillance_2016_2017",
+            "cnss_avis_03ca2018_linux_tuneps",
+            "cnss_avis_01ca2017_extension_bureau_mahdia",
+            "cnss_report_ao20_2017_licences_oracle",
+            "cnss_avis_09ca2017_iso22301_continuite_activites",
+            "cnss_ao02_2020_materiel_roulant_tuneps",
+            "cnss_consultation_01si2020_videosurveillance_tuneps",
             "cnss_n44_affiliation_independants",
             "cnss_n40_affiliation_employes_maison",
         ),
@@ -316,6 +322,12 @@ CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
             ("cnss_service_sms", ("service sms", "85785", "mandats electroniques", "cotisations", "salaires declares"), 2),
             ("cnss_communique_prets_universitaires_2017", ("prets universitaires", "decret gouvernemental 2017-369", "taux d interet", "interets de retard", "48 tranches"), 2),
             ("cnss_appels_offres_equipements_informatiques_videosurveillance_2016_2017", ("equipements informatiques", "cablage informatique", "switchs", "video-surveillance", "10 ca 2017"), 2),
+            ("cnss_avis_03ca2018_linux_tuneps", ("03 ca 2018", "linux", "souscription et maintenance", "tuneps"), 2),
+            ("cnss_avis_01ca2017_extension_bureau_mahdia", ("01 ca 2017", "extension", "bureau regional de mahdia", "travaux"), 2),
+            ("cnss_report_ao20_2017_licences_oracle", ("20 2017", "licences oracle", "report", "14 fevrier 2018"), 2),
+            ("cnss_avis_09ca2017_iso22301_continuite_activites", ("09 ca 2017", "iso 22301", "continuite des activites", "management"), 2),
+            ("cnss_ao02_2020_materiel_roulant_tuneps", ("02 2020", "materiel roulant", "voiture", "camion fourgon", "tuneps"), 2),
+            ("cnss_consultation_01si2020_videosurveillance_tuneps", ("01 si 2020", "video-surveillance", "tuneps", "signature electronique"), 2),
             ("cnss_n44_affiliation_independants", ("travailleur pour son propre compte", "secteur agricole", "secteur non agricole", "affiliation"), 2),
             ("cnss_n40_affiliation_employes_maison", ("employes de maison", "aide de menage", "chauffeur", "jardinier", "affiliation"), 2),
         ),
@@ -347,6 +359,10 @@ CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
 
 def detect_cabinet_workflow(query: str) -> CabinetWorkflow | None:
     normalized = _key(query)
+    if _contains(normalized, "cnss") and any(_contains(normalized, term) for term in ("appel d offres", "appel d offre", "consultation", "tuneps", "marches publics")):
+        for workflow in CABINET_WORKFLOWS:
+            if workflow.family == "paie_social":
+                return workflow
     best: tuple[int, CabinetWorkflow] | None = None
     for workflow in CABINET_WORKFLOWS:
         score = sum(3 for term in workflow.trigger_any if _contains(normalized, term))
@@ -369,6 +385,10 @@ def detect_cabinet_workflow(query: str) -> CabinetWorkflow | None:
             score += 10
         if workflow.family == "paie_social" and any(_contains(normalized, term) for term in ("salarie", "cnss", "charges sociales", "retenues salariales", "employeur", "salaire", "cotisation")):
             score += 12
+        if workflow.family == "paie_social" and _contains(normalized, "cnss") and any(_contains(normalized, term) for term in ("appel d offres", "appel d offre", "consultation", "tuneps", "marches publics")):
+            score += 45
+        if workflow.family == "comptabilite" and _contains(normalized, "cnss") and any(_contains(normalized, term) for term in ("appel d offres", "appel d offre", "consultation", "tuneps", "marches publics")):
+            score -= 45
         if workflow.family == "procedure_fiscale" and any(_contains(normalized, term) for term in ("controle fiscal", "notification", "recours", "penalite", "redressement", "declaration fiscale", "certificat", "procedure")):
             score += 10
         if workflow.family == "fiscalite_directe" and _contains(normalized, "tva"):
