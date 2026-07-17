@@ -500,6 +500,9 @@ def legal_sources_by_doc_ids(doc_ids: list[str]) -> list[dict]:
 def source_precision_rules(message: str) -> list[dict]:
     query = match_key(message)
     france_case = "france" in query or "francais" in query or "francaise" in query
+    treaty_doc_ids = detected_treaty_doc_ids(query)
+    if is_treaty_overview_query(query) and treaty_doc_ids:
+        return treaty_precision_rules(treaty_doc_ids)
     if is_cross_border_service_case(query):
         rules = [
             {
@@ -562,6 +565,8 @@ def source_precision_rules(message: str) -> list[dict]:
                 "terms": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
                 "min_matches": 2,
             })
+        elif treaty_doc_ids:
+            rules.extend(treaty_precision_rules(treaty_doc_ids))
         else:
             rules.append({
                 "doc_id": "convention_fiscale_applicable",
@@ -995,10 +1000,77 @@ def source_precision_rules(message: str) -> list[dict]:
     return []
 
 
+TREATY_SOURCE_TERMS: dict[str, list[str]] = {
+    "convention_fiscale_tunisie_tchecoslovaquie_slovaquie": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
+    "convention_fiscale_tunisie_soudan": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_suede": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
+    "convention_fiscale_tunisie_suisse": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_oman": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_syrie": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_turquie": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
+    "convention_fiscale_union_maghreb_arabe": ["etablissement stable", "benefices des entreprises", "double imposition", "assistance", "recouvrement"],
+}
+
+
+TREATY_COUNTRY_PATTERNS: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("slovaquie", "tchecoslovaquie", "tcheque"), "convention_fiscale_tunisie_tchecoslovaquie_slovaquie"),
+    (("soudan", "sudan"), "convention_fiscale_tunisie_soudan"),
+    (("suede",), "convention_fiscale_tunisie_suede"),
+    (("suisse",), "convention_fiscale_tunisie_suisse"),
+    (("oman",), "convention_fiscale_tunisie_oman"),
+    (("syrie", "syrienne"), "convention_fiscale_tunisie_syrie"),
+    (("turquie",), "convention_fiscale_tunisie_turquie"),
+    (("union du maghreb arabe", "u.m.a", "uma", "maghreb", "maroc", "algerie", "libye", "mauritanie"), "convention_fiscale_union_maghreb_arabe"),
+    (("vietnam",), "convention_fiscale_tunisie_vietnam"),
+    (("yemen",), "convention_fiscale_tunisie_yemen"),
+)
+
+
+def detected_treaty_doc_ids(query: str) -> list[str]:
+    found: list[str] = []
+    for terms, doc_id in TREATY_COUNTRY_PATTERNS:
+        if any(term in query for term in terms) and doc_id not in found:
+            found.append(doc_id)
+    return found
+
+
+def is_treaty_overview_query(query: str) -> bool:
+    return any(
+        term in query
+        for term in (
+            "convention fiscale",
+            "accord fiscal",
+            "double imposition",
+            "impots sur le revenu",
+            "impot sur le revenu",
+            "impots sur la fortune",
+            "etablissement stable",
+            "redevances",
+        )
+    )
+
+
+def treaty_precision_rules(doc_ids: list[str]) -> list[dict]:
+    return [
+        {
+            "doc_id": doc_id,
+            "terms": TREATY_SOURCE_TERMS.get(
+                doc_id,
+                ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+            ),
+            "min_matches": 2,
+        }
+        for doc_id in doc_ids
+    ]
+
+
 def is_cross_border_service_case(query: str) -> bool:
     foreign_markers = [
         "france", "francais", "italie", "italien", "allemagne", "allemand",
-        "emirats", "dubai", "uae", "algerie", "algerien", "vietnam", "yemen", "yémen", "client etranger",
+        "emirats", "dubai", "uae", "algerie", "algerien", "vietnam", "yemen", "yémen",
+        "slovaquie", "tchecoslovaquie", "soudan", "sudan", "suede", "suède", "suisse",
+        "oman", "syrie", "turquie", "maroc", "libye", "mauritanie", "maghreb",
+        "client etranger",
         "societe algerienne", "societe allemande", "societe italienne",
         "non resident", "hors de tunisie", "eur", "euro",
     ]
@@ -1717,8 +1789,20 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     query = match_key(message)
     priority_doc_ids: list[str] = []
     blocked_doc_ids: set[str] = set()
+    treaty_doc_ids = detected_treaty_doc_ids(query)
 
-    if is_cross_border_service_case(query):
+    if is_treaty_overview_query(query) and treaty_doc_ids:
+        priority_doc_ids = treaty_doc_ids
+        blocked_doc_ids = {
+            "loi_comptable",
+            "nc_01_norme_generale",
+            "nc_03_revenus",
+            "nc_04_stocks",
+            "nc_05_immobilisations_corporelles",
+            "fiscalite_locale",
+            "code_societes_commerciales_2022",
+        }
+    elif is_cross_border_service_case(query):
         priority_doc_ids = ["tva_droit_consommation", "procedures_fiscales_2026", "code_irpp_is_2011", "loi_finances_2026"]
         if "france" in query or "francais" in query or "francaise" in query:
             priority_doc_ids.extend([
@@ -1730,6 +1814,9 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             priority_doc_ids.append("convention_fiscale_tunisie_vietnam")
         elif "yemen" in query or "yémen" in query:
             priority_doc_ids.append("convention_fiscale_tunisie_yemen")
+        for treaty_doc_id in treaty_doc_ids:
+            if treaty_doc_id not in priority_doc_ids:
+                priority_doc_ids.append(treaty_doc_id)
         blocked_doc_ids = {
             "code_societes_commerciales_2022",
             "guide_creation_sarl_tunisie",
@@ -1782,6 +1869,9 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
         blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale", "code_commerce_2014"}
     elif coverage_workflow := detect_cabinet_workflow(query):
         priority_doc_ids = list(coverage_workflow.source_doc_ids)
+        for treaty_doc_id in reversed(treaty_doc_ids):
+            if treaty_doc_id not in priority_doc_ids:
+                priority_doc_ids.insert(0, treaty_doc_id)
         blocked_doc_ids = set()
         if coverage_workflow.family == "paie_social":
             social_priority: list[str] = []
