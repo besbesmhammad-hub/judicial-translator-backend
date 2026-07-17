@@ -111,6 +111,7 @@ Priority sources:
 - CNSS institutional presentation, employer guide for the non-agricultural sector, regional/local bank account list, direct debit authorization, RCP affiliation request, SMS service flyer, and the accident-at-work / occupational-disease text collection.
 - CNSS statistical publications on social loans, the pension-alimony/divorce-rent guarantee fund, 2020 statistical summary and 2018 financial statements.
 - CNSS statistical publications on contributions, served-benefit expenses, family benefits, cash social-insurance benefits, pensions, and social loans over the 2000-2020 period.
+- CNSS statistical publications on insured persons, active insured by regime, pension holders by regime/nature, demographic ratio, employer counts, employers by regime, plus 2018 notes to financial statements and 2022 budget.
 - IRPP/IS and procedures fiscales for salary withholding, declarations and control issues.
 
 Current limitation:

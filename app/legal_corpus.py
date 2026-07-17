@@ -43,6 +43,7 @@ SOURCE_TIER_WEIGHTS = {
     "service_flyer": 0.36,
     "social_security_statistics": 0.44,
     "institutional_financial_statement": 0.48,
+    "institutional_budget": 0.46,
 }
 
 
@@ -285,6 +286,15 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "cnss_prets_sociaux_nombre_montants_2010_2020": r"\bcnss\b|prets sociaux|prêts sociaux|nombre et montants|effectif des beneficiaires|nature de pret|2010|2020|montants",
         "cnss_prets_sociaux_effectifs_nature_2000_2020": r"\bcnss\b|prets sociaux|prêts sociaux|effectifs par nature|effectif des beneficiaires|pret voiture|pret logement|pret personnel|pret universitaire|2000|2020",
         "cnss_prets_sociaux_montants_nature_2000_2020": r"\bcnss\b|prets sociaux|prêts sociaux|montants par nature|pret voiture|pret logement|pret personnel|pret universitaire|projets de sante|2000|2020",
+        "cnss_evolution_effectif_assures_sociaux_2000_2020": r"\bcnss\b|evolution de l'effectif des assures sociaux|effectif des assures sociaux|actifs|pensionnes|ensemble des regimes|2000|2020",
+        "cnss_repartition_assures_actifs_regime_2000_2020": r"\bcnss\b|repartition des assures sociaux actifs|assures sociaux actifs par regime|regime des salaries non agricoles|travailleurs non salaries|2000|2020",
+        "cnss_repartition_titulaires_pensions_regime_2000_2020": r"\bcnss\b|repartition des titulaires de pensions par regime|titulaires de pensions|pensionnes par regime|salaries non agricoles|travailleurs non salaries|2000|2020",
+        "cnss_repartition_titulaires_pensions_nature_2000_2020": r"\bcnss\b|repartition des titulaires de pensions par nature|nature de pension|retraites|invalides|conjoints survivants|orphelins|2000|2020",
+        "cnss_rapport_demographique_2000_2020": r"\bcnss\b|rapport demographique|rapport démographique|nombre des actifs|beneficiaire de pension|ensemble des regimes|2000|2020",
+        "cnss_evolution_effectif_employeurs_2000_2020": r"\bcnss\b|evolution de l'effectif des employeurs|effectif des employeurs|secteur non agricole|secteur agricole|travailleurs a faible revenu|2000|2020",
+        "cnss_repartition_employeurs_regime_2000_2020": r"\bcnss\b|repartition de l'effectif des employeurs|employeurs par regime|salaries non agricoles|salaries agricoles|travailleurs a faible revenu|2000|2020",
+        "cnss_notes_etats_financiers_2018": r"\bcnss\b|notes aux etats financiers|normes comptables tunisiennes|cotisants et comptes rattaches|assures sociaux|liquidites|produits techniques|2018",
+        "cnss_budget_2022": r"\bcnss\b|budget 2022|recapitulatif general du budget|produits techniques|charges techniques|resultat technique|provisions|policliniques|centre d'appareillage orthopedique",
         "attestation_activite_agricole": r"attestation|activite agricole|poursuite d'activite agricole|poursuite d activite agricole|agriculture|formation agricole",
         "note_generale_facturation_electronique_2026": r"facturation electronique|facture electronique|e-facturation|e facture|e-facture|plateforme facture|operations de services|obligation de facturation",
         "note_generale_non_residents_services_administratifs_2026": r"tunisien non resident|tunisiens non residents|non resident|services administratifs|article 109|certificat d'immatriculation|depot des declarations fiscales|dépôt des déclarations fiscales",
