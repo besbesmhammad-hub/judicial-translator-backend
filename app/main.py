@@ -501,11 +501,6 @@ def source_precision_rules(message: str) -> list[dict]:
     query = match_key(message)
     france_case = "france" in query or "francais" in query or "francaise" in query
     treaty_doc_ids = detected_treaty_doc_ids(query)
-    if is_treaty_overview_query(query) and treaty_doc_ids:
-        return treaty_precision_rules(treaty_doc_ids)
-    procedure_rules = tax_procedure_precision_rules(query)
-    if procedure_rules:
-        return procedure_rules
     if is_cross_border_service_case(query):
         rules = [
             {
@@ -577,6 +572,11 @@ def source_precision_rules(message: str) -> list[dict]:
                 "missing": True,
             })
         return rules
+    if is_treaty_overview_query(query) and treaty_doc_ids:
+        return treaty_precision_rules(treaty_doc_ids)
+    procedure_rules = tax_procedure_precision_rules(query)
+    if procedure_rules:
+        return procedure_rules
     if is_mixed_dividends_case(query):
         rules = [
             {"doc_id": "code_irpp_is_2011", "terms": ["article 52", "c bis", "revenus distribues", "10%"], "min_matches": 2},
@@ -1923,6 +1923,66 @@ def fastpath_loi_finances_tva_answer(message: str, legal_domain: str) -> dict | 
     }
 
 
+def fastpath_document_analysis_without_document_answer(
+    message: str,
+    context: str,
+    intent: str,
+    legal_domain: str,
+) -> dict | None:
+    if intent != "document_analysis" or context.strip():
+        return None
+    query = match_key(message)
+    if not any(term in query for term in ("document", "piece", "dossier", "risques comptables", "risques fiscaux")):
+        return None
+
+    sources = legal_sources_by_doc_ids([
+        "loi_comptable",
+        "nc_01_norme_generale",
+        "code_irpp_is_2011",
+        "procedures_fiscales_2026",
+    ])
+    source_lines = summarize_source_titles(sources, limit=4)
+    answer = compose_structured_answer(
+        "practical_analysis",
+        {
+            "Reponse": (
+                "Je peux faire l'analyse cabinet, mais il manque la piece principale: le document a analyser. "
+                "Sans le contenu du document, je ne peux pas identifier de risques propres au dossier sans inventer des faits. "
+                "La bonne demarche est donc de recuperer le document, puis de qualifier separement les risques comptables, fiscaux, juridiques et de preuve."
+            ),
+            "Application pratique": (
+                "- Pieces a fournir: document complet, annexes, dates, montants, parties concernees, statut fiscal, contrat, facture et justificatifs de paiement si disponibles.\n"
+                "- Risques comptables a examiner apres lecture: cut-off, rattachement charges/produits, immobilisations, provisions, creances douteuses, parties liees et evenements posterieurs.\n"
+                "- Risques fiscaux a examiner apres lecture: deductibilite des charges, TVA, retenue a la source, declarations, justificatifs, reintegrations extra-comptables et risques de controle.\n"
+                "- Methode: extraire les faits, lister les zones d'incertitude, rattacher chaque conclusion a une source et signaler les informations manquantes.\n"
+                "- Conclusion prudente: tant que le document n'est pas fourni, la reponse doit rester une checklist de travail, pas une conclusion client."
+            ),
+            "Points de vigilance": (
+                "- Ne pas donner une conclusion fiscale ou comptable sans avoir lu le document.\n"
+                "- Ne pas inventer de taux, article, montant, date ou risque specifique absent du dossier.\n"
+                "- Si le document est scanne ou incomplet, verifier l'OCR et demander les pages manquantes avant conclusion."
+            ),
+            "Sources utilisees": source_lines,
+        },
+    )
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "document_analysis",
+        "preferred_source": "legal_corpus",
+        "response_style": "practical_analysis",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/document-analysis-missing-input",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
 def merge_priority_sources(priority_sources: list[dict], retrieved_sources: list[dict], limit: int = 5) -> list[dict]:
     merged: list[dict] = []
     seen: set[str] = set()
@@ -1943,18 +2003,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     blocked_doc_ids: set[str] = set()
     treaty_doc_ids = detected_treaty_doc_ids(query)
 
-    if is_treaty_overview_query(query) and treaty_doc_ids:
-        priority_doc_ids = treaty_doc_ids
-        blocked_doc_ids = {
-            "loi_comptable",
-            "nc_01_norme_generale",
-            "nc_03_revenus",
-            "nc_04_stocks",
-            "nc_05_immobilisations_corporelles",
-            "fiscalite_locale",
-            "code_societes_commerciales_2022",
-        }
-    elif is_cross_border_service_case(query):
+    if is_cross_border_service_case(query):
         priority_doc_ids = ["tva_droit_consommation", "procedures_fiscales_2026", "code_irpp_is_2011", "loi_finances_2026"]
         if "france" in query or "francais" in query or "francaise" in query:
             priority_doc_ids.extend([
@@ -1975,6 +2024,17 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "fiscalite_locale",
             "code_commerce_2014",
             "code_obligations_contrats_2015",
+        }
+    elif is_treaty_overview_query(query) and treaty_doc_ids:
+        priority_doc_ids = treaty_doc_ids
+        blocked_doc_ids = {
+            "loi_comptable",
+            "nc_01_norme_generale",
+            "nc_03_revenus",
+            "nc_04_stocks",
+            "nc_05_immobilisations_corporelles",
+            "fiscalite_locale",
+            "code_societes_commerciales_2022",
         }
     elif ("bofip" in query or "boi-int-cvb" in query or "convention fiscale france tunisie" in query or "convention fiscale france-tunisie" in query) and ("france" in query or "tunisie" in query):
         priority_doc_ids = [
@@ -3562,6 +3622,43 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     answer_style = preferred_answer_style(query_intent, prefer_golden_kb)
     legal_query = f"{message}\n{context_block}"
     legal_domain = infer_query_domain(legal_query)
+    missing_document_fastpath = fastpath_document_analysis_without_document_answer(
+        message=message,
+        context=context_block,
+        intent=query_intent,
+        legal_domain=legal_domain,
+    )
+    if missing_document_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": missing_document_fastpath.get("intent"),
+                "legal_domain": legal_domain,
+                "preferred_source": missing_document_fastpath.get("preferred_source"),
+                "response_style": missing_document_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(missing_document_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": missing_document_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            missing_document_fastpath,
+            request,
+            workflow="document_analysis_missing_input",
+            case_analysis_enabled=True,
+            retrieval_domains=[legal_domain],
+            selected_sources=missing_document_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=missing_document_fastpath.get("model"),
+        )
     commissariat_fastpath = fastpath_commissariat_texts_answer(
         message=message,
         legal_domain=legal_domain,

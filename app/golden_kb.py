@@ -50,7 +50,7 @@ INTENT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         re.compile(
             r"piece jointe|document ci-joint|document joint|dans ce document|analyse ce document|selon ce document|"
             r"uploaded document|attached document|analyse ce dossier|analyse ce cas|analyse d[' ]audit|"
-            r"premiere analyse|controle interne|contr[ôo]le interne|risques comptables|risques fiscaux|"
+            r"premiere analyse|controle interne|contr[ôo]le interne|"
             r"risques techniques|risques de preuve|dossier paie incomplet|bulletins de paie|avantages en nature|"
             r"regulariser ses dettes fiscales|remise de penalites|remise de p[ée]nalit[ée]s",
             re.I,
@@ -154,6 +154,15 @@ def classify_query_intent(message: str, context: str = "") -> str:
     query = match_key(f"{message}\n{context}".strip())
     accounting_pattern = next(pattern for intent, pattern in INTENT_PATTERNS if intent == "accounting_treatment")
     legal_pattern = next(pattern for intent, pattern in INTENT_PATTERNS if intent == "legal_basis")
+    is_plain_definition = DEFINITION_PATTERN.search(query) and not re.search(
+        r"\b(comment|quelles?|quels?|peut|faut|doit|traitement|ecriture|calcul|deductibilite|"
+        r"deductible|fiscal|fiscale|mise en service|pret a fonctionner|machine|contrat|facture|"
+        r"client|associe|non resident|resident|avant paiement|avant facturation)\b",
+        query,
+        re.I,
+    )
+    if is_plain_definition:
+        return "definition"
     if re.search(r"dividendes?|associe non resident|associe resident|retenue a la source", query, re.I):
         return "tax_calculation" if re.search(r"retenue a la source|points fiscaux|consequences fiscales|bases? legales?", query, re.I) else "legal_basis"
     if accounting_pattern.search(query) and legal_pattern.search(query):
