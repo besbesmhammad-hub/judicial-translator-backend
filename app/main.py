@@ -865,8 +865,8 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_appels_offres_travaux_2015_2017", "terms": ["appel d offres", "construction", "amenagement", "bureau regional"], "min_matches": 2})
             if ("fiches des services" in query or "delais des services" in query or "délais des services" in query or "services cnss" in query or "قائمة خدمات الصندوق" in query or "آجال الحصول" in query) and ("cnss" in query or "الصندوق" in query):
                 social_rules.append({"doc_id": "cnss_fiches_services_octobre_2020", "terms": ["fiches des services", "delais", "آجال", "الخدمة", "الإنخراط", "الشهادات", "prestations"], "min_matches": 2})
-            if ("engagements envers le citoyen" in query or "service du citoyen" in query or "relations avec le citoyen" in query or "bureau regional" in query or "bureaux regionaux" in query or "bureau local" in query or "bureaux locaux" in query) and "cnss" in query:
-                social_rules.append({"doc_id": "cnss_engagements_citoyen_reseau", "terms": ["engagements envers le citoyen", "bureau regional", "bureau local", "delai"], "min_matches": 2})
+            if ("engagements envers le citoyen" in query or ("engagement" in query and "citoyen" in query) or "service du citoyen" in query or "relations avec le citoyen" in query or "reseau de bureaux" in query or "réseau de bureaux" in query or "bureau regional" in query or "bureaux regionaux" in query or "bureau local" in query or "bureaux locaux" in query) and "cnss" in query:
+                social_rules.append({"doc_id": "cnss_engagements_citoyen_reseau", "terms": ["engagement", "citoyen", "bureau regional", "bureau local", "delai"], "min_matches": 2})
             explicit_doc_ids = {rule["doc_id"] for rule in social_rules}
             existing_doc_ids = set(explicit_doc_ids)
             social_rules.extend(
@@ -1822,7 +1822,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_appels_offres_travaux_2015_2017")
             if ("fiches des services" in query or "delais des services" in query or "délais des services" in query or "services cnss" in query or "قائمة خدمات الصندوق" in query or "آجال الحصول" in query) and ("cnss" in query or "الصندوق" in query):
                 social_priority.append("cnss_fiches_services_octobre_2020")
-            if ("engagements envers le citoyen" in query or "service du citoyen" in query or "relations avec le citoyen" in query or "bureau regional" in query or "bureaux regionaux" in query or "bureau local" in query or "bureaux locaux" in query) and "cnss" in query:
+            if ("engagements envers le citoyen" in query or ("engagement" in query and "citoyen" in query) or "service du citoyen" in query or "relations avec le citoyen" in query or "reseau de bureaux" in query or "réseau de bureaux" in query or "bureau regional" in query or "bureaux regionaux" in query or "bureau local" in query or "bureaux locaux" in query) and "cnss" in query:
                 social_priority.append("cnss_engagements_citoyen_reseau")
             if social_priority:
                 statistical_doc_ids = {
