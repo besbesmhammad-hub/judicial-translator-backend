@@ -41,9 +41,9 @@ CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
         title="Fiscalite directe: deductibilite, reintegrations et avantages",
         intent="tax_calculation",
         legal_domain="fiscalite",
-        trigger_any=("is", "irpp", "retenue a la source", "charge deductible", "charges deductibles", "reintegr", "avantage occulte", "provision", "amortissement fiscal", "benefice imposable"),
-        trigger_all_any=(("charge", "provision", "amortissement", "avantage", "reintegr", "retenue", "dividende"), ("deduire", "deductible", "fiscal", "impot", "is", "irpp")),
-        source_doc_ids=("code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026", "loi_comptable"),
+        trigger_any=("is", "irpp", "retenue a la source", "charge deductible", "charges deductibles", "reintegr", "avantage occulte", "provision", "amortissement fiscal", "benefice imposable", "convention fiscale", "double imposition", "etablissement stable", "bofip", "revenus non commerciaux", "redevances"),
+        trigger_all_any=(("charge", "provision", "amortissement", "avantage", "reintegr", "retenue", "dividende", "convention", "bofip", "etablissement stable", "redevance"), ("deduire", "deductible", "fiscal", "impot", "is", "irpp", "double imposition", "france", "tunisie", "vietnam", "yemen")),
+        source_doc_ids=("code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026", "loi_comptable", "convention_fiscale_france_tunisie", "convention_fiscale_france_tunisie_texte_1973", "boi_france_tunisie_convention_fiscale_2012", "convention_fiscale_tunisie_vietnam", "convention_fiscale_tunisie_yemen"),
         issue_split=(
             "qualifier le contribuable, le beneficiaire et l'exercice concerne",
             "distinguer traitement comptable, deductibilite fiscale et reintegration extra-comptable",
@@ -56,6 +56,11 @@ CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
             ("loi_finances_2026", ("loi de finances", "2026", "retenue", "impot"), 2),
             ("procedures_fiscales_2026", ("declaration", "controle", "justificatifs", "certificat"), 2),
             ("loi_comptable", ("pieces justificatives", "comptabilite", "enregistrement", "documents"), 2),
+            ("convention_fiscale_france_tunisie", ("france", "tunisie", "etablissement stable", "dividendes", "redevances"), 2),
+            ("convention_fiscale_france_tunisie_texte_1973", ("france", "tunisie", "benefices des entreprises", "revenus non commerciaux", "redevances"), 2),
+            ("boi_france_tunisie_convention_fiscale_2012", ("bofip", "france", "tunisie", "etablissement stable", "revenus non commerciaux"), 2),
+            ("convention_fiscale_tunisie_vietnam", ("vietnam", "tunisie", "etablissement stable", "dividendes", "redevances"), 2),
+            ("convention_fiscale_tunisie_yemen", ("yemen", "tunisie", "etablissement stable", "dividendes", "redevances"), 2),
         ),
     ),
     CabinetWorkflow(
@@ -66,7 +71,7 @@ CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
         legal_domain="fiscalite",
         trigger_any=("tva", "taxe sur la valeur ajoutee", "deduction tva", "tva deductible", "tva collectee", "exigibilite", "exoneration", "facturation", "regularisation tva", "exportation de services"),
         trigger_all_any=(("tva", "taxe sur la valeur ajoutee", "facture", "exoneration", "deduction"), ("territorialite", "export", "deductible", "exigible", "regularisation", "justificatif")),
-        source_doc_ids=("tva_droit_consommation", "procedures_fiscales_2026", "loi_finances_2026", "code_irpp_is_2011"),
+        source_doc_ids=("tva_droit_consommation", "procedures_fiscales_2026", "loi_finances_2026", "code_irpp_is_2011", "convention_fiscale_france_tunisie", "convention_fiscale_france_tunisie_texte_1973", "boi_france_tunisie_convention_fiscale_2012"),
         issue_split=(
             "qualifier l'operation, le lieu d'utilisation et le statut du client",
             "separer champ d'application, territorialite, exonération, exigibilite et droit a deduction",
@@ -78,6 +83,8 @@ CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
             ("tva_droit_consommation", ("tva", "taxe sur la valeur ajoutee", "facture", "deduction", "exoneration"), 2),
             ("procedures_fiscales_2026", ("facture", "controle", "declaration", "justificatifs"), 2),
             ("loi_finances_2026", ("tva", "loi de finances", "2026"), 2),
+            ("convention_fiscale_france_tunisie", ("france", "tunisie", "etablissement stable", "redevances"), 2),
+            ("boi_france_tunisie_convention_fiscale_2012", ("france", "tunisie", "prestations", "etablissement stable"), 2),
         ),
     ),
     CabinetWorkflow(

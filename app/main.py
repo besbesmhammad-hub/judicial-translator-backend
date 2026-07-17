@@ -533,9 +533,33 @@ def source_precision_rules(message: str) -> list[dict]:
             },
         ]
         if france_case:
+            rules.extend([
+                {
+                    "doc_id": "convention_fiscale_france_tunisie",
+                    "terms": ["etablissement stable", "chantier", "montage", "benefices des entreprises", "redevances"],
+                    "min_matches": 2,
+                },
+                {
+                    "doc_id": "convention_fiscale_france_tunisie_texte_1973",
+                    "terms": ["etablissement stable", "benefices des entreprises", "revenus non commerciaux", "redevances"],
+                    "min_matches": 2,
+                },
+                {
+                    "doc_id": "boi_france_tunisie_convention_fiscale_2012",
+                    "terms": ["etablissement stable", "benefices industriels et commerciaux", "revenus non commerciaux", "redevances"],
+                    "min_matches": 2,
+                },
+            ])
+        elif "vietnam" in query:
             rules.append({
-                "doc_id": "convention_fiscale_france_tunisie",
-                "terms": ["etablissement stable", "chantier", "montage", "benefices des entreprises", "redevances"],
+                "doc_id": "convention_fiscale_tunisie_vietnam",
+                "terms": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+                "min_matches": 2,
+            })
+        elif "yemen" in query or "yémen" in query:
+            rules.append({
+                "doc_id": "convention_fiscale_tunisie_yemen",
+                "terms": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
                 "min_matches": 2,
             })
         else:
@@ -552,7 +576,11 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": "procedures_fiscales_2026", "terms": ["declaration", "reversement", "certificat", "retenue"], "min_matches": 2},
         ]
         if france_case:
-            rules.append({"doc_id": "convention_fiscale_france_tunisie", "terms": ["dividendes", "resident", "etat contractant", "retenue"], "min_matches": 2})
+            rules.extend([
+                {"doc_id": "convention_fiscale_france_tunisie", "terms": ["dividendes", "resident", "etat contractant", "retenue"], "min_matches": 2},
+                {"doc_id": "convention_fiscale_france_tunisie_texte_1973", "terms": ["dividendes", "resident", "etat contractant", "impot de distribution"], "min_matches": 2},
+                {"doc_id": "boi_france_tunisie_convention_fiscale_2012", "terms": ["dividendes", "revenus de capitaux mobiliers", "retenue", "tunisie"], "min_matches": 2},
+            ])
         elif "non resident" in query or "non-resident" in query:
             rules.append({
                 "doc_id": "convention_fiscale_applicable",
@@ -609,6 +637,12 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": "code_irpp_is_2011", "terms": ["provision", "deductible", "benefice imposable", "reintegr"], "min_matches": 2},
             {"doc_id": "ias_12_impots_resultat", "terms": ["impot differe", "difference temporaire", "resultat fiscal"], "min_matches": 2},
         ]
+    if ("bofip" in query or "boi-int-cvb" in query or "convention fiscale france tunisie" in query or "convention fiscale france-tunisie" in query) and ("france" in query or "tunisie" in query):
+        return [
+            {"doc_id": "boi_france_tunisie_convention_fiscale_2012", "terms": ["etablissement stable", "benefices industriels et commerciaux", "revenus non commerciaux", "redevances"], "min_matches": 2},
+            {"doc_id": "convention_fiscale_france_tunisie_texte_1973", "terms": ["etablissement stable", "benefices des entreprises", "revenus non commerciaux", "redevances"], "min_matches": 2},
+            {"doc_id": "convention_fiscale_france_tunisie", "terms": ["etablissement stable", "benefices des entreprises", "redevances"], "min_matches": 2},
+        ]
     if "dividende" in query or "dividendes" in query:
         return [
             {
@@ -657,6 +691,16 @@ def source_precision_rules(message: str) -> list[dict]:
             {
                 "doc_id": "loi_finances_2026",
                 "terms": ["loi de finances", "2026", "tva", "الأداء على القيمة المضافة"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "convention_fiscale_france_tunisie_texte_1973",
+                "terms": ["etablissement stable", "benefices des entreprises", "revenus non commerciaux", "redevances"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "boi_france_tunisie_convention_fiscale_2012",
+                "terms": ["etablissement stable", "benefices industriels et commerciaux", "revenus non commerciaux", "redevances"],
                 "min_matches": 2,
             },
         ]
@@ -954,7 +998,7 @@ def source_precision_rules(message: str) -> list[dict]:
 def is_cross_border_service_case(query: str) -> bool:
     foreign_markers = [
         "france", "francais", "italie", "italien", "allemagne", "allemand",
-        "emirats", "dubai", "uae", "algerie", "algerien", "client etranger",
+        "emirats", "dubai", "uae", "algerie", "algerien", "vietnam", "yemen", "yémen", "client etranger",
         "societe algerienne", "societe allemande", "societe italienne",
         "non resident", "hors de tunisie", "eur", "euro",
     ]
@@ -1676,6 +1720,16 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
 
     if is_cross_border_service_case(query):
         priority_doc_ids = ["tva_droit_consommation", "procedures_fiscales_2026", "code_irpp_is_2011", "loi_finances_2026"]
+        if "france" in query or "francais" in query or "francaise" in query:
+            priority_doc_ids.extend([
+                "convention_fiscale_france_tunisie",
+                "convention_fiscale_france_tunisie_texte_1973",
+                "boi_france_tunisie_convention_fiscale_2012",
+            ])
+        elif "vietnam" in query:
+            priority_doc_ids.append("convention_fiscale_tunisie_vietnam")
+        elif "yemen" in query or "yémen" in query:
+            priority_doc_ids.append("convention_fiscale_tunisie_yemen")
         blocked_doc_ids = {
             "code_societes_commerciales_2022",
             "guide_creation_sarl_tunisie",
@@ -1683,6 +1737,15 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "code_commerce_2014",
             "code_obligations_contrats_2015",
         }
+    elif ("bofip" in query or "boi-int-cvb" in query or "convention fiscale france tunisie" in query or "convention fiscale france-tunisie" in query) and ("france" in query or "tunisie" in query):
+        priority_doc_ids = [
+            "boi_france_tunisie_convention_fiscale_2012",
+            "convention_fiscale_france_tunisie_texte_1973",
+            "convention_fiscale_france_tunisie",
+            "code_irpp_is_2011",
+            "procedures_fiscales_2026",
+        ]
+        blocked_doc_ids = {"loi_comptable", "nc_01_norme_generale", "nc_03_revenus", "nc_04_stocks", "nc_05_immobilisations_corporelles"}
     elif is_mixed_dividends_case(query):
         priority_doc_ids = ["code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026"]
         blocked_doc_ids = {"fiscalite_locale", "droits_taxes_hors_codes", "code_commerce_2014"}
@@ -1971,7 +2034,14 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "fiscalite_locale",
         }
     elif ("prestations de services" in query or "prestation informatique" in query) and ("france" in query or "client etabli" in query or "client francais" in query):
-        priority_doc_ids = ["tva_droit_consommation", "procedures_fiscales_2026", "loi_finances_2026"]
+        priority_doc_ids = [
+            "tva_droit_consommation",
+            "convention_fiscale_france_tunisie",
+            "convention_fiscale_france_tunisie_texte_1973",
+            "boi_france_tunisie_convention_fiscale_2012",
+            "procedures_fiscales_2026",
+            "loi_finances_2026",
+        ]
         blocked_doc_ids = {"code_irpp_is_2011", "code_societes_commerciales_2022", "droits_taxes_hors_codes", "fiscalite_locale"}
     elif "fraude" in query and ("commissaire aux comptes" in query or "rapport" in query):
         priority_doc_ids = [
