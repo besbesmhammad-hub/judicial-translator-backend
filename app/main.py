@@ -787,7 +787,7 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_accidents_travail_maladies_professionnelles", "terms": ["accidents du travail", "maladies professionnelles", "incapacite permanente", "cotisations"], "min_matches": 2})
             if "guide de l employeur" in query or "guide de l'employeur" in query or ("secteur non agricole" in query and ("employeur" in query or "cotisation" in query or "declaration" in query)):
                 social_rules.append({"doc_id": "cnss_guide_employeur_secteur_non_agricole", "terms": ["guide de l employeur", "secteur non agricole", "declaration des salaires", "penalite de retard"], "min_matches": 2})
-            if "compte bancaire" in query or "comptes bancaires" in query or "rib" in query or "bureau regional" in query or "bureau local" in query:
+            if "compte bancaire" in query or "comptes bancaires" in query or "rib" in query or (("bureau regional" in query or "bureau local" in query) and ("banque" in query or "bancaire" in query or "rib" in query)):
                 social_rules.append({"doc_id": "cnss_liste_comptes_bancaires_bureaux_regionaux", "terms": ["comptes bancaires", "rib", "bureau regional", "stb"], "min_matches": 2})
             if "autorisation de debit" in query or "autorisation de débit" in query or "prelevement" in query or "prélèvement" in query:
                 social_rules.append({"doc_id": "cnss_autorisation_debit_bancaire_postal", "terms": ["autorisation de debit", "compte bancaire", "compte postal", "prelevement"], "min_matches": 2})
@@ -857,26 +857,50 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_notes_etats_financiers_2018", "terms": ["notes aux etats financiers", "normes comptables tunisiennes", "cotisants", "produits techniques"], "min_matches": 2})
             if "budget 2022" in query and "cnss" in query:
                 social_rules.append({"doc_id": "cnss_budget_2022", "terms": ["budget 2022", "produits techniques", "charges techniques", "resultat technique"], "min_matches": 2})
-            tender_exact_01ca = "tuneps" in query or "climatiseur" in query or "01/ca/2020" in query or "01 ca 2020" in query
+            tender_exact_01ca = "climatiseur" in query or "01/ca/2020" in query or "01 ca 2020" in query
             tender_exact_it = ("oracle" in query or "systeme d information" in query or "système d information" in query or "pmsi" in query or "informatique" in query) and "cnss" in query
             tender_exact_it_equipment = ("equipements informatiques" in query or "équipements informatiques" in query or "cablage informatique" in query or "câblage informatique" in query or "switch" in query or "video-surveillance" in query or "vidéo-surveillance" in query or "16/2016" in query or "16/2017" in query or "10/ca/2017" in query) and "cnss" in query
             tender_exact_works = ("travaux" in query or "construction" in query or "amenagement" in query or "aménagement" in query or "bureau regional" in query) and "cnss" in query
-            if ("appel d offres" in query or "appels d offres" in query or "appel d'offre" in query or "appels d'offre" in query or "appel d’offres" in query or "appels d’offres" in query or "marches publics" in query or "marchés publics" in query or "طلب العروض" in query) and ("cnss" in query or "الصندوق" in query) and not (tender_exact_01ca or tender_exact_it or tender_exact_it_equipment or tender_exact_works):
+            tender_linux = ("03/ca/2018" in query or "03 ca 2018" in query or "linux" in query) and "cnss" in query
+            tender_mahdia = ("01/ca/2017" in query or "01 ca 2017" in query or ("mahdia" in query and "extension" in query)) and "cnss" in query
+            tender_oracle_report = ("20/2017" in query or "20 2017" in query or ("oracle" in query and "report" in query)) and "cnss" in query
+            tender_iso22301 = ("09/ca/2017" in query or "09 ca 2017" in query or "iso 22301" in query or "continuite des activites" in query or "continuité des activités" in query) and "cnss" in query
+            tender_rolling_stock = ("02/2020" in query or "02 2020" in query or "materiel roulant" in query or "matériel roulant" in query or "voiture de service" in query or "camion fourgon" in query) and "cnss" in query
+            tender_si_video_2020 = ("01/si/2020" in query or "01 si 2020" in query or ("video-surveillance" in query and "2020" in query) or ("vidéo-surveillance" in query and "2020" in query)) and "cnss" in query
+            if ("appel d offres" in query or "appels d offres" in query or "appel d'offre" in query or "appels d'offre" in query or "appel d’offres" in query or "appels d’offres" in query or "marches publics" in query or "marchés publics" in query or "طلب العروض" in query) and ("cnss" in query or "الصندوق" in query) and not (tender_exact_01ca or tender_exact_it or tender_exact_it_equipment or tender_exact_works or tender_linux or tender_mahdia or tender_oracle_report or tender_iso22301 or tender_rolling_stock or tender_si_video_2020):
                 social_rules.extend([
                     {"doc_id": "cnss_appels_offres_resultats_ar_2016_2017", "terms": ["طلب العروض", "اسناد الصفقة", "غير مثمر", "اقتناء"], "min_matches": 2},
                     {"doc_id": "cnss_appels_offres_informatique_2015_2017", "terms": ["appel d offres", "systeme d information", "oracle", "pmsi"], "min_matches": 2},
                     {"doc_id": "cnss_appels_offres_equipements_informatiques_videosurveillance_2016_2017", "terms": ["equipements informatiques", "cablage informatique", "switchs", "video-surveillance"], "min_matches": 2},
                     {"doc_id": "cnss_appels_offres_travaux_2015_2017", "terms": ["appel d offres", "construction", "amenagement", "bureau regional"], "min_matches": 2},
                     {"doc_id": "cnss_avis_appel_offres_climatiseurs_01ca2020", "terms": ["avis d appel d offres", "01 ca 2020", "climatiseurs", "tuneps"], "min_matches": 2},
+                    {"doc_id": "cnss_avis_03ca2018_linux_tuneps", "terms": ["03 ca 2018", "linux", "souscription et maintenance", "tuneps"], "min_matches": 2},
+                    {"doc_id": "cnss_avis_01ca2017_extension_bureau_mahdia", "terms": ["01 ca 2017", "extension", "bureau regional de mahdia", "travaux"], "min_matches": 2},
+                    {"doc_id": "cnss_report_ao20_2017_licences_oracle", "terms": ["20 2017", "licences oracle", "report", "14 fevrier 2018"], "min_matches": 2},
+                    {"doc_id": "cnss_avis_09ca2017_iso22301_continuite_activites", "terms": ["09 ca 2017", "iso 22301", "continuite des activites", "management"], "min_matches": 2},
+                    {"doc_id": "cnss_ao02_2020_materiel_roulant_tuneps", "terms": ["02 2020", "materiel roulant", "voiture", "camion fourgon", "tuneps"], "min_matches": 2},
+                    {"doc_id": "cnss_consultation_01si2020_videosurveillance_tuneps", "terms": ["01 si 2020", "video-surveillance", "tuneps", "signature electronique"], "min_matches": 2},
                 ])
             if tender_exact_01ca and "cnss" in query:
                 social_rules.append({"doc_id": "cnss_avis_appel_offres_climatiseurs_01ca2020", "terms": ["avis d appel d offres", "01 ca 2020", "climatiseurs", "tuneps"], "min_matches": 2})
             if tender_exact_it_equipment:
                 social_rules.append({"doc_id": "cnss_appels_offres_equipements_informatiques_videosurveillance_2016_2017", "terms": ["equipements informatiques", "cablage informatique", "switchs", "video-surveillance"], "min_matches": 2})
-            if tender_exact_it and not tender_exact_it_equipment:
+            if tender_exact_it and not (tender_exact_it_equipment or tender_oracle_report):
                 social_rules.append({"doc_id": "cnss_appels_offres_informatique_2015_2017", "terms": ["appel d offres", "systeme d information", "oracle", "pmsi"], "min_matches": 2})
-            if tender_exact_works:
+            if tender_exact_works and not tender_mahdia:
                 social_rules.append({"doc_id": "cnss_appels_offres_travaux_2015_2017", "terms": ["appel d offres", "construction", "amenagement", "bureau regional"], "min_matches": 2})
+            if tender_linux:
+                social_rules.append({"doc_id": "cnss_avis_03ca2018_linux_tuneps", "terms": ["03 ca 2018", "linux", "souscription et maintenance", "tuneps"], "min_matches": 2})
+            if tender_mahdia:
+                social_rules.append({"doc_id": "cnss_avis_01ca2017_extension_bureau_mahdia", "terms": ["01 ca 2017", "extension", "bureau regional de mahdia", "travaux"], "min_matches": 2})
+            if tender_oracle_report:
+                social_rules.append({"doc_id": "cnss_report_ao20_2017_licences_oracle", "terms": ["20 2017", "licences oracle", "report", "14 fevrier 2018"], "min_matches": 2})
+            if tender_iso22301:
+                social_rules.append({"doc_id": "cnss_avis_09ca2017_iso22301_continuite_activites", "terms": ["09 ca 2017", "iso 22301", "continuite des activites", "management"], "min_matches": 2})
+            if tender_rolling_stock:
+                social_rules.append({"doc_id": "cnss_ao02_2020_materiel_roulant_tuneps", "terms": ["02 2020", "materiel roulant", "voiture", "camion fourgon", "tuneps"], "min_matches": 2})
+            if tender_si_video_2020:
+                social_rules.append({"doc_id": "cnss_consultation_01si2020_videosurveillance_tuneps", "terms": ["01 si 2020", "video-surveillance", "tuneps", "signature electronique"], "min_matches": 2})
             if ("fiches des services" in query or "delais des services" in query or "délais des services" in query or "services cnss" in query or "قائمة خدمات الصندوق" in query or "آجال الحصول" in query) and ("cnss" in query or "الصندوق" in query):
                 social_rules.append({"doc_id": "cnss_fiches_services_octobre_2020", "terms": ["fiches des services", "delais", "آجال", "الخدمة", "الإنخراط", "الشهادات", "prestations"], "min_matches": 2})
             if ("engagements envers le citoyen" in query or ("engagement" in query and "citoyen" in query) or "service du citoyen" in query or "relations avec le citoyen" in query or "reseau de bureaux" in query or "réseau de bureaux" in query or "bureau regional" in query or "bureaux regionaux" in query or "bureau local" in query or "bureaux locaux" in query) and "cnss" in query:
@@ -1027,6 +1051,8 @@ def is_fixed_asset_component_depreciation_case(query: str) -> bool:
 
 
 def is_going_concern_case(query: str) -> bool:
+    if "cnss" in query and any(marker in query for marker in ("appel d offres", "appel d offre", "consultation", "tuneps", "marches publics")):
+        return False
     return (
         "continuite" in query
         or "going concern" in query
@@ -1828,26 +1854,50 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_smig_smag_2020")
             if ("pret universitaire" in query or "prêt universitaire" in query or "prets universitaires" in query or "prêts universitaires" in query) and ("nouveautes" in query or "nouveautés" in query or "2017" in query or "taux d interet" in query or "taux d'intérêt" in query or "interets de retard" in query):
                 social_priority.append("cnss_communique_prets_universitaires_2017")
-            tender_exact_01ca = "tuneps" in query or "climatiseur" in query or "01/ca/2020" in query or "01 ca 2020" in query
+            tender_exact_01ca = "climatiseur" in query or "01/ca/2020" in query or "01 ca 2020" in query
             tender_exact_it = ("oracle" in query or "systeme d information" in query or "système d information" in query or "pmsi" in query or "informatique" in query) and "cnss" in query
             tender_exact_it_equipment = ("equipements informatiques" in query or "équipements informatiques" in query or "cablage informatique" in query or "câblage informatique" in query or "switch" in query or "video-surveillance" in query or "vidéo-surveillance" in query or "16/2016" in query or "16/2017" in query or "10/ca/2017" in query) and "cnss" in query
             tender_exact_works = ("travaux" in query or "construction" in query or "amenagement" in query or "aménagement" in query or "bureau regional" in query) and "cnss" in query
-            if ("appel d offres" in query or "appels d offres" in query or "appel d'offre" in query or "appels d'offre" in query or "appel d’offres" in query or "appels d’offres" in query or "marches publics" in query or "marchés publics" in query or "طلب العروض" in query) and ("cnss" in query or "الصندوق" in query) and not (tender_exact_01ca or tender_exact_it or tender_exact_it_equipment or tender_exact_works):
+            tender_linux = ("03/ca/2018" in query or "03 ca 2018" in query or "linux" in query) and "cnss" in query
+            tender_mahdia = ("01/ca/2017" in query or "01 ca 2017" in query or ("mahdia" in query and "extension" in query)) and "cnss" in query
+            tender_oracle_report = ("20/2017" in query or "20 2017" in query or ("oracle" in query and "report" in query)) and "cnss" in query
+            tender_iso22301 = ("09/ca/2017" in query or "09 ca 2017" in query or "iso 22301" in query or "continuite des activites" in query or "continuité des activités" in query) and "cnss" in query
+            tender_rolling_stock = ("02/2020" in query or "02 2020" in query or "materiel roulant" in query or "matériel roulant" in query or "voiture de service" in query or "camion fourgon" in query) and "cnss" in query
+            tender_si_video_2020 = ("01/si/2020" in query or "01 si 2020" in query or ("video-surveillance" in query and "2020" in query) or ("vidéo-surveillance" in query and "2020" in query)) and "cnss" in query
+            if ("appel d offres" in query or "appels d offres" in query or "appel d'offre" in query or "appels d'offre" in query or "appel d’offres" in query or "appels d’offres" in query or "marches publics" in query or "marchés publics" in query or "طلب العروض" in query) and ("cnss" in query or "الصندوق" in query) and not (tender_exact_01ca or tender_exact_it or tender_exact_it_equipment or tender_exact_works or tender_linux or tender_mahdia or tender_oracle_report or tender_iso22301 or tender_rolling_stock or tender_si_video_2020):
                 social_priority.extend([
                     "cnss_appels_offres_resultats_ar_2016_2017",
                     "cnss_appels_offres_informatique_2015_2017",
                     "cnss_appels_offres_equipements_informatiques_videosurveillance_2016_2017",
                     "cnss_appels_offres_travaux_2015_2017",
                     "cnss_avis_appel_offres_climatiseurs_01ca2020",
+                    "cnss_avis_03ca2018_linux_tuneps",
+                    "cnss_avis_01ca2017_extension_bureau_mahdia",
+                    "cnss_report_ao20_2017_licences_oracle",
+                    "cnss_avis_09ca2017_iso22301_continuite_activites",
+                    "cnss_ao02_2020_materiel_roulant_tuneps",
+                    "cnss_consultation_01si2020_videosurveillance_tuneps",
                 ])
             if tender_exact_01ca and "cnss" in query:
                 social_priority.append("cnss_avis_appel_offres_climatiseurs_01ca2020")
             if tender_exact_it_equipment:
                 social_priority.append("cnss_appels_offres_equipements_informatiques_videosurveillance_2016_2017")
-            if tender_exact_it and not tender_exact_it_equipment:
+            if tender_exact_it and not (tender_exact_it_equipment or tender_oracle_report):
                 social_priority.append("cnss_appels_offres_informatique_2015_2017")
-            if tender_exact_works:
+            if tender_exact_works and not tender_mahdia:
                 social_priority.append("cnss_appels_offres_travaux_2015_2017")
+            if tender_linux:
+                social_priority.append("cnss_avis_03ca2018_linux_tuneps")
+            if tender_mahdia:
+                social_priority.append("cnss_avis_01ca2017_extension_bureau_mahdia")
+            if tender_oracle_report:
+                social_priority.append("cnss_report_ao20_2017_licences_oracle")
+            if tender_iso22301:
+                social_priority.append("cnss_avis_09ca2017_iso22301_continuite_activites")
+            if tender_rolling_stock:
+                social_priority.append("cnss_ao02_2020_materiel_roulant_tuneps")
+            if tender_si_video_2020:
+                social_priority.append("cnss_consultation_01si2020_videosurveillance_tuneps")
             if ("fiches des services" in query or "delais des services" in query or "délais des services" in query or "services cnss" in query or "قائمة خدمات الصندوق" in query or "آجال الحصول" in query) and ("cnss" in query or "الصندوق" in query):
                 social_priority.append("cnss_fiches_services_octobre_2020")
             if ("engagements envers le citoyen" in query or ("engagement" in query and "citoyen" in query) or "service du citoyen" in query or "relations avec le citoyen" in query or "reseau de bureaux" in query or "réseau de bureaux" in query or "bureau regional" in query or "bureaux regionaux" in query or "bureau local" in query or "bureaux locaux" in query) and "cnss" in query:
@@ -1890,6 +1940,12 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                     "cnss_service_sms",
                     "cnss_communique_prets_universitaires_2017",
                     "cnss_appels_offres_equipements_informatiques_videosurveillance_2016_2017",
+                    "cnss_avis_03ca2018_linux_tuneps",
+                    "cnss_avis_01ca2017_extension_bureau_mahdia",
+                    "cnss_report_ao20_2017_licences_oracle",
+                    "cnss_avis_09ca2017_iso22301_continuite_activites",
+                    "cnss_ao02_2020_materiel_roulant_tuneps",
+                    "cnss_consultation_01si2020_videosurveillance_tuneps",
                 }
                 if "formulaire" not in query and "demande" not in query:
                     social_priority = [doc_id for doc_id in social_priority if doc_id in statistical_doc_ids] + [
