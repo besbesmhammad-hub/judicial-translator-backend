@@ -829,6 +829,24 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_prestations_assurances_sociales_especes_2020", "terms": ["prestations en especes", "assurances sociales", "indemnite de deces", "capital deces"], "min_matches": 2})
             if ("depenses de pension" in query or "dépenses de pension" in query or "les pensions" in query) and "2020" in query:
                 social_rules.append({"doc_id": "cnss_depenses_pensions_regime_nature_2020", "terms": ["depenses de pension", "regime complementaire", "retraite", "survie conjoints"], "min_matches": 2})
+            if ("effectif des assures sociaux" in query or "effectif des assur" in query or ("assures sociaux" in query and "pensionnes" in query)) and ("2000" in query or "2020" in query):
+                social_rules.append({"doc_id": "cnss_evolution_effectif_assures_sociaux_2000_2020", "terms": ["effectif des assures sociaux", "actifs", "pensionnes", "ensemble des regimes"], "min_matches": 2})
+            if ("assures sociaux actifs" in query or ("assur" in query and "sociaux actifs" in query)) and ("regime" in query or "rÃ©gime" in query):
+                social_rules.append({"doc_id": "cnss_repartition_assures_actifs_regime_2000_2020", "terms": ["assures sociaux actifs", "par regime", "travailleurs non salaries", "2000"], "min_matches": 2})
+            if "titulaires de pensions" in query and ("regime" in query or "rÃ©gime" in query):
+                social_rules.append({"doc_id": "cnss_repartition_titulaires_pensions_regime_2000_2020", "terms": ["titulaires de pensions", "par regime", "salaries non agricoles", "2020"], "min_matches": 2})
+            if "titulaires de pensions" in query and ("nature" in query or "orphelins" in query or "conjoints survivants" in query):
+                social_rules.append({"doc_id": "cnss_repartition_titulaires_pensions_nature_2000_2020", "terms": ["titulaires de pensions", "nature de pension", "retraites", "orphelins"], "min_matches": 2})
+            if "rapport demographique" in query or "rapport dÃ©mographique" in query:
+                social_rules.append({"doc_id": "cnss_rapport_demographique_2000_2020", "terms": ["rapport demographique", "nombre des actifs", "beneficiaire de pension", "2020"], "min_matches": 2})
+            if ("effectif des employeurs" in query or ("employeurs" in query and "secteur" in query)) and ("2000" in query or "2020" in query):
+                social_rules.append({"doc_id": "cnss_evolution_effectif_employeurs_2000_2020", "terms": ["effectif des employeurs", "secteur non agricole", "secteur agricole", "2000"], "min_matches": 2})
+            if ("employeurs par regime" in query or "employeurs par rÃ©gime" in query or ("repartition employeurs" in query and ("regime" in query or "rÃ©gime" in query))) and ("2000" in query or "2020" in query):
+                social_rules.append({"doc_id": "cnss_repartition_employeurs_regime_2000_2020", "terms": ["employeurs par regime", "salaries non agricoles", "travailleurs a faible revenu", "2020"], "min_matches": 2})
+            if ("notes aux etats financiers" in query or "notes aux Ã©tats financiers" in query or "etat2018" in query) and ("2018" in query or "cnss" in query):
+                social_rules.append({"doc_id": "cnss_notes_etats_financiers_2018", "terms": ["notes aux etats financiers", "normes comptables tunisiennes", "cotisants", "produits techniques"], "min_matches": 2})
+            if "budget 2022" in query and "cnss" in query:
+                social_rules.append({"doc_id": "cnss_budget_2022", "terms": ["budget 2022", "produits techniques", "charges techniques", "resultat technique"], "min_matches": 2})
             explicit_doc_ids = {rule["doc_id"] for rule in social_rules}
             existing_doc_ids = set(explicit_doc_ids)
             social_rules.extend(
@@ -850,9 +868,18 @@ def source_precision_rules(message: str) -> list[dict]:
                 "cnss_fonds_garantie_pension_divorce_2015_2020",
                 "cnss_fonds_garantie_effectif_2017",
                 "cnss_fonds_garantie_montants_2017",
-                "cnss_sommaire_statistique_2020",
-                "cnss_publication_financiere_2018",
-            }
+                    "cnss_sommaire_statistique_2020",
+                    "cnss_publication_financiere_2018",
+                    "cnss_evolution_effectif_assures_sociaux_2000_2020",
+                    "cnss_repartition_assures_actifs_regime_2000_2020",
+                    "cnss_repartition_titulaires_pensions_regime_2000_2020",
+                    "cnss_repartition_titulaires_pensions_nature_2000_2020",
+                    "cnss_rapport_demographique_2000_2020",
+                    "cnss_evolution_effectif_employeurs_2000_2020",
+                    "cnss_repartition_employeurs_regime_2000_2020",
+                    "cnss_notes_etats_financiers_2018",
+                    "cnss_budget_2022",
+                }
             if "formulaire" not in query and "demande" not in query:
                 explicit_statistical_doc_ids = statistical_doc_ids.intersection(explicit_doc_ids)
                 social_rules = [rule for rule in social_rules if rule["doc_id"] in explicit_statistical_doc_ids] + [
@@ -1739,6 +1766,24 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_prestations_assurances_sociales_especes_2020")
             if ("depenses de pension" in query or "dépenses de pension" in query or "les pensions" in query) and "2020" in query:
                 social_priority.append("cnss_depenses_pensions_regime_nature_2020")
+            if ("effectif des assures sociaux" in query or "effectif des assur" in query or ("assures sociaux" in query and "pensionnes" in query)) and ("2000" in query or "2020" in query):
+                social_priority.append("cnss_evolution_effectif_assures_sociaux_2000_2020")
+            if ("assures sociaux actifs" in query or ("assur" in query and "sociaux actifs" in query)) and ("regime" in query or "rÃ©gime" in query):
+                social_priority.append("cnss_repartition_assures_actifs_regime_2000_2020")
+            if "titulaires de pensions" in query and ("regime" in query or "rÃ©gime" in query):
+                social_priority.append("cnss_repartition_titulaires_pensions_regime_2000_2020")
+            if "titulaires de pensions" in query and ("nature" in query or "orphelins" in query or "conjoints survivants" in query):
+                social_priority.append("cnss_repartition_titulaires_pensions_nature_2000_2020")
+            if "rapport demographique" in query or "rapport dÃ©mographique" in query:
+                social_priority.append("cnss_rapport_demographique_2000_2020")
+            if ("effectif des employeurs" in query or ("employeurs" in query and "secteur" in query)) and ("2000" in query or "2020" in query):
+                social_priority.append("cnss_evolution_effectif_employeurs_2000_2020")
+            if ("employeurs par regime" in query or "employeurs par rÃ©gime" in query or ("repartition employeurs" in query and ("regime" in query or "rÃ©gime" in query))) and ("2000" in query or "2020" in query):
+                social_priority.append("cnss_repartition_employeurs_regime_2000_2020")
+            if ("notes aux etats financiers" in query or "notes aux Ã©tats financiers" in query or "etat2018" in query) and ("2018" in query or "cnss" in query):
+                social_priority.append("cnss_notes_etats_financiers_2018")
+            if "budget 2022" in query and "cnss" in query:
+                social_priority.append("cnss_budget_2022")
             if social_priority:
                 statistical_doc_ids = {
                     "cnss_evolution_cotisations_2000_2020",
@@ -1756,6 +1801,15 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                     "cnss_fonds_garantie_montants_2017",
                     "cnss_sommaire_statistique_2020",
                     "cnss_publication_financiere_2018",
+                    "cnss_evolution_effectif_assures_sociaux_2000_2020",
+                    "cnss_repartition_assures_actifs_regime_2000_2020",
+                    "cnss_repartition_titulaires_pensions_regime_2000_2020",
+                    "cnss_repartition_titulaires_pensions_nature_2000_2020",
+                    "cnss_rapport_demographique_2000_2020",
+                    "cnss_evolution_effectif_employeurs_2000_2020",
+                    "cnss_repartition_employeurs_regime_2000_2020",
+                    "cnss_notes_etats_financiers_2018",
+                    "cnss_budget_2022",
                 }
                 if "formulaire" not in query and "demande" not in query:
                     social_priority = [doc_id for doc_id in social_priority if doc_id in statistical_doc_ids] + [
