@@ -180,6 +180,16 @@ def record_matches_domain(record: dict, route: str) -> bool:
                 "convention_fiscale_tunisie_senegal",
                 "convention_fiscale_tunisie_serbie",
                 "convention_fiscale_tunisie_singapour",
+                "convention_fiscale_tunisie_liban",
+                "protocole_convention_fiscale_tunisie_liban",
+                "convention_fiscale_tunisie_luxembourg",
+                "convention_fiscale_tunisie_libye",
+                "convention_fiscale_tunisie_mali",
+                "convention_fiscale_tunisie_malte",
+                "convention_fiscale_tunisie_maroc",
+                "convention_fiscale_tunisie_mauritanie",
+                "convention_fiscale_tunisie_norvege",
+                "convention_fiscale_tunisie_pakistan",
                 "formulaire_declaration_mensuelle_ar_2025",
                 "formulaire_impot_fortune_2026",
                 "formulaire_declaration_is_2026",
@@ -379,6 +389,16 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "convention_fiscale_tunisie_senegal": r"convention tunisie senegal|convention tunisie sénégal|senegal|sénégal|double imposition|assistance administrative|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
         "convention_fiscale_tunisie_serbie": r"convention tunisie serbie|convention tunisie serbie|serbie|republique de serbie|double imposition|impots sur le revenu|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
         "convention_fiscale_tunisie_singapour": r"convention tunisie singapour|singapour|singapore|republique de singapour|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_liban": r"convention tunisie liban|liban|libanaise|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "protocole_convention_fiscale_tunisie_liban": r"protocole liban|protocole convention liban|protocole annexe|republique libanaise|dispositions plus avantageuses|article 5",
+        "convention_fiscale_tunisie_luxembourg": r"convention tunisie luxembourg|luxembourg|grand-duche de luxembourg|double imposition|impots sur le revenu|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_libye": r"convention tunisie libye|convention tunisie lybie|libye|lybie|jamahiria arabe lybienne|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_mali": r"convention tunisie mali|mali|republique du mali|double imposition|assistance reciproque|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_malte": r"convention tunisie malte|malte|double imposition|evasion fiscale|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_maroc": r"convention tunisie maroc|maroc|royaume du maroc|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_mauritanie": r"convention tunisie mauritanie|mauritanie|republique islamique mauritanienne|non double imposition|impots sur les revenus|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_norvege": r"convention tunisie norvege|convention tunisie norvège|norvege|norvège|royaume de norvege|double imposition|impots sur le revenu|impots sur la fortune|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_pakistan": r"convention tunisie pakistan|pakistan|republique islamique du pakistan|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
         "formulaire_declaration_mensuelle_ar_2025": r"declaration mensuelle|mensuelle|retenue a la source|tva|droit de consommation|2025",
         "formulaire_declaration_mensuelle_ar_2026": r"declaration mensuelle|mensuelle|retenue a la source|tva|droit de consommation|2026",
         "formulaire_impot_fortune_2026": r"impot sur la fortune|declaration impot fortune|fortune|article 88|loi de finances 2026",
@@ -895,6 +915,24 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             elif "serbie" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_serbie":
                 score *= 5.6
             elif ("singapour" in query_text or "singapore" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_singapour":
+                score *= 5.6
+            elif "liban" in query_text and record.get("doc_id") in {"convention_fiscale_tunisie_liban", "protocole_convention_fiscale_tunisie_liban"}:
+                score *= 5.6
+            elif "luxembourg" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_luxembourg":
+                score *= 5.6
+            elif ("libye" in query_text or "lybie" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_libye":
+                score *= 5.6
+            elif "mali" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_mali":
+                score *= 5.6
+            elif "malte" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_malte":
+                score *= 5.6
+            elif "maroc" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_maroc":
+                score *= 5.6
+            elif "mauritanie" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_mauritanie":
+                score *= 5.6
+            elif ("norvege" in query_text or "norvège" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_norvege":
+                score *= 5.6
+            elif "pakistan" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_pakistan":
                 score *= 5.6
         if ("declaration mensuelle" in query_text or "déclaration mensuelle" in query_text or "mensuelle" in query_text) and record.get("doc_id") in {"formulaire_declaration_mensuelle_ar_2025", "formulaire_declaration_mensuelle_ar_2026"}:
             score *= 4.8
