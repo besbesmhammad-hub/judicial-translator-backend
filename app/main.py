@@ -1042,6 +1042,17 @@ TREATY_SOURCE_TERMS: dict[str, list[str]] = {
     "convention_fiscale_tunisie_iran": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
     "convention_fiscale_tunisie_italie": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
     "convention_fiscale_tunisie_jordanie": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "capital"],
+    "convention_fiscale_tunisie_burkina_faso": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_cameroun": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_canada": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
+    "convention_fiscale_tunisie_chine": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_coree_sud": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_cote_ivoire": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_danemark": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
+    "convention_fiscale_tunisie_egypte": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "gains en capital"],
+    "convention_fiscale_tunisie_emirats_arabes_unis": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_espagne": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
+    "convention_fiscale_tunisie_belgique": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
 }
 
 
@@ -1074,6 +1085,17 @@ TREATY_COUNTRY_PATTERNS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("iran",), "convention_fiscale_tunisie_iran"),
     (("italie",), "convention_fiscale_tunisie_italie"),
     (("jordanie",), "convention_fiscale_tunisie_jordanie"),
+    (("burkina", "burkina faso", "burkina-faso"), "convention_fiscale_tunisie_burkina_faso"),
+    (("cameroun",), "convention_fiscale_tunisie_cameroun"),
+    (("canada",), "convention_fiscale_tunisie_canada"),
+    (("chine",), "convention_fiscale_tunisie_chine"),
+    (("coree du sud", "coree", "corée du sud", "corée"), "convention_fiscale_tunisie_coree_sud"),
+    (("cote d'ivoire", "cote d ivoire", "côte d'ivoire", "côte d ivoire"), "convention_fiscale_tunisie_cote_ivoire"),
+    (("danemark",), "convention_fiscale_tunisie_danemark"),
+    (("egypte", "égypte"), "convention_fiscale_tunisie_egypte"),
+    (("emirats arabes unis", "emirates arabes unis", "emirats", "emirates", "dubai", "abu dhabi"), "convention_fiscale_tunisie_emirats_arabes_unis"),
+    (("espagne",), "convention_fiscale_tunisie_espagne"),
+    (("belgique",), "convention_fiscale_tunisie_belgique"),
     (("union du maghreb arabe", "u.m.a", "maghreb"), "convention_fiscale_union_maghreb_arabe"),
     (("pays bas", "pays-bas", "netherlands", "hollande"), "convention_fiscale_tunisie_pays_bas"),
     (("pologne",), "convention_fiscale_tunisie_pologne"),
@@ -1221,7 +1243,11 @@ def is_cross_border_service_case(query: str) -> bool:
         "norvege", "pakistan",
         "koweit", "ethiopie", "ethioupie", "grece", "hongrie",
         "ile maurice", "ile-de-maurice", "maurice", "indonesie",
-        "iran", "italie", "jordanie",
+        "iran", "italie", "jordanie", "burkina", "burkina faso",
+        "cameroun", "canada", "chine", "coree du sud", "corée du sud",
+        "cote d'ivoire", "cote d ivoire", "côte d'ivoire", "côte d ivoire",
+        "danemark", "egypte", "égypte", "emirats arabes unis",
+        "emirates arabes unis", "espagne", "belgique",
         "client etranger",
         "societe algerienne", "societe allemande", "societe italienne",
         "non resident", "hors de tunisie", "eur", "euro",
@@ -1977,6 +2003,68 @@ def fastpath_document_analysis_without_document_answer(
         "golden_kb_hits": [],
         "sources": sources,
         "model": "internal/document-analysis-missing-input",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
+def fastpath_document_analysis_with_context_answer(
+    message: str,
+    context: str,
+    intent: str,
+    legal_domain: str,
+) -> dict | None:
+    if intent != "document_analysis" or not context.strip():
+        return None
+    query = match_key(f"{message}\n{context}")
+    if not any(term in query for term in ("document", "piece", "dossier", "risque", "facture", "charge", "vente", "comptable", "fiscal")):
+        return None
+
+    sources = legal_sources_by_doc_ids([
+        "loi_comptable",
+        "nc_01_norme_generale",
+        "code_irpp_is_2011",
+        "procedures_fiscales_2026",
+        "tva_droit_consommation",
+    ])
+    source_lines = summarize_source_titles(sources, limit=5)
+    context_preview = clean_translation_output(context).strip()
+    if len(context_preview) > 900:
+        context_preview = f"{context_preview[:900].rstrip()}..."
+    answer = compose_structured_answer(
+        "practical_analysis",
+        {
+            "Reponse": (
+                "Sur la base du contenu fourni, l'analyse doit rester une revue de risques et non une conclusion definitive. "
+                f"Le document decrit semble contenir les elements suivants: {context_preview}"
+            ),
+            "Application pratique": (
+                "- Risques comptables: verifier le rattachement des ventes et charges a la bonne periode, l'exhaustivite des factures, la justification des charges, les cut-off, provisions eventuelles et soldes clients/fournisseurs.\n"
+                "- Risques fiscaux: identifier les charges sans pieces probantes, la TVA collectee ou deductible, les retenues a la source possibles, les declarations concernees et les reintegrations extra-comptables si une charge n'est pas justifiee.\n"
+                "- Preuves a rapprocher: factures, contrats, bons de livraison ou rapports de mission, moyens de paiement, releves bancaires, journaux comptables, declarations fiscales et grand livre.\n"
+                "- Conclusion de travail: les factures non justifiees sont le risque principal; elles doivent etre documentees ou isolees avant toute deduction comptable/fiscale client."
+            ),
+            "Points de vigilance": (
+                "- Ne pas deduire fiscalement une charge sans lien avec l'exploitation, facture reguliere et preuve suffisante.\n"
+                "- Ne pas recuperer la TVA si la facture ou l'affectation taxable n'est pas suffisamment etablie.\n"
+                "- Si le document est un resume, demander les pieces originales avant de chiffrer un ajustement ou une provision."
+            ),
+            "Sources utilisees": source_lines,
+        },
+    )
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "document_analysis",
+        "preferred_source": "legal_corpus",
+        "response_style": "practical_analysis",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/document-analysis-context",
         "fallback_mode": False,
         "legal_domain": legal_domain,
         "question": message,
@@ -3658,6 +3746,43 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
             selected_sources=missing_document_fastpath.get("sources") or [],
             fallback_used=False,
             generator_path=missing_document_fastpath.get("model"),
+        )
+    document_context_fastpath = fastpath_document_analysis_with_context_answer(
+        message=message,
+        context=context_block,
+        intent=query_intent,
+        legal_domain=legal_domain,
+    )
+    if document_context_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": document_context_fastpath.get("intent"),
+                "legal_domain": legal_domain,
+                "preferred_source": document_context_fastpath.get("preferred_source"),
+                "response_style": document_context_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(document_context_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": document_context_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            document_context_fastpath,
+            request,
+            workflow="document_analysis_context",
+            case_analysis_enabled=True,
+            retrieval_domains=[legal_domain],
+            selected_sources=document_context_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=document_context_fastpath.get("model"),
         )
     commissariat_fastpath = fastpath_commissariat_texts_answer(
         message=message,
