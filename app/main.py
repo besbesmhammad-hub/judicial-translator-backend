@@ -847,6 +847,26 @@ def source_precision_rules(message: str) -> list[dict]:
                 social_rules.append({"doc_id": "cnss_notes_etats_financiers_2018", "terms": ["notes aux etats financiers", "normes comptables tunisiennes", "cotisants", "produits techniques"], "min_matches": 2})
             if "budget 2022" in query and "cnss" in query:
                 social_rules.append({"doc_id": "cnss_budget_2022", "terms": ["budget 2022", "produits techniques", "charges techniques", "resultat technique"], "min_matches": 2})
+            tender_exact_01ca = "tuneps" in query or "climatiseur" in query or "01/ca/2020" in query or "01 ca 2020" in query
+            tender_exact_it = ("oracle" in query or "systeme d information" in query or "système d information" in query or "pmsi" in query or "informatique" in query) and "cnss" in query
+            tender_exact_works = ("travaux" in query or "construction" in query or "amenagement" in query or "aménagement" in query or "bureau regional" in query) and ("appel" in query or "marches" in query or "marchés" in query) and "cnss" in query
+            if ("appel d offres" in query or "appels d offres" in query or "appel d'offre" in query or "appels d'offre" in query or "appel d’offres" in query or "appels d’offres" in query or "marches publics" in query or "marchés publics" in query or "طلب العروض" in query) and ("cnss" in query or "الصندوق" in query) and not (tender_exact_01ca or tender_exact_it or tender_exact_works):
+                social_rules.extend([
+                    {"doc_id": "cnss_appels_offres_resultats_ar_2016_2017", "terms": ["طلب العروض", "اسناد الصفقة", "غير مثمر", "اقتناء"], "min_matches": 2},
+                    {"doc_id": "cnss_appels_offres_informatique_2015_2017", "terms": ["appel d offres", "systeme d information", "oracle", "pmsi"], "min_matches": 2},
+                    {"doc_id": "cnss_appels_offres_travaux_2015_2017", "terms": ["appel d offres", "construction", "amenagement", "bureau regional"], "min_matches": 2},
+                    {"doc_id": "cnss_avis_appel_offres_climatiseurs_01ca2020", "terms": ["avis d appel d offres", "01 ca 2020", "climatiseurs", "tuneps"], "min_matches": 2},
+                ])
+            if tender_exact_01ca and "cnss" in query:
+                social_rules.append({"doc_id": "cnss_avis_appel_offres_climatiseurs_01ca2020", "terms": ["avis d appel d offres", "01 ca 2020", "climatiseurs", "tuneps"], "min_matches": 2})
+            if tender_exact_it:
+                social_rules.append({"doc_id": "cnss_appels_offres_informatique_2015_2017", "terms": ["appel d offres", "systeme d information", "oracle", "pmsi"], "min_matches": 2})
+            if tender_exact_works:
+                social_rules.append({"doc_id": "cnss_appels_offres_travaux_2015_2017", "terms": ["appel d offres", "construction", "amenagement", "bureau regional"], "min_matches": 2})
+            if ("fiches des services" in query or "delais des services" in query or "délais des services" in query or "services cnss" in query or "قائمة خدمات الصندوق" in query or "آجال الحصول" in query) and ("cnss" in query or "الصندوق" in query):
+                social_rules.append({"doc_id": "cnss_fiches_services_octobre_2020", "terms": ["fiches des services", "delais", "آجال", "الخدمة", "الإنخراط", "الشهادات", "prestations"], "min_matches": 2})
+            if ("engagements envers le citoyen" in query or "service du citoyen" in query or "relations avec le citoyen" in query or "bureau regional" in query or "bureaux regionaux" in query or "bureau local" in query or "bureaux locaux" in query) and "cnss" in query:
+                social_rules.append({"doc_id": "cnss_engagements_citoyen_reseau", "terms": ["engagements envers le citoyen", "bureau regional", "bureau local", "delai"], "min_matches": 2})
             explicit_doc_ids = {rule["doc_id"] for rule in social_rules}
             existing_doc_ids = set(explicit_doc_ids)
             social_rules.extend(
@@ -1784,6 +1804,26 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                 social_priority.append("cnss_notes_etats_financiers_2018")
             if "budget 2022" in query and "cnss" in query:
                 social_priority.append("cnss_budget_2022")
+            tender_exact_01ca = "tuneps" in query or "climatiseur" in query or "01/ca/2020" in query or "01 ca 2020" in query
+            tender_exact_it = ("oracle" in query or "systeme d information" in query or "système d information" in query or "pmsi" in query or "informatique" in query) and "cnss" in query
+            tender_exact_works = ("travaux" in query or "construction" in query or "amenagement" in query or "aménagement" in query or "bureau regional" in query) and ("appel" in query or "marches" in query or "marchés" in query) and "cnss" in query
+            if ("appel d offres" in query or "appels d offres" in query or "appel d'offre" in query or "appels d'offre" in query or "appel d’offres" in query or "appels d’offres" in query or "marches publics" in query or "marchés publics" in query or "طلب العروض" in query) and ("cnss" in query or "الصندوق" in query) and not (tender_exact_01ca or tender_exact_it or tender_exact_works):
+                social_priority.extend([
+                    "cnss_appels_offres_resultats_ar_2016_2017",
+                    "cnss_appels_offres_informatique_2015_2017",
+                    "cnss_appels_offres_travaux_2015_2017",
+                    "cnss_avis_appel_offres_climatiseurs_01ca2020",
+                ])
+            if tender_exact_01ca and "cnss" in query:
+                social_priority.append("cnss_avis_appel_offres_climatiseurs_01ca2020")
+            if tender_exact_it:
+                social_priority.append("cnss_appels_offres_informatique_2015_2017")
+            if tender_exact_works:
+                social_priority.append("cnss_appels_offres_travaux_2015_2017")
+            if ("fiches des services" in query or "delais des services" in query or "délais des services" in query or "services cnss" in query or "قائمة خدمات الصندوق" in query or "آجال الحصول" in query) and ("cnss" in query or "الصندوق" in query):
+                social_priority.append("cnss_fiches_services_octobre_2020")
+            if ("engagements envers le citoyen" in query or "service du citoyen" in query or "relations avec le citoyen" in query or "bureau regional" in query or "bureaux regionaux" in query or "bureau local" in query or "bureaux locaux" in query) and "cnss" in query:
+                social_priority.append("cnss_engagements_citoyen_reseau")
             if social_priority:
                 statistical_doc_ids = {
                     "cnss_evolution_cotisations_2000_2020",
@@ -1810,6 +1850,12 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                     "cnss_repartition_employeurs_regime_2000_2020",
                     "cnss_notes_etats_financiers_2018",
                     "cnss_budget_2022",
+                    "cnss_appels_offres_resultats_ar_2016_2017",
+                    "cnss_appels_offres_informatique_2015_2017",
+                    "cnss_appels_offres_travaux_2015_2017",
+                    "cnss_avis_appel_offres_climatiseurs_01ca2020",
+                    "cnss_fiches_services_octobre_2020",
+                    "cnss_engagements_citoyen_reseau",
                 }
                 if "formulaire" not in query and "demande" not in query:
                     social_priority = [doc_id for doc_id in social_priority if doc_id in statistical_doc_ids] + [
