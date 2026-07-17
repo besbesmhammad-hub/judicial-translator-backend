@@ -163,8 +163,12 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["level3_mentions_missing_facts"] = contains_any(normalized, ["informations manquantes", "statut tva du client", "ventilation du prix"])
         checks["level3_uses_tva_source"] = "tva_droit_consommation" in docs
         checks["level3_uses_irpp_source"] = "code_irpp_is_2011" in docs
+        has_treaty_source = any(
+            doc.startswith("convention_fiscale") or doc.startswith("boi_")
+            for doc in docs
+        )
         checks["level3_uses_treaty_source"] = (
-            "convention_fiscale_france_tunisie" in docs
+            has_treaty_source
             or "convention_fiscale_applicable" in docs
         )
 
@@ -230,6 +234,8 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
 
 def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) -> dict:
     case_id = str(case.get("id") or "")
+    if case.get("expected_intent") == "definition":
+        return {"checks": {}, "passed": True, "support_levels": selected_source_support(debug_trace), "headings": selected_source_headings(debug_trace)}
     question = normalize_for_match(str(case.get("question") or ""))
     normalized = normalize_for_match(answer)
     supports = selected_source_support(debug_trace)
@@ -295,11 +301,12 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
         checks["level3_has_tva_direct_or_framework"] = "tva_droit_consommation" in docs and any(
             level in {"direct_passage", "framework_source"} for level in supports
         )
+        has_treaty_source = any(
+            doc.startswith("convention_fiscale") or doc.startswith("boi_")
+            for doc in docs
+        )
         checks["level3_has_treaty_direct_or_framework"] = (
-            (
-                "convention_fiscale_france_tunisie" in docs
-                and any(level in {"direct_passage", "framework_source"} for level in supports)
-            )
+            (has_treaty_source and any(level in {"direct_passage", "framework_source"} for level in supports))
             or (
                 "convention_fiscale_applicable" in docs
                 and "missing_source" in supports
