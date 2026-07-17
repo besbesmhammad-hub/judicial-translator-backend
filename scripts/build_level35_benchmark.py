@@ -58,7 +58,7 @@ CASES += [
         "legal_basis",
         cross_contains + ["20 jours", "120 000 EUR"],
         docs=["tva_droit_consommation", "code_irpp_is_2011"],
-        direct_docs=["tva_droit_consommation", "convention_fiscale_france_tunisie"],
+        direct_docs=["tva_droit_consommation", "convention_fiscale_france_tunisie", "convention_fiscale_france_tunisie_texte_1973", "boi_france_tunisie_convention_fiscale_2012"],
     ),
     case(
         "level35_cross_border_italy_missing_treaty",
@@ -104,8 +104,26 @@ CASES += [
         "level3_multi_domain_case_analysis",
         "legal_basis",
         cross_contains + ["non assujetti"],
-        docs=["tva_droit_consommation"],
-        direct_docs=["tva_droit_consommation"],
+        docs=["tva_droit_consommation", "convention_fiscale_france_tunisie"],
+        direct_docs=["tva_droit_consommation", "convention_fiscale_france_tunisie_texte_1973"],
+    ),
+    case(
+        "level35_cross_border_vietnam_treaty",
+        "Une societe tunisienne facture une assistance logicielle a un client vietnamien, avec une mission de formation sur place. Quels points conventionnels, TVA, retenue a la source, facturation et justificatifs faut-il verifier ?",
+        "level3_multi_domain_case_analysis",
+        "legal_basis",
+        cross_contains + ["Vietnam", "convention fiscale"],
+        docs=["tva_droit_consommation", "code_irpp_is_2011", "convention_fiscale_tunisie_vietnam"],
+        direct_docs=["convention_fiscale_tunisie_vietnam"],
+    ),
+    case(
+        "level35_cross_border_yemen_treaty",
+        "Une societe tunisienne realise une prestation informatique pour un client au Yemen avec paiement transfrontalier. Quels traitements doivent etre examines en TVA, retenue a la source, convention fiscale, facturation et justificatifs ?",
+        "level3_multi_domain_case_analysis",
+        "legal_basis",
+        cross_contains + ["Yemen", "convention fiscale"],
+        docs=["tva_droit_consommation", "code_irpp_is_2011", "convention_fiscale_tunisie_yemen"],
+        direct_docs=["convention_fiscale_tunisie_yemen"],
     ),
 ]
 

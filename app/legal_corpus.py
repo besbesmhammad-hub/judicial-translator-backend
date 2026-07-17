@@ -88,6 +88,8 @@ DOMAIN_ROUTE_PATTERNS = {
         r"dividendes?|associe resident|associé résident|associe non resident|associé non résident|"
         r"prestations de services|prestation informatique|client etabli en france|client établi en france|client francais|client français|"
         r"procedure fiscale|procédure fiscale|procedures fiscales|procédures fiscales|loi de finances|"
+        r"convention fiscale|double imposition|bofip|boi-int-cvb|etablissement stable|établissement stable|"
+        r"revenus non commerciaux|benefices des entreprises|bénéfices des entreprises|redevances|"
         r"enregistrement|timbre|matricule fiscal|facturation electronique|facture electronique|"
         r"e-facturation|dette fiscale|dettes fiscales|redressement|controle fiscal|contrôle fiscal|"
         r"taxe environnementale|vehicules hybrides|véhicules hybrides|non residents|non-résidents|"
@@ -155,6 +157,11 @@ def record_matches_domain(record: dict, route: str) -> bool:
                 "note_generale_regularisation_dettes_fiscales_2026",
                 "note_generale_taxe_environnement_2026",
                 "note_generale_fiscalite_vehicules_hybrides_2026",
+                "convention_fiscale_france_tunisie",
+                "convention_fiscale_france_tunisie_texte_1973",
+                "boi_france_tunisie_convention_fiscale_2012",
+                "convention_fiscale_tunisie_vietnam",
+                "convention_fiscale_tunisie_yemen",
             }
             or domain.startswith((
                 "fiscalite_",
@@ -162,6 +169,7 @@ def record_matches_domain(record: dict, route: str) -> bool:
                 "enregistrement_",
                 "procedures_",
                 "taxe_",
+                "convention_fiscale_",
                 "facturation_",
                 "regularisation_",
                 "contribution_",
@@ -319,6 +327,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "note_generale_regularisation_dettes_fiscales_2026": r"regularisation des dettes fiscales|régularisation des dettes fiscales|dettes fiscales|dettes fiscales admin|penalites fiscales|pénalités fiscales|remise des penalites|remise des pénalités|echeancier fiscal|échéancier fiscal|roznam|roseman|30 juin 2026",
         "note_generale_taxe_environnement_2026": r"mecenvironnement|taxe environnementale|taxe pour la protection de l'environnement|mpp|mou3allim lil mouhafadha 3ala al b2ia|produits manufactures localement|produits importes|produits importés|protection de l environnement",
         "note_generale_fiscalite_vehicules_hybrides_2026": r"batteries lithium|vehicules hybrides|véhicules hybrides|hybrides rechargeables|voitures hybrides|bornes de recharge|appareils de charge|moteur electrique|moteur électrique|taxation automobile",
+        "convention_fiscale_france_tunisie": r"convention fiscale france tunisie|france et la tunisie|double imposition|etablissement stable|établissement stable|redevances|revenus non commerciaux|prestations de services|assistance mutuelle administrative",
+        "convention_fiscale_france_tunisie_texte_1973": r"convention entre la france et la tunisie|elimin(?:er|ation) les doubles impositions|assistance mutuelle administrative|domicile fiscal|etablissement stable|établissement stable|revenus non commerciaux|redevances",
+        "boi_france_tunisie_convention_fiscale_2012": r"boi-int-cvb-tun|bofip|convention fiscale entre la france et la tunisie|benefices industriels et commerciaux|bénéfices industriels et commerciaux|etablissement stable|revenus non commerciaux|redevances|dividendes|interets",
+        "convention_fiscale_tunisie_vietnam": r"convention tunisie vietnam|republique socialiste du vietnam|double imposition|impots sur le revenu|impôts sur le revenu|etablissement stable|dividendes|interets|redevances",
+        "convention_fiscale_tunisie_yemen": r"convention tunisie yemen|convention tunisie yémen|republique yemenite|république yéménite|double imposition|impots sur le revenu|etablissement stable|dividendes|interets|redevances",
         "loi_comptable": r"loi comptable|systeme comptable|normes comptables|etats financiers",
         "cadre_conceptuel_comptable": r"cadre conceptuel|qualitative|hypothese sous-jacente|information financiere",
         "ifrs_cadre_conceptuel_information_financiere": r"cadre conceptuel|ifrs|iasb|information financiere|caracteristiques qualitatives|image fidele|pertinence|representation fidele",
@@ -775,12 +788,21 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         if (("prestations de services" in query_text or "prestation informatique" in query_text) and ("france" in query_text or "client etabli" in query_text or "client établi" in query_text)):
             if record.get("doc_id") == "tva_droit_consommation":
                 score *= 5.6
+            elif record.get("doc_id") in {"convention_fiscale_france_tunisie", "convention_fiscale_france_tunisie_texte_1973", "boi_france_tunisie_convention_fiscale_2012"}:
+                score *= 5.2
             elif record.get("doc_id") == "procedures_fiscales_2026":
                 score *= 1.6
             elif record.get("doc_id") == "code_irpp_is_2011":
                 score *= 0.28
             elif record.get("doc_id") in {"droits_taxes_hors_codes", "fiscalite_locale"}:
                 score *= 0.35
+        if ("convention fiscale" in query_text or "double imposition" in query_text or "etablissement stable" in query_text or "établissement stable" in query_text):
+            if "france" in query_text and record.get("doc_id") in {"convention_fiscale_france_tunisie", "convention_fiscale_france_tunisie_texte_1973", "boi_france_tunisie_convention_fiscale_2012"}:
+                score *= 5.6
+            elif "vietnam" in query_text and record.get("doc_id") == "convention_fiscale_tunisie_vietnam":
+                score *= 5.6
+            elif ("yemen" in query_text or "yémen" in query_text) and record.get("doc_id") == "convention_fiscale_tunisie_yemen":
+                score *= 5.6
         if ("ias 11" in query_text or "contrats de construction" in query_text or "pourcentage d'avancement" in query_text or "pourcentage d’avancement" in query_text):
             if record.get("doc_id") == "ias_11_contrats_construction":
                 score *= 4.2
