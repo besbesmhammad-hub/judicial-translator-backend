@@ -6,7 +6,9 @@ import json
 import os
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
+from zipfile import ZipFile
 
 import fitz
 from docx import Document
@@ -20,6 +22,7 @@ from app.ocr_utils import choose_better_text, is_low_quality_text, normalize_tex
 
 CORPUS_PATH = ROOT / "app" / "data" / "tunisian_legal_corpus.jsonl"
 DOWNLOADS = Path.home() / "Downloads"
+WORD_NS = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
 
 
 DOCS = [
@@ -736,6 +739,66 @@ DOCS = [
         "year": 2020,
         "domain": "paie_social_cnss_relation_citoyen_reseau",
         "chunk_limit": 2600,
+    },
+    {
+        "filename": "Convention bilatérale de sécurité sociale.docx",
+        "doc_id": "cnss_conventions_bilaterales_securite_sociale_2017",
+        "title": "CNSS - Conventions bilaterales de securite sociale approuvees en 2017",
+        "authority": "Caisse Nationale de Securite Sociale",
+        "source_tier": "social_security_international_agreements",
+        "year": 2017,
+        "domain": "paie_social_cnss_conventions_bilaterales",
+        "chunk_limit": 2200,
+    },
+    {
+        "filename": "Une administration plus proche.docx",
+        "doc_id": "cnss_maisons_service_administration_proche",
+        "title": "CNSS - Maisons de service et administration plus proche",
+        "authority": "Caisse Nationale de Securite Sociale",
+        "source_tier": "public_service_network",
+        "year": 2020,
+        "domain": "paie_social_cnss_reseau_maisons_service",
+        "chunk_limit": 2600,
+    },
+    {
+        "filename": "Montant du salaire minimum garanti.docx",
+        "doc_id": "cnss_smig_smag_2020",
+        "title": "CNSS - Montant du salaire minimum garanti SMIG et SMAG 2020",
+        "authority": "Caisse Nationale de Securite Sociale",
+        "source_tier": "social_security_minimum_wage_notice",
+        "year": 2020,
+        "domain": "paie_social_cnss_smig_smag",
+        "chunk_limit": 2200,
+    },
+    {
+        "filename": "Le service SMS.docx",
+        "doc_id": "cnss_service_sms",
+        "title": "CNSS - Service SMS",
+        "authority": "Caisse Nationale de Securite Sociale",
+        "source_tier": "social_security_service_notice",
+        "year": 2020,
+        "domain": "paie_social_cnss_service_sms",
+        "chunk_limit": 2200,
+    },
+    {
+        "filename": "Communiqué.docx",
+        "doc_id": "cnss_communique_prets_universitaires_2017",
+        "title": "CNSS - Communique sur les nouveautes des prets universitaires 2017",
+        "authority": "Caisse Nationale de Securite Sociale",
+        "source_tier": "social_security_public_notice",
+        "year": 2017,
+        "domain": "paie_social_cnss_prets_universitaires",
+        "chunk_limit": 2400,
+    },
+    {
+        "filename": "Numéro1.docx",
+        "doc_id": "cnss_appels_offres_equipements_informatiques_videosurveillance_2016_2017",
+        "title": "CNSS - Appels d offres equipements informatiques et video-surveillance 2016-2017",
+        "authority": "Caisse Nationale de Securite Sociale",
+        "source_tier": "public_procurement_award_notice",
+        "year": 2017,
+        "domain": "commande_publique_cnss_equipements_informatiques_videosurveillance",
+        "chunk_limit": 2400,
     },
     {
         "filename": "I16.pdf",
@@ -2072,7 +2135,23 @@ def extract_docx_text(path: Path) -> str:
                 + ["| " + " | ".join(row) + " |" for row in rows[1:]]
                 + ["[/TABLE]"]
             )
-    return "\n\n".join(blocks).strip()
+    text = "\n\n".join(blocks).strip()
+    if text:
+        return text
+
+    # Some downloaded DOCX files store visible text in OOXML shapes or runs that
+    # python-docx does not expose as paragraphs/tables. Fall back to direct XML.
+    try:
+        with ZipFile(path) as archive:
+            root = ET.fromstring(archive.read("word/document.xml"))
+    except Exception:
+        return ""
+    xml_blocks: list[str] = []
+    for paragraph in root.findall(".//w:p", WORD_NS):
+        value = normalize_text("".join(node.text or "" for node in paragraph.findall(".//w:t", WORD_NS)).strip())
+        if value:
+            xml_blocks.append(value)
+    return "\n\n".join(xml_blocks).strip()
 
 
 def build_records(meta: dict) -> list[dict]:
