@@ -1053,6 +1053,13 @@ TREATY_SOURCE_TERMS: dict[str, list[str]] = {
     "convention_fiscale_tunisie_emirats_arabes_unis": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
     "convention_fiscale_tunisie_espagne": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
     "convention_fiscale_tunisie_belgique": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
+    "convention_fiscale_tunisie_afrique_sud": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
+    "convention_fiscale_tunisie_algerie": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "assistance reciproque"],
+    "convention_fiscale_tunisie_allemagne": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
+    "convention_fiscale_tunisie_etats_unis": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances"],
+    "convention_fiscale_tunisie_arabie_saoudite": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "zakat"],
+    "convention_fiscale_tunisie_autriche": ["etablissement stable", "benefices des entreprises", "dividendes", "interets", "redevances", "fortune"],
+    "protocole_convention_fiscale_tunisie_belgique": ["protocole", "article 8", "article 11", "interets", "navires", "aeronefs", "conteneurs"],
 }
 
 
@@ -1095,7 +1102,14 @@ TREATY_COUNTRY_PATTERNS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("egypte", "égypte"), "convention_fiscale_tunisie_egypte"),
     (("emirats arabes unis", "emirates arabes unis", "emirats", "emirates", "dubai", "abu dhabi"), "convention_fiscale_tunisie_emirats_arabes_unis"),
     (("espagne",), "convention_fiscale_tunisie_espagne"),
+    (("protocole belgique", "protocole d'accord belgique", "protocole d accord belgique"), "protocole_convention_fiscale_tunisie_belgique"),
     (("belgique",), "convention_fiscale_tunisie_belgique"),
+    (("afrique du sud", "south africa"), "convention_fiscale_tunisie_afrique_sud"),
+    (("algerie", "algérie"), "convention_fiscale_tunisie_algerie"),
+    (("allemagne", "allemand", "allemande"), "convention_fiscale_tunisie_allemagne"),
+    (("etats unis", "etats-unis", "usa", "amerique", "amérique"), "convention_fiscale_tunisie_etats_unis"),
+    (("arabie saoudite", "saoudite", "saoudien", "saoudienne"), "convention_fiscale_tunisie_arabie_saoudite"),
+    (("autriche",), "convention_fiscale_tunisie_autriche"),
     (("union du maghreb arabe", "u.m.a", "maghreb"), "convention_fiscale_union_maghreb_arabe"),
     (("pays bas", "pays-bas", "netherlands", "hollande"), "convention_fiscale_tunisie_pays_bas"),
     (("pologne",), "convention_fiscale_tunisie_pologne"),
@@ -1113,6 +1127,8 @@ TREATY_COUNTRY_PATTERNS: tuple[tuple[tuple[str, ...], str], ...] = (
 
 def detected_treaty_doc_ids(query: str) -> list[str]:
     found: list[str] = []
+    if "protocole" in query and "belgique" in query:
+        found.append("protocole_convention_fiscale_tunisie_belgique")
     for terms, doc_id in TREATY_COUNTRY_PATTERNS:
         if any(term in query for term in terms) and doc_id not in found:
             found.append(doc_id)
@@ -1247,7 +1263,10 @@ def is_cross_border_service_case(query: str) -> bool:
         "cameroun", "canada", "chine", "coree du sud", "corée du sud",
         "cote d'ivoire", "cote d ivoire", "côte d'ivoire", "côte d ivoire",
         "danemark", "egypte", "égypte", "emirats arabes unis",
-        "emirates arabes unis", "espagne", "belgique",
+        "emirates arabes unis", "espagne", "belgique", "afrique du sud",
+        "south africa", "algerie", "algérie", "allemagne", "allemand",
+        "etats unis", "etats-unis", "usa", "amerique", "amérique",
+        "arabie saoudite", "saoudite", "autriche",
         "client etranger",
         "societe algerienne", "societe allemande", "societe italienne",
         "non resident", "hors de tunisie", "eur", "euro",
