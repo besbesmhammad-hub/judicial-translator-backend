@@ -74,6 +74,11 @@ def match_key(value: str) -> str:
 
 CLIENT_SOURCE_TITLES = {
     "code_irpp_is_2011": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS)",
+    "code_irpp_is_2023": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2023",
+    "code_irpp_is_2022": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2022",
+    "code_irpp_is_2021": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2021",
+    "code_irpp_is_2020": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2020",
+    "code_irpp_is_2019": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2019",
     "code_comptabilite_publique": "Code de la comptabilité publique",
     "tva_droit_consommation": "Code de la taxe sur la valeur ajoutée (loi n° 88-61 du 2 juin 1988), recueil officiel mis à jour au 1er janvier 2026",
     "tva_droit_consommation_2025": "Code de la taxe sur la valeur ajoutée et droit de consommation, édition 2025",
@@ -104,6 +109,11 @@ CLIENT_SOURCE_TITLES = {
 }
 CLIENT_SOURCE_TITLE_ALIASES = {
     "Code de l IRPP et de l IS": CLIENT_SOURCE_TITLES["code_irpp_is_2011"],
+    "Code de l IRPP et de l IS 2023": CLIENT_SOURCE_TITLES["code_irpp_is_2023"],
+    "Code de l IRPP et de l IS 2022": CLIENT_SOURCE_TITLES["code_irpp_is_2022"],
+    "Code de l IRPP et de l IS 2021": CLIENT_SOURCE_TITLES["code_irpp_is_2021"],
+    "Code de l IRPP et de l IS 2020": CLIENT_SOURCE_TITLES["code_irpp_is_2020"],
+    "Code de l IRPP et de l IS 2019": CLIENT_SOURCE_TITLES["code_irpp_is_2019"],
     "Code de la comptabilite publique": CLIENT_SOURCE_TITLES["code_comptabilite_publique"],
     "Code TVA et droit de consommation 2026": CLIENT_SOURCE_TITLES["tva_droit_consommation"],
     "Code TVA et droit de consommation 2025": CLIENT_SOURCE_TITLES["tva_droit_consommation_2025"],
@@ -139,6 +149,41 @@ CANONICAL_FISCAL_SOURCE_METADATA = {
         "page": 1,
         "authority": "Imprimerie Officielle de la Republique Tunisienne",
         "year": 2011,
+    },
+    "code_irpp_is_2023": {
+        "title": "Code de l IRPP et de l IS 2023",
+        "filename": "Code-de-limpot-sur-le-Revenu-des-Personnes-Physiques-et-de-limpot-sur-les-Societes-2023.pdf",
+        "page": 1,
+        "authority": "Imprimerie Officielle de la Republique Tunisienne",
+        "year": 2023,
+    },
+    "code_irpp_is_2022": {
+        "title": "Code de l IRPP et de l IS 2022",
+        "filename": "Code-de-limpot-sur-le-Revenu-des-Personnes-Physiques-et-de-limpot-sur-les-Societes-2022.pdf",
+        "page": 1,
+        "authority": "Imprimerie Officielle de la Republique Tunisienne",
+        "year": 2022,
+    },
+    "code_irpp_is_2021": {
+        "title": "Code de l IRPP et de l IS 2021",
+        "filename": "Code-de-limpot-sur-le-revenu-des-personnes-physiques-et-de-limpot-sur-les-societes-2021.pdf",
+        "page": 1,
+        "authority": "Imprimerie Officielle de la Republique Tunisienne",
+        "year": 2021,
+    },
+    "code_irpp_is_2020": {
+        "title": "Code de l IRPP et de l IS 2020",
+        "filename": "Code-de-limpot-sur-le-Revenu-des-personnes-physiques-et-de-limpot-sur-les-societes-2020.pdf",
+        "page": 1,
+        "authority": "Imprimerie Officielle de la Republique Tunisienne",
+        "year": 2020,
+    },
+    "code_irpp_is_2019": {
+        "title": "Code de l IRPP et de l IS 2019",
+        "filename": "code-de-limpot-sur-le-revenu-des-personnes-physiques-et-de-limpot-sur-les-societes-2019.pdf",
+        "page": 1,
+        "authority": "Imprimerie Officielle de la Republique Tunisienne",
+        "year": 2019,
     },
     "code_comptabilite_publique": {
         "title": "Code de la comptabilite publique",
@@ -642,6 +687,7 @@ def legal_sources_by_doc_ids(doc_ids: list[str]) -> list[dict]:
 def source_precision_rules(message: str) -> list[dict]:
     query = match_key(message)
     france_case = "france" in query or "francais" in query or "francaise" in query
+    irpp_is_doc_id = irpp_is_doc_id_for_query(query)
     treaty_doc_ids = detected_treaty_doc_ids(query)
     if is_cross_border_service_case(query):
         tva_doc_id = tva_doc_id_for_query(query)
@@ -666,7 +712,7 @@ def source_precision_rules(message: str) -> list[dict]:
                 "min_matches": 2,
             },
             {
-                "doc_id": "code_irpp_is_2011",
+                "doc_id": irpp_is_doc_id,
                 "terms": ["non resident", "retenue a la source", "redevance", "beneficiaire", "services"],
                 "min_matches": 2,
             },
@@ -722,7 +768,7 @@ def source_precision_rules(message: str) -> list[dict]:
         return procedure_rules
     if is_mixed_dividends_case(query):
         rules = [
-            {"doc_id": "code_irpp_is_2011", "terms": ["article 52", "c bis", "revenus distribues", "10%"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["article 52", "c bis", "revenus distribues", "10%"], "min_matches": 2},
             {"doc_id": "loi_finances_2026", "terms": ["dividende", "retenue", "2026"], "min_matches": 2},
             {"doc_id": "procedures_fiscales_2026", "terms": ["declaration", "reversement", "certificat", "retenue"], "min_matches": 2},
         ]
@@ -744,20 +790,20 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": "nc_03_revenus", "terms": ["revenu", "prestation de services", "realisation", "exercice"], "min_matches": 2},
             {"doc_id": "nc_01_norme_generale", "terms": ["periodicite", "rattachement", "produits", "exercice"], "min_matches": 2},
             {"doc_id": tva_doc_id_for_query(query), "terms": ["الفصل5", "إسداء الخدمات", "الفاتورة", "الأداء على القيمة المضافة"], "min_matches": 2},
-            {"doc_id": "code_irpp_is_2011", "terms": ["benefice imposable", "produits", "exercice", "charges"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["benefice imposable", "produits", "exercice", "charges"], "min_matches": 2},
         ]
     if is_receivable_subsequent_recovery_case(query):
         return [
             {"doc_id": "nc_01_norme_generale", "terms": ["creances", "depreciation", "provision", "recouvrement"], "min_matches": 2},
             {"doc_id": "ias_37_provisions_passifs_actifs_eventuels", "terms": ["provision", "obligation", "estimation", "creances douteuses"], "min_matches": 2},
             {"doc_id": "ias_10_evenements_post_cloture", "terms": ["evenements posterieurs", "date de cloture", "ajuster", "non ajuster"], "min_matches": 2},
-            {"doc_id": "code_irpp_is_2011", "terms": ["creances douteuses", "provision", "deductible", "depreciation"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["creances douteuses", "provision", "deductible", "depreciation"], "min_matches": 2},
         ]
     if is_fixed_asset_component_depreciation_case(query):
         return [
             {"doc_id": "nc_05_immobilisations_corporelles", "terms": ["amortissement", "duree d'utilisation", "composants", "valeur residuelle", "mise en service"], "min_matches": 2},
             {"doc_id": "ias_16_immobilisations_corporelles", "terms": ["amortissement", "pret a etre utilisee", "composant", "parties", "duree d'utilite"], "min_matches": 2},
-            {"doc_id": "code_irpp_is_2011", "terms": ["amortissements", "mise en service", "composantes", "date d'acquisition", "exploitation"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["amortissements", "mise en service", "composantes", "date d'acquisition", "exploitation"], "min_matches": 2},
             {"doc_id": "nc_01_norme_generale", "terms": ["immobilisations", "amortissements", "etats financiers", "estimation"], "min_matches": 2},
         ]
     if is_going_concern_case(query):
@@ -771,13 +817,13 @@ def source_precision_rules(message: str) -> list[dict]:
         return [
             {"doc_id": "nc_39_parties_liees", "terms": ["parties liees", "transactions", "informations", "dirigeants"], "min_matches": 2},
             {"doc_id": "code_societes_commerciales_2022", "terms": ["conventions", "dirigeants", "autorisation", "associes"], "min_matches": 2},
-            {"doc_id": "code_irpp_is_2011", "terms": ["acte anormal", "benefice imposable", "reintegre", "avantage"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["acte anormal", "benefice imposable", "reintegre", "avantage"], "min_matches": 2},
             {"doc_id": "audit_resume_gaida_normes_missions", "terms": ["parties liees", "risque", "rapport", "documentation"], "min_matches": 2},
         ]
     if is_cash_consulting_evidence_case(query):
         return [
             {"doc_id": "loi_comptable", "terms": ["pieces justificatives", "enregistrement", "journal", "operation"], "min_matches": 2},
-            {"doc_id": "code_irpp_is_2011", "terms": ["charges", "deduction", "benefice imposable", "justifie"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["charges", "deduction", "benefice imposable", "justifie"], "min_matches": 2},
             {"doc_id": "procedures_fiscales_2026", "terms": ["controle", "justificatifs", "facture", "paiement"], "min_matches": 2},
             {"doc_id": "nc_01_norme_generale", "terms": ["objectivite", "preuves", "transactions", "charges"], "min_matches": 2},
         ]
@@ -785,7 +831,7 @@ def source_precision_rules(message: str) -> list[dict]:
         return [
             {"doc_id": "ias_37_provisions_passifs_actifs_eventuels", "terms": ["provision", "obligation", "estimation", "passif"], "min_matches": 2},
             {"doc_id": "nc_14_eventualites_post_cloture", "terms": ["provision", "eventualite", "probable", "estimation"], "min_matches": 2},
-            {"doc_id": "code_irpp_is_2011", "terms": ["provision", "deductible", "benefice imposable", "reintegr"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["provision", "deductible", "benefice imposable", "reintegr"], "min_matches": 2},
             {"doc_id": "ias_12_impots_resultat", "terms": ["impot differe", "difference temporaire", "resultat fiscal"], "min_matches": 2},
         ]
     if ("bofip" in query or "boi-int-cvb" in query or "convention fiscale france tunisie" in query or "convention fiscale france-tunisie" in query) and ("france" in query or "tunisie" in query):
@@ -797,7 +843,7 @@ def source_precision_rules(message: str) -> list[dict]:
     if "dividende" in query or "dividendes" in query:
         return [
             {
-                "doc_id": "code_irpp_is_2011",
+                "doc_id": irpp_is_doc_id,
                 "terms": ["article 52", "c bis", "revenus distribues", "10%"],
                 "min_matches": 2,
             },
@@ -896,7 +942,7 @@ def source_precision_rules(message: str) -> list[dict]:
     ):
         return [
             {
-                "doc_id": "code_irpp_is_2011",
+                "doc_id": irpp_is_doc_id,
                 "terms": ["creances douteuses", "provision", "deductible", "depreciation", "recouvrement"],
                 "min_matches": 2,
             },
@@ -1353,6 +1399,28 @@ def tva_doc_id_for_query(query: str) -> str:
     return "tva_droit_consommation"
 
 
+def irpp_is_doc_id_for_query(query: str) -> str:
+    asks_for_code_edition = bool(re.search(r"\bcode\b|edition|mis a jour|selon le code", query, re.I))
+    asks_for_irpp_is = bool(
+        re.search(
+            r"\birpp\b|\bis\b|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés",
+            query,
+            re.I,
+        )
+    )
+    if asks_for_code_edition and asks_for_irpp_is and "2023" in query:
+        return "code_irpp_is_2023"
+    if asks_for_code_edition and asks_for_irpp_is and "2022" in query:
+        return "code_irpp_is_2022"
+    if asks_for_code_edition and asks_for_irpp_is and "2021" in query:
+        return "code_irpp_is_2021"
+    if asks_for_code_edition and asks_for_irpp_is and "2020" in query:
+        return "code_irpp_is_2020"
+    if asks_for_code_edition and asks_for_irpp_is and "2019" in query:
+        return "code_irpp_is_2019"
+    return "code_irpp_is_2011"
+
+
 def enregistrement_timbre_doc_id_for_query(query: str) -> str:
     if "2025" in query:
         return "enregistrement_timbre_2025"
@@ -1756,9 +1824,9 @@ def semantically_adjust_support_level(message: str, source: dict) -> dict:
             "alerte",
             "rapport special",
         ]
-    elif is_fixed_asset_component_depreciation_case(query) and doc_id in {"nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "code_irpp_is_2011"}:
+    elif is_fixed_asset_component_depreciation_case(query) and doc_id in {"nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "code_irpp_is_2011", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
         required_any = ["amortissement", "mise en service", "pret a etre utilise", "composant", "duree d'utilisation", "duree d'utilite"]
-    elif is_receivable_subsequent_recovery_case(query) and doc_id in {"nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011"}:
+    elif is_receivable_subsequent_recovery_case(query) and doc_id in {"nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
         required_any = ["creance", "provision", "depreciation", "recouvrement", "evenement posterieur", "cloture"]
 
     if required_any and not any(term in haystack for term in required_any):
@@ -1955,6 +2023,64 @@ def fastpath_enregistrement_timbre_answer(message: str, legal_domain: str) -> di
         "model": "internal/enregistrement-timbre-fastpath",
         "fallback_mode": False,
         "legal_domain": "fiscalite",
+        "question": message,
+    }
+
+
+def fastpath_irpp_is_code_answer(message: str, legal_domain: str) -> dict | None:
+    query = match_key(message)
+    if legal_domain not in {"fiscalite", "general"}:
+        return None
+    asks_for_irpp_code = bool(
+        re.search(
+            r"\bcode\b|edition|mis a jour|selon le code",
+            query,
+            re.I,
+        )
+    ) and bool(
+        re.search(
+            r"\birpp\b|\bis\b|impot sur le revenu|impot sur les societes|impôt sur le revenu|impôt sur les sociétés",
+            query,
+            re.I,
+        )
+    )
+    if not asks_for_irpp_code:
+        return None
+
+    doc_id = irpp_is_doc_id_for_query(query)
+    sources = legal_sources_by_doc_ids([doc_id, "procedures_fiscales_2026", "loi_finances_2026"])
+    if not sources:
+        return None
+
+    source_lines = summarize_source_titles(sources, limit=3)
+    year_label = str(CANONICAL_FISCAL_SOURCE_METADATA.get(doc_id, {}).get("year") or "").strip()
+    edition = f" edition {year_label}" if year_label else ""
+    answer = "\n\n".join([
+        "## Reponse\n"
+        f"Pour une question fondee sur le **Code de l'IRPP et de l'IS{edition}**, le raisonnement doit partir de ce code comme texte principal de fiscalite directe. "
+        "Il sert a identifier les personnes imposables, les categories de revenus, la determination du resultat ou du revenu imposable, les exonérations, les retenues a la source, les regimes particuliers et les obligations declaratives rattachees.\n\n"
+        "Dans un dossier de cabinet, il faut ensuite verifier la date de l'operation, la qualite du contribuable, la residence fiscale, la nature du revenu ou de la charge, les textes modificatifs issus des lois de finances et les regles de procedure applicables. "
+        "Aucun taux, delai ou article precis ne doit etre conclu sans passage cible dans l'edition applicable.",
+        "## Points de vigilance\n"
+        "- Ne pas confondre une edition historique du code avec le texte applicable aujourd'hui.\n"
+        "- Pour les exercices recents, verifier les lois de finances et notes administratives posterieures.\n"
+        "- Pour les dossiers transfrontaliers, completer par la convention fiscale applicable.",
+        f"## Base legale\n{source_lines}",
+    ])
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "legal_basis",
+        "preferred_source": "legal_corpus",
+        "response_style": "practical_analysis",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/irpp-is-code-fastpath",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
         "question": message,
     }
 
@@ -2470,9 +2596,10 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     priority_doc_ids: list[str] = []
     blocked_doc_ids: set[str] = set()
     treaty_doc_ids = detected_treaty_doc_ids(query)
+    irpp_is_doc_id = irpp_is_doc_id_for_query(query)
 
     if is_cross_border_service_case(query):
-        priority_doc_ids = [tva_doc_id_for_query(query), "procedures_fiscales_2026", "code_irpp_is_2011", "loi_finances_2026"]
+        priority_doc_ids = [tva_doc_id_for_query(query), "procedures_fiscales_2026", irpp_is_doc_id, "loi_finances_2026"]
         if "france" in query or "francais" in query or "francaise" in query:
             priority_doc_ids.extend([
                 "convention_fiscale_france_tunisie",
@@ -2509,21 +2636,21 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "boi_france_tunisie_convention_fiscale_2012",
             "convention_fiscale_france_tunisie_texte_1973",
             "convention_fiscale_france_tunisie",
-            "code_irpp_is_2011",
+            irpp_is_doc_id,
             "procedures_fiscales_2026",
         ]
         blocked_doc_ids = {"loi_comptable", "nc_01_norme_generale", "nc_03_revenus", "nc_04_stocks", "nc_05_immobilisations_corporelles"}
     elif is_mixed_dividends_case(query):
-        priority_doc_ids = ["code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026"]
+        priority_doc_ids = [irpp_is_doc_id, "loi_finances_2026", "procedures_fiscales_2026"]
         blocked_doc_ids = {"fiscalite_locale", "droits_taxes_hors_codes", "code_commerce_2014"}
     elif is_revenue_cutoff_tva_case(query):
-        priority_doc_ids = ["nc_03_revenus", "nc_01_norme_generale", tva_doc_id_for_query(query), "code_irpp_is_2011"]
+        priority_doc_ids = ["nc_03_revenus", "nc_01_norme_generale", tva_doc_id_for_query(query), irpp_is_doc_id]
         blocked_doc_ids = {"audit_resume_gaida_normes_missions", "ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
     elif is_receivable_subsequent_recovery_case(query):
-        priority_doc_ids = ["nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011"]
+        priority_doc_ids = ["nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", irpp_is_doc_id]
         blocked_doc_ids = {"fiscalite_locale", "code_commerce_2014", "nct_44_takaful_controle_interne"}
     elif is_fixed_asset_component_depreciation_case(query):
-        priority_doc_ids = ["nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "code_irpp_is_2011", "nc_01_norme_generale"]
+        priority_doc_ids = ["nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", irpp_is_doc_id, "nc_01_norme_generale"]
         blocked_doc_ids = {
             "droits_taxes_hors_codes",
             "fiscalite_locale",
@@ -2539,13 +2666,13 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
         priority_doc_ids = ["cadre_conceptuel_comptable", "nc_01_norme_generale", "audit_resume_gaida_normes_missions", "audit_resume_acceptation_controle_qualite"]
         blocked_doc_ids = {"code_societes_commerciales_2022", "fiscalite_locale", "code_irpp_is_2011"}
     elif is_related_party_property_case(query):
-        priority_doc_ids = ["nc_39_parties_liees", "code_societes_commerciales_2022", "code_irpp_is_2011", "audit_resume_gaida_normes_missions"]
+        priority_doc_ids = ["nc_39_parties_liees", "code_societes_commerciales_2022", irpp_is_doc_id, "audit_resume_gaida_normes_missions"]
         blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale", "tva_droit_consommation"}
     elif is_cash_consulting_evidence_case(query):
-        priority_doc_ids = ["loi_comptable", "code_irpp_is_2011", "procedures_fiscales_2026", "nc_01_norme_generale"]
+        priority_doc_ids = ["loi_comptable", irpp_is_doc_id, "procedures_fiscales_2026", "nc_01_norme_generale"]
         blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "audit_resume_gaida_normes_missions", "fiscalite_locale"}
     elif is_accounting_tax_bridge_case(query):
-        priority_doc_ids = ["ias_37_provisions_passifs_actifs_eventuels", "nc_14_eventualites_post_cloture", "code_irpp_is_2011", "ias_12_impots_resultat"]
+        priority_doc_ids = ["ias_37_provisions_passifs_actifs_eventuels", "nc_14_eventualites_post_cloture", irpp_is_doc_id, "ias_12_impots_resultat"]
         blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale", "code_commerce_2014"}
     elif is_public_accounting_query(query):
         priority_doc_ids = ["code_comptabilite_publique", "procedures_fiscales_2026", "loi_finances_2026"]
@@ -2845,7 +2972,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
         elif coverage_workflow.family == "droit_societes":
             blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
     elif "dividende" in query or "dividendes" in query:
-        priority_doc_ids = ["code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026"]
+        priority_doc_ids = [irpp_is_doc_id, "loi_finances_2026", "procedures_fiscales_2026"]
         blocked_doc_ids = {
             "code_societes_commerciales_2022",
             "guide_creation_sarl_tunisie",
@@ -2881,7 +3008,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     elif ("creances douteuses" in query or "créances douteuses" in query or "creance douteuse" in query or "créance douteuse" in query) and (
         "deductible" in query or "deductibilite" in query or "deductibile" in query or "déductible" in query or "déductibilité" in query
     ):
-        priority_doc_ids = ["code_irpp_is_2011", "procedures_fiscales_2026", "nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels"]
+        priority_doc_ids = [irpp_is_doc_id, "procedures_fiscales_2026", "nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels"]
         blocked_doc_ids = {
             "code_commerce_2014",
             "nct_44_takaful_controle_interne",
@@ -4357,6 +4484,41 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
             selected_sources=fiscal_code_comparison_fastpath.get("sources") or [],
             fallback_used=False,
             generator_path=fiscal_code_comparison_fastpath.get("model"),
+        )
+    irpp_is_code_fastpath = fastpath_irpp_is_code_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if irpp_is_code_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": irpp_is_code_fastpath.get("intent"),
+                "legal_domain": irpp_is_code_fastpath.get("legal_domain"),
+                "preferred_source": irpp_is_code_fastpath.get("preferred_source"),
+                "response_style": irpp_is_code_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(irpp_is_code_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": irpp_is_code_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            irpp_is_code_fastpath,
+            request,
+            workflow="fastpath_irpp_is_code",
+            case_analysis_enabled=False,
+            retrieval_domains=["fiscalite"],
+            selected_sources=irpp_is_code_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=irpp_is_code_fastpath.get("model"),
         )
     enregistrement_timbre_fastpath = fastpath_enregistrement_timbre_answer(
         message=message,
