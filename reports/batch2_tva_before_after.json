@@ -1,0 +1,122 @@
+[
+  {
+    "id": "tva_services_client_france",
+    "question": "Une societe vend des prestations de services a un client etabli en France. Quel est le regime TVA applicable ?",
+    "before_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage); convention_fiscale_france_tunisie_texte_1973 p.8 (direct_passage); boi_france_tunisie_convention_fiscale_2012 p.4 (direct_passage)",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "## Reponse\nCe dossier releve de la famille cabinet suivante: TVA: territorialite, deduction, facturation et regularisation. Faits transmis: Une societe vend des prestations de services a un client etabli en France. Quel est le regime TVA applicable ?. La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct.\n\n## Application pratique\nIssues a traiter:\n- qualifier l'operation, le lieu d'utilisation et le statut du client\n- separer champ d'application, territorialite, exonération, exigibilite et droit a deduction\n- verifier les mentions de fa",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une societe vend des prestations de services a un client etabli en France. Quel est le regime TVA applicable ?. Si le service est rendu a un client etranger et effectivement utilise ou exploite hors de Tunisie avec justificatifs, le traitement peut relever d'une exportation de services, d'une operation hors champ tunisien ou d'une exoneration a verifier dans le Code de la taxe sur la valeur ajoutee. Le statut B2B/B2C du client n'est pas completement documente: il faut obtenir son identite, son pays d'etablissement et,"
+  },
+  {
+    "id": "level2_tva_services_france_sources_tva",
+    "question": "Une societe vend des prestations de services a un client etabli en France. Quel est le regime TVA applicable ?",
+    "before_status": "workflow=tva_operational_case safe=False expert=False source=True",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage); convention_fiscale_france_tunisie_texte_1973 p.8 (direct_passage); boi_france_tunisie_convention_fiscale_2012 p.4 (direct_passage)",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "## Reponse\nCe dossier releve de la famille cabinet suivante: TVA: territorialite, deduction, facturation et regularisation. Faits transmis: Une societe vend des prestations de services a un client etabli en France. Quel est le regime TVA applicable ?. La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct.\n\n## Application pratique\nIssues a traiter:\n- qualifier l'operation, le lieu d'utilisation et le statut du client\n- separer champ d'application, territorialite, exonération, exigibilite et droit a deduction\n- verifier les mentions de fa",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une societe vend des prestations de services a un client etabli en France. Quel est le regime TVA applicable ?. Si le service est rendu a un client etranger et effectivement utilise ou exploite hors de Tunisie avec justificatifs, le traitement peut relever d'une exportation de services, d'une operation hors champ tunisien ou d'une exoneration a verifier dans le Code de la taxe sur la valeur ajoutee. Le statut B2B/B2C du client n'est pas completement documente: il faut obtenir son identite, son pays d'etablissement et,"
+  },
+  {
+    "id": "level2_tva_services_client_francais_non_assujetti",
+    "question": "Une societe tunisienne fournit une prestation informatique a un client francais non assujetti a la TVA. Quel regime TVA faut il verifier ?",
+    "before_status": "workflow=level3_multi_domain_case_analysis safe=False expert=False source=True",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); code_irpp_is_2025 p.89 (direct_passage); loi_finances_2026 p.6 (direct_passage); convention_fiscale_france_tunisie p.4 (direct_passage)",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "## Reponse\nCe dossier doit etre traite comme une analyse fiscale transfrontaliere multi-issues, et non comme une simple question IRPP/IS. Les faits transmis doivent etre qualifies sans les remplacer par un cas standard: Une societe tunisienne fournit une prestation informatique a un client francais non assujetti a la TVA. Quel regime TVA faut il verifier ?. L'analyse doit separer au minimum la TVA tunisienne, la retenue a la source ou le risque d'imposition sur le paiement transfrontalier, la convention fiscale France-Tunisie, le risque d'etablissement stable, la facturation et les justificatifs.\n\n## Application pratique\n- TVA: verifier dans le Code de la taxe sur la valeur ajoutee si la pre",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une societe tunisienne fournit une prestation informatique a un client francais non assujetti a la TVA. Quel regime TVA faut il verifier ?. Si le service est rendu a un client etranger et effectivement utilise ou exploite hors de Tunisie avec justificatifs, le traitement peut relever d'une exportation de services, d'une operation hors champ tunisien ou d'une exoneration a verifier dans le Code de la taxe sur la valeur ajoutee. Le client non-assujetti doit etre analyse specifiquement: ne pas reprendre mecaniquement la "
+  },
+  {
+    "id": "level2_user_tva_prestation_informatique_france_assujetti",
+    "question": "Une societe tunisienne fournit une prestation informatique a une societe etablie en France. Le client est assujetti a la TVA dans son pays. Quel est le regime TVA applicable en Tunisie ? Quelles dispositions legales doivent etre examinees ?",
+    "before_status": "workflow=level3_multi_domain_case_analysis safe=False expert=False source=True",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); code_irpp_is_2025 p.89 (direct_passage); loi_finances_2026 p.6 (direct_passage); convention_fiscale_france_tunisie p.4 (direct_passage)",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "## Reponse\nCe dossier doit etre traite comme une analyse fiscale transfrontaliere multi-issues, et non comme une simple question IRPP/IS. Les faits transmis doivent etre qualifies sans les remplacer par un cas standard: Une societe tunisienne fournit une prestation informatique a une societe etablie en France. Le client est assujetti a la TVA dans son pays. Quel est le regime TVA applicable en Tunisie ? Quelles dispositions legales doivent etre examinees ?. L'analyse doit separer au minimum la TVA tunisienne, la retenue a la source ou le risque d'imposition sur le paiement transfrontalier, la convention fiscale France-Tunisie, le risque d'etablissement stable, la facturation et les justifica",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une societe tunisienne fournit une prestation informatique a une societe etablie en France. Le client est assujetti a la TVA dans son pays. Quel est le regime TVA applicable en Tunisie ? Quelles dispositions legales doivent etre examinees ?. Si le service est rendu a un client etranger et effectivement utilise ou exploite hors de Tunisie avec justificatifs, le traitement peut relever d'une exportation de services, d'une operation hors champ tunisien ou d'une exoneration a verifier dans le Code de la taxe sur la valeur"
+  },
+  {
+    "id": "batch2_tva_france_b2b_assujetti",
+    "question": "Une societe tunisienne facture une prestation de conseil informatique a une societe francaise assujettie a la TVA. Le service est utilise en France. Quel traitement TVA tunisien faut-il examiner et quelles preuves demander ?",
+    "before_status": "new",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "new case",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une societe tunisienne facture une prestation de conseil informatique a une societe francaise assujettie a la TVA. Le service est utilise en France. Quel traitement TVA tunisien faut-il examiner et quelles preuves demander ?. Si le service est utilise hors de Tunisie ou exploite hors de Tunisie, notamment en France, et que les preuves existent, l'analyse peut s'orienter vers un traitement d'exportation de services ou de non-imposition tunisienne a verifier dans le Code de la taxe sur la valeur ajoutee. Le client est p"
+  },
+  {
+    "id": "batch2_tva_france_b2c_non_assujetti",
+    "question": "Une societe tunisienne fournit un service numerique a un client francais non assujetti. Peut-on appliquer le meme regime TVA qu'une prestation B2B exportee ?",
+    "before_status": "new",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "new case",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une societe tunisienne fournit un service numerique a un client francais non assujetti. Peut-on appliquer le meme regime TVA qu'une prestation B2B exportee ?. Si le service est rendu a un client etranger et effectivement utilise ou exploite hors de Tunisie avec justificatifs, le traitement peut relever d'une exportation de services, d'une operation hors champ tunisien ou d'une exoneration a verifier dans le Code de la taxe sur la valeur ajoutee. Le client non-assujetti doit etre analyse specifiquement: ne pas reprendr"
+  },
+  {
+    "id": "batch2_tva_service_used_tunisia",
+    "question": "Une societe tunisienne facture un client etabli en France, mais la prestation informatique est utilisee en Tunisie par la filiale tunisienne du client. Peut-on la traiter comme exportation de services ?",
+    "before_status": "new",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "new case",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une societe tunisienne facture un client etabli en France, mais la prestation informatique est utilisee en Tunisie par la filiale tunisienne du client. Peut-on la traiter comme exportation de services ?. Si le service est utilise ou exploite en Tunisie, il ne faut pas conclure automatiquement a une exportation de services: le risque de TVA tunisienne doit rester ouvert et documente. Le statut B2B/B2C du client n'est pas completement documente: il faut obtenir son identite, son pays d'etablissement et, si possible, son"
+  },
+  {
+    "id": "batch2_tva_service_used_abroad",
+    "question": "Une prestation de support logiciel est facturee par une societe tunisienne a un client francais; le logiciel est exploite en France. Quel regime TVA et quels justificatifs verifier ?",
+    "before_status": "new",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "new case",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une prestation de support logiciel est facturee par une societe tunisienne a un client francais; le logiciel est exploite en France. Quel regime TVA et quels justificatifs verifier ?. Si le service est utilise hors de Tunisie ou exploite hors de Tunisie, notamment en France, et que les preuves existent, l'analyse peut s'orienter vers un traitement d'exportation de services ou de non-imposition tunisienne a verifier dans le Code de la taxe sur la valeur ajoutee. Le statut B2B/B2C du client n'est pas completement docume"
+  },
+  {
+    "id": "batch2_tva_training_physically_france",
+    "question": "Une societe tunisienne facture une formation informatique a une societe francaise. Les consultants se deplacent et la formation est realisee physiquement en France. Quelle analyse TVA faut-il faire ?",
+    "before_status": "new",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "new case",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une societe tunisienne facture une formation informatique a une societe francaise. Les consultants se deplacent et la formation est realisee physiquement en France. Quelle analyse TVA faut-il faire ?. Si le service est rendu a un client etranger et effectivement utilise ou exploite hors de Tunisie avec justificatifs, le traitement peut relever d'une exportation de services, d'une operation hors champ tunisien ou d'une exoneration a verifier dans le Code de la taxe sur la valeur ajoutee. Le statut B2B/B2C du client n'e"
+  },
+  {
+    "id": "batch2_tva_partly_tunisia_partly_abroad",
+    "question": "Une mission de maintenance informatique pour un client francais est realisee partiellement depuis la Tunisie et partiellement en France. Comment securiser le traitement TVA et la facture ?",
+    "before_status": "new",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "new case",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une mission de maintenance informatique pour un client francais est realisee partiellement depuis la Tunisie et partiellement en France. Comment securiser le traitement TVA et la facture ?. Si le service est rendu a un client etranger et effectivement utilise ou exploite hors de Tunisie avec justificatifs, le traitement peut relever d'une exportation de services, d'une operation hors champ tunisien ou d'une exoneration a verifier dans le Code de la taxe sur la valeur ajoutee. Le statut B2B/B2C du client n'est pas comp"
+  },
+  {
+    "id": "batch2_tva_no_foreign_client_proof",
+    "question": "Une facture de prestation informatique est emise a un nom francais, mais le client ne fournit aucun justificatif de son etablissement hors de Tunisie. Peut-on appliquer un regime export TVA ?",
+    "before_status": "new",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "new case",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: Une facture de prestation informatique est emise a un nom francais, mais le client ne fournit aucun justificatif de son etablissement hors de Tunisie. Peut-on appliquer un regime export TVA ?. Sans preuve du client etranger, du lieu d'utilisation ou de l'exploitation hors de Tunisie, le cabinet ne peut pas securiser un traitement d'exportation de services ou d'exoneration. Le statut B2B/B2C du client n'est pas completement documente: il faut obtenir son identite, son pays d'etablissement et, si possible, son statut fi"
+  },
+  {
+    "id": "batch2_tva_invoice_no_export_justification",
+    "question": "La societe a emis une facture sans TVA a un client francais, mais la facture ne contient aucune justification du regime d'exportation de services. Quels risques et corrections verifier ?",
+    "before_status": "new",
+    "after_status": "workflow=tva_operational_case safe=True expert=True source=True",
+    "before_sources": "new case",
+    "after_sources": "tva_droit_consommation p.14 (direct_passage); procedures_fiscales_2026 p.1 (framework_source); loi_finances_2026 p.6 (direct_passage)",
+    "before_answer_preview": "",
+    "after_answer_preview": "## Reponse\nPour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. Faits transmis: La societe a emis une facture sans TVA a un client francais, mais la facture ne contient aucune justification du regime d'exportation de services. Quels risques et corrections verifier ?. Sans preuve du client etranger, du lieu d'utilisation ou de l'exploitation hors de Tunisie, le cabinet ne peut pas securiser un traitement d'exportation de services ou d'exoneration. Le statut B2B/B2C du client n'est pas completement documente: il faut obtenir son identite, son pays d'etablissement et, si possible, son statut fiscal "
+  }
+]
