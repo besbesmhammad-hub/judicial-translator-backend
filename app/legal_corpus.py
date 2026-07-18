@@ -88,7 +88,7 @@ DOMAIN_ROUTE_PATTERNS = {
         r"\bfiscal(?:ite)?\b|fiscalit[eé]|\btva\b|irpp|\bis\b|impot|impôt|retenue a la source|retenue à la source|"
         r"dividendes?|associe resident|associé résident|associe non resident|associé non résident|"
         r"prestations de services|prestation informatique|client etabli en france|client établi en france|client francais|client français|"
-        r"procedure fiscale|procédure fiscale|procedures fiscales|procédures fiscales|loi de finances|"
+        r"procedure fiscale|procédure fiscale|procedures fiscales|procédures fiscales|loi de finances|قانون المالية|ميزانية الدولة|"
         r"convention fiscale|double imposition|bofip|boi-int-cvb|etablissement stable|établissement stable|"
         r"revenus non commerciaux|benefices des entreprises|bénéfices des entreprises|redevances|"
         r"enregistrement|timbre|matricule fiscal|facturation electronique|facture electronique|"
@@ -146,6 +146,7 @@ def record_matches_domain(record: dict, route: str) -> bool:
         return (
             doc_id in {
                 "code_irpp_is_2011",
+                "code_irpp_is_2025",
                 "code_irpp_is_2023",
                 "code_irpp_is_2022",
                 "code_irpp_is_2021",
@@ -179,6 +180,7 @@ def record_matches_domain(record: dict, route: str) -> bool:
                 "loi_investissement_2016_71",
                 "loi_avantages_fiscaux_2017_8",
                 "loi_finances_2026",
+                "loi_finances_2026_ar",
                 "note_generale_contribution_solidarite_2026",
                 "note_generale_facturation_electronique_2026",
                 "note_generale_non_residents_services_administratifs_2026",
@@ -327,6 +329,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
 
     query_text = query.lower()
     domain_boosts = {
+        "code_irpp_is_2025": r"(code|edition|mis a jour|selon le code).{0,80}(irpp|impot sur le revenu|impot sur les societes).{0,80}2025|(irpp|impot sur le revenu|impot sur les societes).{0,80}2025.{0,80}(code|edition|mis a jour|selon le code)",
         "code_irpp_is_2011": r"\birpp\b|\bis\b|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés|benefice imposable|bénéfice imposable|retenue a la source|retenue à la source|plus-value|plus value",
         "code_irpp_is_2023": r"(code|edition|mis a jour|selon le code).{0,80}(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2023|(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2023.{0,80}(code|edition|mis a jour|selon le code)",
         "code_irpp_is_2022": r"(code|edition|mis a jour|selon le code).{0,80}(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2022|(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2022.{0,80}(code|edition|mis a jour|selon le code)",
@@ -354,6 +357,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "fiscalite_locale_2023": r"fiscalite locale 2023|code de la fiscalite locale 2023|mis a jour au 1er janvier 2023",
         "fiscalite_locale_2020": r"fiscalite locale 2020|code de la fiscalite locale 2020|mis a jour au 1er janvier 2020",
         "fiscalite_locale_2018": r"fiscalite locale 2018|code de la fiscalite locale 2018|mis a jour au 1er janvier 2018",
+        "loi_finances_2026_ar": r"loi de finances 2026 arabe|قانون المالية لسنة 2026|قانون عدد 17 لسنة 2025|ميزانية الدولة لسنة 2026|احكام الميزانية|أحكام الميزانية",
         "loi_finances_2026": r"loi de finances|finance 2026|budget 2026|mesures fiscales 2026|mesure fiscale|dispositions fiscales nouvelles",
         "note_generale_contribution_solidarite_2026": r"contribution sociale solidaire|contribution sociale solidarite|mcss|cotisation sociale solidaire|contribution exceptionnelle",
         "cnss_f1_demande_affiliation_employeur": r"\bcnss\b|caisse nationale de securite sociale|demande d'affiliation|demande d affiliation|affiliation employeur|representant legal|entreprise|employeur",
@@ -703,6 +707,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         )
         if asks_for_irpp_edition:
             historical_irpp_doc = {
+                "2025": "code_irpp_is_2025",
                 "2023": "code_irpp_is_2023",
                 "2022": "code_irpp_is_2022",
                 "2021": "code_irpp_is_2021",
@@ -1591,6 +1596,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         ):
             if record.get("doc_id") in {
                 "code_irpp_is_2011",
+                "code_irpp_is_2025",
                 "code_irpp_is_2023",
                 "code_irpp_is_2022",
                 "code_irpp_is_2021",
@@ -1624,6 +1630,7 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 "loi_investissement_2016_71",
                 "loi_avantages_fiscaux_2017_8",
                 "loi_finances_2026",
+                "loi_finances_2026_ar",
                 "note_generale_contribution_solidarite_2026",
             }:
                 score = (score * 4.6) + 12.0
@@ -1654,6 +1661,13 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 score *= 1.35
             elif record.get("doc_id") == "note_generale_contribution_solidarite_2026":
                 score *= 0.82
+        if re.search(r"قانون المالية|ميزانية الدولة|احكام الميزانية|أحكام الميزانية", query_text, re.I):
+            if record.get("doc_id") == "loi_finances_2026_ar":
+                score = (score * 7.0) + 45.0
+            elif record.get("doc_id") == "loi_finances_2026":
+                score = (score * 2.2) + 12.0
+            elif record.get("source_tier") == "tax_form":
+                score *= 0.25
         if re.search(r"facturation electronique|facture electronique|e-facturation|e facture|e-facture|fou?tur", query_text, re.I):
             if record.get("doc_id") == "note_generale_facturation_electronique_2026":
                 score = (score * 5.2) + 28.0
