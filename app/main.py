@@ -55,6 +55,20 @@ SECTION_SPLIT_RE = re.compile(
 )
 CONCEPT_BRIEF_SECTIONS = ["Definition", "Base legale", "Points de vigilance", "Sources utilisees"]
 PRACTICAL_ANALYSIS_SECTIONS = ["Reponse", "Application pratique", "Points de vigilance", "Sources utilisees"]
+CURRENT_IRPP_IS_DOC_ID = "code_irpp_is_2025"
+CURRENT_TVA_DOC_ID = "tva_droit_consommation"
+CURRENT_TAX_PROCEDURE_DOC_ID = "procedures_fiscales_2026"
+CURRENT_ENREGISTREMENT_TIMBRE_DOC_ID = "enregistrement_timbre"
+CURRENT_FISCALITE_LOCALE_DOC_ID = "fiscalite_locale_2026"
+IRPP_IS_DOC_IDS = {
+    "code_irpp_is_2011",
+    "code_irpp_is_2019",
+    "code_irpp_is_2020",
+    "code_irpp_is_2021",
+    "code_irpp_is_2022",
+    "code_irpp_is_2023",
+    "code_irpp_is_2025",
+}
 
 
 def match_key(value: str) -> str:
@@ -1404,8 +1418,12 @@ def treaty_precision_rules(doc_ids: list[str]) -> list[dict]:
     ]
 
 
+def asks_for_source_edition(query: str) -> bool:
+    return bool(re.search(r"\bcode\b|edition|version|mis a jour|selon le code|texte de\s+\d{4}|edition\s+\d{4}", query, re.I))
+
+
 def tva_doc_id_for_query(query: str) -> str:
-    asks_for_code_edition = bool(re.search(r"\bcode\b|edition|mis a jour|selon le code", query, re.I))
+    asks_for_code_edition = asks_for_source_edition(query)
     if asks_for_code_edition and "2025" in query:
         return "tva_droit_consommation_2025"
     if asks_for_code_edition and "2023" in query:
@@ -1414,11 +1432,11 @@ def tva_doc_id_for_query(query: str) -> str:
         return "tva_droit_consommation_2021"
     if asks_for_code_edition and "2019" in query:
         return "tva_droit_consommation_2019"
-    return "tva_droit_consommation"
+    return CURRENT_TVA_DOC_ID
 
 
 def irpp_is_doc_id_for_query(query: str) -> str:
-    asks_for_code_edition = bool(re.search(r"\bcode\b|edition|mis a jour|selon le code", query, re.I))
+    asks_for_code_edition = asks_for_source_edition(query)
     asks_for_irpp_is = bool(
         re.search(
             r"\birpp\b|\bis\b|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés",
@@ -1438,33 +1456,48 @@ def irpp_is_doc_id_for_query(query: str) -> str:
         return "code_irpp_is_2020"
     if asks_for_code_edition and asks_for_irpp_is and "2019" in query:
         return "code_irpp_is_2019"
-    return "code_irpp_is_2011"
+    if asks_for_code_edition and asks_for_irpp_is and "2011" in query:
+        return "code_irpp_is_2011"
+    return CURRENT_IRPP_IS_DOC_ID
+
+
+def tax_procedure_doc_id_for_query(query: str) -> str:
+    asks_for_code_edition = asks_for_source_edition(query)
+    if asks_for_code_edition and "2025" in query:
+        return "procedures_fiscales_2025"
+    if asks_for_code_edition and "2024" in query:
+        return "procedures_fiscales_2024"
+    if asks_for_code_edition and "2023" in query:
+        return "procedures_fiscales_2023"
+    return CURRENT_TAX_PROCEDURE_DOC_ID
 
 
 def enregistrement_timbre_doc_id_for_query(query: str) -> str:
-    if "2025" in query:
+    asks_for_code_edition = asks_for_source_edition(query)
+    if asks_for_code_edition and "2025" in query:
         return "enregistrement_timbre_2025"
-    if "2022" in query:
+    if asks_for_code_edition and "2022" in query:
         return "enregistrement_timbre_2022"
-    if "2020" in query:
+    if asks_for_code_edition and "2020" in query:
         return "enregistrement_timbre_2020"
-    if "2018" in query:
+    if asks_for_code_edition and "2018" in query:
         return "enregistrement_timbre_2018"
-    return "enregistrement_timbre"
+    return CURRENT_ENREGISTREMENT_TIMBRE_DOC_ID
 
 
 def fiscalite_locale_doc_id_for_query(query: str) -> str:
-    if "2026" in query:
+    asks_for_code_edition = asks_for_source_edition(query)
+    if asks_for_code_edition and "2026" in query:
         return "fiscalite_locale_2026"
-    if "2025" in query:
+    if asks_for_code_edition and "2025" in query:
         return "fiscalite_locale_2025"
-    if "2023" in query:
+    if asks_for_code_edition and "2023" in query:
         return "fiscalite_locale_2023"
-    if "2020" in query:
+    if asks_for_code_edition and "2020" in query:
         return "fiscalite_locale_2020"
-    if "2018" in query:
+    if asks_for_code_edition and "2018" in query:
         return "fiscalite_locale_2018"
-    return "fiscalite_locale_2026"
+    return CURRENT_FISCALITE_LOCALE_DOC_ID
 
 
 def is_public_accounting_query(query: str) -> bool:
@@ -1489,13 +1522,7 @@ def tax_procedure_precision_rules(query: str) -> list[dict]:
         or "contrôle fiscal" in query
         or "contentieux fiscal" in query
     ):
-        procedure_doc_id = "procedures_fiscales_2026"
-        if "2025" in query:
-            procedure_doc_id = "procedures_fiscales_2025"
-        elif "2024" in query:
-            procedure_doc_id = "procedures_fiscales_2024"
-        elif "2023" in query:
-            procedure_doc_id = "procedures_fiscales_2023"
+        procedure_doc_id = tax_procedure_doc_id_for_query(query)
         return [
             {
                 "doc_id": procedure_doc_id,
@@ -2164,11 +2191,11 @@ def fastpath_general_fiscal_framework_answer(message: str, legal_domain: str) ->
         return None
 
     framework_sources = legal_sources_by_doc_ids([
-        "code_irpp_is_2011",
-        "tva_droit_consommation",
-        "procedures_fiscales_2026",
-        "enregistrement_timbre",
-        "fiscalite_locale",
+        CURRENT_IRPP_IS_DOC_ID,
+        CURRENT_TVA_DOC_ID,
+        CURRENT_TAX_PROCEDURE_DOC_ID,
+        CURRENT_ENREGISTREMENT_TIMBRE_DOC_ID,
+        CURRENT_FISCALITE_LOCALE_DOC_ID,
         "loi_finances_2026",
     ])
     if not framework_sources:
@@ -2218,11 +2245,11 @@ def fastpath_fiscal_sources_answer(message: str, legal_domain: str) -> dict | No
         return None
 
     framework_sources = legal_sources_by_doc_ids([
-        "code_irpp_is_2011",
-        "tva_droit_consommation",
-        "procedures_fiscales_2026",
-        "enregistrement_timbre",
-        "fiscalite_locale",
+        CURRENT_IRPP_IS_DOC_ID,
+        CURRENT_TVA_DOC_ID,
+        CURRENT_TAX_PROCEDURE_DOC_ID,
+        CURRENT_ENREGISTREMENT_TIMBRE_DOC_ID,
+        CURRENT_FISCALITE_LOCALE_DOC_ID,
         "loi_finances_2026",
     ])
     if not framework_sources:
@@ -2276,8 +2303,8 @@ def fastpath_fiscal_code_comparison_answer(message: str, legal_domain: str) -> d
         return None
 
     sources = legal_sources_by_doc_ids([
-        "code_irpp_is_2011",
-        "procedures_fiscales_2026",
+        CURRENT_IRPP_IS_DOC_ID,
+        CURRENT_TAX_PROCEDURE_DOC_ID,
     ])
     if not sources:
         return None
@@ -2324,9 +2351,9 @@ def fastpath_legal_hierarchy_answer(message: str, legal_domain: str) -> dict | N
         return None
 
     sources = legal_sources_by_doc_ids([
-        "code_irpp_is_2011",
-        "tva_droit_consommation",
-        "procedures_fiscales_2026",
+        CURRENT_IRPP_IS_DOC_ID,
+        CURRENT_TVA_DOC_ID,
+        CURRENT_TAX_PROCEDURE_DOC_ID,
         "loi_finances_2026",
     ])
     if not sources:
@@ -2554,8 +2581,8 @@ def fastpath_document_analysis_without_document_answer(
     sources = legal_sources_by_doc_ids([
         "loi_comptable",
         "nc_01_norme_generale",
-        "code_irpp_is_2011",
-        "procedures_fiscales_2026",
+        CURRENT_IRPP_IS_DOC_ID,
+        CURRENT_TAX_PROCEDURE_DOC_ID,
     ])
     source_lines = summarize_source_titles(sources, limit=4)
     answer = compose_structured_answer(
@@ -2614,9 +2641,9 @@ def fastpath_document_analysis_with_context_answer(
     sources = legal_sources_by_doc_ids([
         "loi_comptable",
         "nc_01_norme_generale",
-        "code_irpp_is_2011",
-        "procedures_fiscales_2026",
-        "tva_droit_consommation",
+        CURRENT_IRPP_IS_DOC_ID,
+        CURRENT_TAX_PROCEDURE_DOC_ID,
+        CURRENT_TVA_DOC_ID,
     ])
     source_lines = summarize_source_titles(sources, limit=5)
     context_preview = clean_translation_output(context).strip()
@@ -2748,7 +2775,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
         }
     elif is_going_concern_case(query):
         priority_doc_ids = ["cadre_conceptuel_comptable", "nc_01_norme_generale", "audit_resume_gaida_normes_missions", "audit_resume_acceptation_controle_qualite"]
-        blocked_doc_ids = {"code_societes_commerciales_2022", "fiscalite_locale", "code_irpp_is_2011"}
+        blocked_doc_ids = {"code_societes_commerciales_2022", "fiscalite_locale", *IRPP_IS_DOC_IDS}
     elif is_related_party_property_case(query):
         priority_doc_ids = ["nc_39_parties_liees", "code_societes_commerciales_2022", irpp_is_doc_id, "audit_resume_gaida_normes_missions"]
         blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale", "tva_droit_consommation"}
@@ -3072,7 +3099,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "procedures_fiscales_2026",
             "loi_finances_2026",
         ]
-        blocked_doc_ids = {"code_irpp_is_2011", "code_societes_commerciales_2022", "droits_taxes_hors_codes", "fiscalite_locale"}
+        blocked_doc_ids = {*IRPP_IS_DOC_IDS, "code_societes_commerciales_2022", "droits_taxes_hors_codes", "fiscalite_locale"}
     elif "fraude" in query and ("commissaire aux comptes" in query or "rapport" in query):
         priority_doc_ids = [
             "audit_resume_gaida_normes_missions",
