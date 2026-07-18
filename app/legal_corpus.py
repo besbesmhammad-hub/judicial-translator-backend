@@ -145,7 +145,9 @@ def record_matches_domain(record: dict, route: str) -> bool:
         return (
             doc_id in {
                 "code_irpp_is_2011",
+                "code_comptabilite_publique",
                 "tva_droit_consommation",
+                "tva_droit_consommation_2025",
                 "tva_droit_consommation_2023",
                 "tva_droit_consommation_2021",
                 "tva_droit_consommation_2019",
@@ -159,6 +161,11 @@ def record_matches_domain(record: dict, route: str) -> bool:
                 "enregistrement_timbre_2020",
                 "enregistrement_timbre_2018",
                 "fiscalite_locale",
+                "fiscalite_locale_2026",
+                "fiscalite_locale_2025",
+                "fiscalite_locale_2023",
+                "fiscalite_locale_2020",
+                "fiscalite_locale_2018",
                 "droits_taxes_hors_codes",
                 "droits_taxes_hors_codes_2026",
                 "droits_taxes_hors_codes_2025",
@@ -315,7 +322,9 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
     query_text = query.lower()
     domain_boosts = {
         "code_irpp_is_2011": r"\birpp\b|\bis\b|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés|benefice imposable|bénéfice imposable|retenue a la source|retenue à la source|plus-value|plus value",
+        "code_comptabilite_publique": r"comptabilite publique|code de la comptabilite publique|ordonnateur|comptable public|tresor public|recouvrement public",
         "tva_droit_consommation": r"\btva\b|taxe sur la valeur ajout|valeur ajoutee|droit de consommation|assujetti|deduction|deductions|exoner|restitution de la taxe",
+        "tva_droit_consommation_2025": r"tva 2025|taxe sur la valeur ajoutee 2025|code de la taxe sur la valeur ajoutee 2025|mis a jour au 1er janvier 2025",
         "tva_droit_consommation_2023": r"tva 2023|taxe sur la valeur ajoutee 2023|taxe sur la valeur ajoutée 2023|code de la taxe sur la valeur ajoutee 2023|mis a jour au 1er janvier 2023",
         "tva_droit_consommation_2021": r"tva 2021|taxe sur la valeur ajoutee 2021|taxe sur la valeur ajoutée 2021|code de la taxe sur la valeur ajoutee 2021|mis a jour au 1er janvier 2021",
         "tva_droit_consommation_2019": r"tva 2019|taxe sur la valeur ajoutee 2019|taxe sur la valeur ajoutée 2019|code de la taxe sur la valeur ajoutee 2019|mis a jour au 1er janvier 2019",
@@ -329,6 +338,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         "enregistrement_timbre_2020": r"enregistrement 2020|timbre 2020|droits d'enregistrement 2020|droits d’enregistrement 2020|code des droits d'enregistrement et de timbre 2020|mis a jour au 1er janvier 2020",
         "enregistrement_timbre_2018": r"enregistrement 2018|timbre 2018|droits d'enregistrement 2018|droits d’enregistrement 2018|code des droits d'enregistrement et de timbre 2018|mis a jour au 1er janvier 2018",
         "fiscalite_locale": r"fiscalite locale|taxe sur les immeubles|tcl|collectivite|commune|municipal",
+        "fiscalite_locale_2026": r"fiscalite locale 2026|code de la fiscalite locale 2026|mis a jour au 1er janvier 2026",
+        "fiscalite_locale_2025": r"fiscalite locale 2025|code de la fiscalite locale 2025|mis a jour au 1er janvier 2025",
+        "fiscalite_locale_2023": r"fiscalite locale 2023|code de la fiscalite locale 2023|mis a jour au 1er janvier 2023",
+        "fiscalite_locale_2020": r"fiscalite locale 2020|code de la fiscalite locale 2020|mis a jour au 1er janvier 2020",
+        "fiscalite_locale_2018": r"fiscalite locale 2018|code de la fiscalite locale 2018|mis a jour au 1er janvier 2018",
         "loi_finances_2026": r"loi de finances|finance 2026|budget 2026|mesures fiscales 2026|mesure fiscale|dispositions fiscales nouvelles",
         "note_generale_contribution_solidarite_2026": r"contribution sociale solidaire|contribution sociale solidarite|mcss|cotisation sociale solidaire|contribution exceptionnelle",
         "cnss_f1_demande_affiliation_employeur": r"\bcnss\b|caisse nationale de securite sociale|demande d'affiliation|demande d affiliation|affiliation employeur|representant legal|entreprise|employeur",
@@ -958,14 +972,33 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             elif record.get("doc_id") == "procedures_fiscales_2026":
                 score = (score * 3.8) + 18.0
         if re.search(r"\btva\b|taxe sur la valeur ajout|droit de consommation|deduction tva|déduction tva|territorialite tva|territorialité tva", query_text, re.I):
-            if "2023" in query_text and record.get("doc_id") == "tva_droit_consommation_2023":
+            asks_for_tva_edition = bool(re.search(r"\bcode\b|edition|mis a jour|selon le code", query_text, re.I))
+            if asks_for_tva_edition and "2025" in query_text and record.get("doc_id") == "tva_droit_consommation_2025":
                 score = (score * 5.4) + 32.0
-            elif "2021" in query_text and record.get("doc_id") == "tva_droit_consommation_2021":
+            elif asks_for_tva_edition and "2023" in query_text and record.get("doc_id") == "tva_droit_consommation_2023":
                 score = (score * 5.4) + 32.0
-            elif "2019" in query_text and record.get("doc_id") == "tva_droit_consommation_2019":
+            elif asks_for_tva_edition and "2021" in query_text and record.get("doc_id") == "tva_droit_consommation_2021":
                 score = (score * 5.4) + 32.0
-            elif not any(year in query_text for year in ("2023", "2021", "2019")) and record.get("doc_id") == "tva_droit_consommation":
+            elif asks_for_tva_edition and "2019" in query_text and record.get("doc_id") == "tva_droit_consommation_2019":
+                score = (score * 5.4) + 32.0
+            elif (not asks_for_tva_edition or not any(year in query_text for year in ("2025", "2023", "2021", "2019"))) and record.get("doc_id") == "tva_droit_consommation":
                 score = (score * 3.8) + 18.0
+        if re.search(r"fiscalite locale|taxe sur les immeubles|tcl|collectivite|commune|municipal", query_text, re.I):
+            if "2026" in query_text and record.get("doc_id") == "fiscalite_locale_2026":
+                score = (score * 5.4) + 32.0
+            elif "2025" in query_text and record.get("doc_id") == "fiscalite_locale_2025":
+                score = (score * 5.4) + 32.0
+            elif "2023" in query_text and record.get("doc_id") == "fiscalite_locale_2023":
+                score = (score * 5.4) + 32.0
+            elif "2020" in query_text and record.get("doc_id") == "fiscalite_locale_2020":
+                score = (score * 5.4) + 32.0
+            elif "2018" in query_text and record.get("doc_id") == "fiscalite_locale_2018":
+                score = (score * 5.4) + 32.0
+            elif not any(year in query_text for year in ("2026", "2025", "2023", "2020", "2018")) and record.get("doc_id") in {"fiscalite_locale_2026", "fiscalite_locale"}:
+                score = (score * 3.8) + 18.0
+        if re.search(r"comptabilite publique|code de la comptabilite publique|ordonnateur|comptable public|tresor public|recouvrement public", query_text, re.I):
+            if record.get("doc_id") == "code_comptabilite_publique":
+                score = (score * 5.4) + 32.0
         if re.search(r"enregistrement|timbre|droits d.enregistrement|mutation|acte|bail|vente immobili", query_text, re.I):
             if "2025" in query_text and record.get("doc_id") == "enregistrement_timbre_2025":
                 score = (score * 5.4) + 32.0
@@ -992,13 +1025,16 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             elif record.get("doc_id") in {"code_irpp_is_2011", "loi_finances_2026"}:
                 score *= 1.35
         if (("prestations de services" in query_text or "prestation informatique" in query_text) and ("france" in query_text or "client etabli" in query_text or "client établi" in query_text)):
-            if "2023" in query_text and record.get("doc_id") == "tva_droit_consommation_2023":
+            asks_for_tva_edition = bool(re.search(r"\bcode\b|edition|mis a jour|selon le code", query_text, re.I))
+            if asks_for_tva_edition and "2025" in query_text and record.get("doc_id") == "tva_droit_consommation_2025":
                 score = (score * 5.8) + 34.0
-            elif "2021" in query_text and record.get("doc_id") == "tva_droit_consommation_2021":
+            elif asks_for_tva_edition and "2023" in query_text and record.get("doc_id") == "tva_droit_consommation_2023":
                 score = (score * 5.8) + 34.0
-            elif "2019" in query_text and record.get("doc_id") == "tva_droit_consommation_2019":
+            elif asks_for_tva_edition and "2021" in query_text and record.get("doc_id") == "tva_droit_consommation_2021":
                 score = (score * 5.8) + 34.0
-            elif not any(year in query_text for year in ("2023", "2021", "2019")) and record.get("doc_id") == "tva_droit_consommation":
+            elif asks_for_tva_edition and "2019" in query_text and record.get("doc_id") == "tva_droit_consommation_2019":
+                score = (score * 5.8) + 34.0
+            elif (not asks_for_tva_edition or not any(year in query_text for year in ("2025", "2023", "2021", "2019"))) and record.get("doc_id") == "tva_droit_consommation":
                 score *= 5.6
             elif record.get("doc_id") in {"convention_fiscale_france_tunisie", "convention_fiscale_france_tunisie_texte_1973", "boi_france_tunisie_convention_fiscale_2012"}:
                 score *= 5.2
@@ -1527,7 +1563,9 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         ):
             if record.get("doc_id") in {
                 "code_irpp_is_2011",
+                "code_comptabilite_publique",
                 "tva_droit_consommation",
+                "tva_droit_consommation_2025",
                 "tva_droit_consommation_2023",
                 "tva_droit_consommation_2021",
                 "tva_droit_consommation_2019",
@@ -1541,6 +1579,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
                 "enregistrement_timbre_2020",
                 "enregistrement_timbre_2018",
                 "fiscalite_locale",
+                "fiscalite_locale_2026",
+                "fiscalite_locale_2025",
+                "fiscalite_locale_2023",
+                "fiscalite_locale_2020",
+                "fiscalite_locale_2018",
                 "droits_taxes_hors_codes",
                 "droits_taxes_hors_codes_2026",
                 "droits_taxes_hors_codes_2025",

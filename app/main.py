@@ -74,7 +74,9 @@ def match_key(value: str) -> str:
 
 CLIENT_SOURCE_TITLES = {
     "code_irpp_is_2011": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS)",
+    "code_comptabilite_publique": "Code de la comptabilité publique",
     "tva_droit_consommation": "Code de la taxe sur la valeur ajoutée (loi n° 88-61 du 2 juin 1988), recueil officiel mis à jour au 1er janvier 2026",
+    "tva_droit_consommation_2025": "Code de la taxe sur la valeur ajoutée et droit de consommation, édition 2025",
     "tva_droit_consommation_2023": "Code de la taxe sur la valeur ajoutée et droit de consommation, édition 2023",
     "tva_droit_consommation_2021": "Code de la taxe sur la valeur ajoutée et droit de consommation, édition 2021",
     "tva_droit_consommation_2019": "Code de la taxe sur la valeur ajoutée et droit de consommation, édition 2019",
@@ -88,6 +90,11 @@ CLIENT_SOURCE_TITLES = {
     "enregistrement_timbre_2020": "Code des droits d'enregistrement et de timbre, édition 2020",
     "enregistrement_timbre_2018": "Code des droits d'enregistrement et de timbre, édition 2018",
     "fiscalite_locale": "Code de la fiscalité locale",
+    "fiscalite_locale_2026": "Code de la fiscalité locale, édition 2026",
+    "fiscalite_locale_2025": "Code de la fiscalité locale, édition 2025",
+    "fiscalite_locale_2023": "Code de la fiscalité locale, édition 2023",
+    "fiscalite_locale_2020": "Code de la fiscalité locale, édition 2020",
+    "fiscalite_locale_2018": "Code de la fiscalité locale, édition 2018",
     "droits_taxes_hors_codes_2026": "Recueil des droits et taxes non incorporés dans les codes fiscaux, édition 2026",
     "droits_taxes_hors_codes_2025": "Recueil des droits et taxes non incorporés dans les codes fiscaux, édition 2025",
     "droits_taxes_hors_codes_2023": "Recueil des droits et taxes non incorporés dans les codes fiscaux, édition 2023",
@@ -97,7 +104,9 @@ CLIENT_SOURCE_TITLES = {
 }
 CLIENT_SOURCE_TITLE_ALIASES = {
     "Code de l IRPP et de l IS": CLIENT_SOURCE_TITLES["code_irpp_is_2011"],
+    "Code de la comptabilite publique": CLIENT_SOURCE_TITLES["code_comptabilite_publique"],
     "Code TVA et droit de consommation 2026": CLIENT_SOURCE_TITLES["tva_droit_consommation"],
+    "Code TVA et droit de consommation 2025": CLIENT_SOURCE_TITLES["tva_droit_consommation_2025"],
     "Code TVA et droit de consommation 2023": CLIENT_SOURCE_TITLES["tva_droit_consommation_2023"],
     "Code TVA et droit de consommation 2021": CLIENT_SOURCE_TITLES["tva_droit_consommation_2021"],
     "Code TVA et droit de consommation 2019": CLIENT_SOURCE_TITLES["tva_droit_consommation_2019"],
@@ -116,6 +125,11 @@ CLIENT_SOURCE_TITLE_ALIASES = {
     "Code des droits d enregistrement et du timbre 2020": CLIENT_SOURCE_TITLES["enregistrement_timbre_2020"],
     "Code des droits d enregistrement et du timbre 2018": CLIENT_SOURCE_TITLES["enregistrement_timbre_2018"],
     "Code de la fiscalite locale 2017": CLIENT_SOURCE_TITLES["fiscalite_locale"],
+    "Code de la fiscalite locale 2026": CLIENT_SOURCE_TITLES["fiscalite_locale_2026"],
+    "Code de la fiscalite locale 2025": CLIENT_SOURCE_TITLES["fiscalite_locale_2025"],
+    "Code de la fiscalite locale 2023": CLIENT_SOURCE_TITLES["fiscalite_locale_2023"],
+    "Code de la fiscalite locale 2020": CLIENT_SOURCE_TITLES["fiscalite_locale_2020"],
+    "Code de la fiscalite locale 2018": CLIENT_SOURCE_TITLES["fiscalite_locale_2018"],
     "Loi de finances 2026": CLIENT_SOURCE_TITLES["loi_finances_2026"],
 }
 CANONICAL_FISCAL_SOURCE_METADATA = {
@@ -126,12 +140,26 @@ CANONICAL_FISCAL_SOURCE_METADATA = {
         "authority": "Imprimerie Officielle de la Republique Tunisienne",
         "year": 2011,
     },
+    "code_comptabilite_publique": {
+        "title": "Code de la comptabilite publique",
+        "filename": "code_compta_fr.pdf",
+        "page": 1,
+        "authority": "Imprimerie Officielle de la Republique Tunisienne",
+        "year": 2013,
+    },
     "tva_droit_consommation": {
         "title": "Code TVA et droit de consommation 2026",
         "filename": "Code-TVA-2026.pdf",
         "page": 2,
         "authority": "Ministere des Finances / legislation fiscale tunisienne",
         "year": 2026,
+    },
+    "tva_droit_consommation_2025": {
+        "title": "Code TVA et droit de consommation 2025",
+        "filename": "مجلة-الأداء-على-القيمة-المضافة-2025.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2025,
     },
     "tva_droit_consommation_2023": {
         "title": "Code TVA et droit de consommation 2023",
@@ -202,6 +230,41 @@ CANONICAL_FISCAL_SOURCE_METADATA = {
         "page": 1,
         "authority": "Ministere des Finances",
         "year": 2017,
+    },
+    "fiscalite_locale_2026": {
+        "title": "Code de la fiscalite locale 2026",
+        "filename": "Code-de-la-Fiscalite-Locale-2026.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2026,
+    },
+    "fiscalite_locale_2025": {
+        "title": "Code de la fiscalite locale 2025",
+        "filename": "Code_FISCALITE-LOCALE-2025.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2025,
+    },
+    "fiscalite_locale_2023": {
+        "title": "Code de la fiscalite locale 2023",
+        "filename": "CODE-DE-LA-FISCALITE-LOCALE-2023-1-1.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2023,
+    },
+    "fiscalite_locale_2020": {
+        "title": "Code de la fiscalite locale 2020",
+        "filename": "code-de-la-fiscalite-locale-2020.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2020,
+    },
+    "fiscalite_locale_2018": {
+        "title": "Code de la fiscalite locale 2018",
+        "filename": "Code-de-la-Fiscalite-Locale-2018.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2018,
     },
     "loi_finances_2026": {
         "title": "Loi de finances 2026",
@@ -853,6 +916,19 @@ def source_precision_rules(message: str) -> list[dict]:
                 "min_matches": 2,
             },
         ]
+    if is_public_accounting_query(query):
+        return [
+            {
+                "doc_id": "code_comptabilite_publique",
+                "terms": ["comptabilite publique", "comptable public", "ordonnateur", "tresor public", "recouvrement"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "procedures_fiscales_2026",
+                "terms": ["recouvrement", "controle", "declaration", "contentieux"],
+                "min_matches": 2,
+            },
+        ]
     coverage_workflow = detect_cabinet_workflow(query)
     if coverage_workflow:
         if coverage_workflow.family == "paie_social":
@@ -1265,11 +1341,14 @@ def treaty_precision_rules(doc_ids: list[str]) -> list[dict]:
 
 
 def tva_doc_id_for_query(query: str) -> str:
-    if "2023" in query:
+    asks_for_code_edition = bool(re.search(r"\bcode\b|edition|mis a jour|selon le code", query, re.I))
+    if asks_for_code_edition and "2025" in query:
+        return "tva_droit_consommation_2025"
+    if asks_for_code_edition and "2023" in query:
         return "tva_droit_consommation_2023"
-    if "2021" in query:
+    if asks_for_code_edition and "2021" in query:
         return "tva_droit_consommation_2021"
-    if "2019" in query:
+    if asks_for_code_edition and "2019" in query:
         return "tva_droit_consommation_2019"
     return "tva_droit_consommation"
 
@@ -1284,6 +1363,28 @@ def enregistrement_timbre_doc_id_for_query(query: str) -> str:
     if "2018" in query:
         return "enregistrement_timbre_2018"
     return "enregistrement_timbre"
+
+
+def fiscalite_locale_doc_id_for_query(query: str) -> str:
+    if "2026" in query:
+        return "fiscalite_locale_2026"
+    if "2025" in query:
+        return "fiscalite_locale_2025"
+    if "2023" in query:
+        return "fiscalite_locale_2023"
+    if "2020" in query:
+        return "fiscalite_locale_2020"
+    if "2018" in query:
+        return "fiscalite_locale_2018"
+    return "fiscalite_locale_2026"
+
+
+def is_public_accounting_query(query: str) -> bool:
+    return bool(re.search(
+        r"comptabilite publique|code de la comptabilite publique|comptable public|ordonnateur|tresor public|recouvrement public",
+        query,
+        re.I,
+    ))
 
 
 def tax_procedure_precision_rules(query: str) -> list[dict]:
@@ -1858,6 +1959,60 @@ def fastpath_enregistrement_timbre_answer(message: str, legal_domain: str) -> di
     }
 
 
+def fastpath_fiscalite_locale_answer(message: str, legal_domain: str) -> dict | None:
+    query = match_key(message)
+    if legal_domain not in {"fiscalite", "general"}:
+        return None
+    if not re.search(r"fiscalite locale|taxe locale|taxes locales|tcl|taxe sur les immeubles|collectivite|commune|municipal", query, re.I):
+        return None
+
+    doc_id = fiscalite_locale_doc_id_for_query(query)
+    sources = legal_sources_by_doc_ids([doc_id, "procedures_fiscales_2026", "loi_finances_2026"])
+    if not sources:
+        return None
+
+    source_lines = summarize_source_titles(sources, limit=3)
+    year_label = str(CANONICAL_FISCAL_SOURCE_METADATA.get(doc_id, {}).get("year") or "").strip()
+    edition = f" edition {year_label}" if year_label else ""
+    answer = "\n\n".join([
+        "## Reponse\n"
+        f"Pour la fiscalite locale{edition}, le raisonnement doit partir du **Code de la fiscalite locale** "
+        "applicable a la periode ou a l'operation examinee. Ce code sert a identifier les impositions locales "
+        "pertinentes, les collectivites concernees, l'assiette, les obligations declaratives et les eventuelles "
+        "exonerations ou regimes particuliers.\n\n"
+        "Dans un dossier de cabinet, il faut verifier au minimum :\n"
+        "- la commune ou la collectivite concernee ;\n"
+        "- la nature de l'activite, de l'immeuble ou de l'operation ;\n"
+        "- la periode d'imposition et la version du code applicable ;\n"
+        "- la base de calcul et les elements justificatifs ;\n"
+        "- les declarations, avis, quittances ou correspondances administratives ;\n"
+        "- les modifications eventuelles issues des lois de finances ou textes d'application.",
+        "## Points de vigilance\n"
+        "La fiscalite locale ne remplace pas la TVA, l'IRPP/IS ou les droits d'enregistrement. Elle doit etre "
+        "analysee comme une composante specifique du cadre fiscal, en tenant compte de la localisation et de "
+        "la nature exacte du bien ou de l'activite.",
+        "## Sources utilisees\n"
+        f"{source_lines}",
+    ])
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "legal_basis",
+        "preferred_source": "legal_corpus",
+        "response_style": "practical_analysis",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/fiscalite-locale-fastpath",
+        "fallback_mode": False,
+        "legal_domain": "fiscalite",
+        "question": message,
+    }
+
+
 def fastpath_general_fiscal_framework_answer(message: str, legal_domain: str) -> dict | None:
     if not is_general_fiscal_framework_query(message, legal_domain):
         return None
@@ -2392,6 +2547,16 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     elif is_accounting_tax_bridge_case(query):
         priority_doc_ids = ["ias_37_provisions_passifs_actifs_eventuels", "nc_14_eventualites_post_cloture", "code_irpp_is_2011", "ias_12_impots_resultat"]
         blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale", "code_commerce_2014"}
+    elif is_public_accounting_query(query):
+        priority_doc_ids = ["code_comptabilite_publique", "procedures_fiscales_2026", "loi_finances_2026"]
+        blocked_doc_ids = {
+            "nc_01_norme_generale",
+            "nc_03_revenus",
+            "nc_04_stocks",
+            "nc_05_immobilisations_corporelles",
+            "ias_7_tableau_flux_tresorerie",
+            "audit_resume_gaida_normes_missions",
+        }
     elif coverage_workflow := detect_cabinet_workflow(query):
         priority_doc_ids = list(coverage_workflow.source_doc_ids)
         for treaty_doc_id in reversed(treaty_doc_ids):
@@ -4227,6 +4392,41 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
             selected_sources=enregistrement_timbre_fastpath.get("sources") or [],
             fallback_used=False,
             generator_path=enregistrement_timbre_fastpath.get("model"),
+        )
+    fiscalite_locale_fastpath = fastpath_fiscalite_locale_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if fiscalite_locale_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": fiscalite_locale_fastpath.get("intent"),
+                "legal_domain": fiscalite_locale_fastpath.get("legal_domain"),
+                "preferred_source": fiscalite_locale_fastpath.get("preferred_source"),
+                "response_style": fiscalite_locale_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(fiscalite_locale_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": fiscalite_locale_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            fiscalite_locale_fastpath,
+            request,
+            workflow="fastpath_fiscalite_locale",
+            case_analysis_enabled=False,
+            retrieval_domains=["fiscalite"],
+            selected_sources=fiscalite_locale_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=fiscalite_locale_fastpath.get("model"),
         )
     fiscal_framework_fastpath = fastpath_general_fiscal_framework_answer(
         message=message,
