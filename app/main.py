@@ -74,6 +74,7 @@ def match_key(value: str) -> str:
 
 CLIENT_SOURCE_TITLES = {
     "code_irpp_is_2011": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS)",
+    "code_irpp_is_2025": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
     "code_irpp_is_2023": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2023",
     "code_irpp_is_2022": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2022",
     "code_irpp_is_2021": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2021",
@@ -106,9 +107,11 @@ CLIENT_SOURCE_TITLES = {
     "loi_investissement_2016_71": "Loi n° 2016-71 portant loi de l'investissement",
     "loi_avantages_fiscaux_2017_8": "Loi n° 2017-8 portant refonte du dispositif des avantages fiscaux",
     "loi_finances_2026": "Loi de finances pour 2026",
+    "loi_finances_2026_ar": "Loi de finances pour 2026, version arabe",
 }
 CLIENT_SOURCE_TITLE_ALIASES = {
     "Code de l IRPP et de l IS": CLIENT_SOURCE_TITLES["code_irpp_is_2011"],
+    "Code de l IRPP et de l IS 2025": CLIENT_SOURCE_TITLES["code_irpp_is_2025"],
     "Code de l IRPP et de l IS 2023": CLIENT_SOURCE_TITLES["code_irpp_is_2023"],
     "Code de l IRPP et de l IS 2022": CLIENT_SOURCE_TITLES["code_irpp_is_2022"],
     "Code de l IRPP et de l IS 2021": CLIENT_SOURCE_TITLES["code_irpp_is_2021"],
@@ -141,6 +144,7 @@ CLIENT_SOURCE_TITLE_ALIASES = {
     "Code de la fiscalite locale 2020": CLIENT_SOURCE_TITLES["fiscalite_locale_2020"],
     "Code de la fiscalite locale 2018": CLIENT_SOURCE_TITLES["fiscalite_locale_2018"],
     "Loi de finances 2026": CLIENT_SOURCE_TITLES["loi_finances_2026"],
+    "Loi de finances 2026 arabe": CLIENT_SOURCE_TITLES["loi_finances_2026_ar"],
 }
 CANONICAL_FISCAL_SOURCE_METADATA = {
     "code_irpp_is_2011": {
@@ -156,6 +160,13 @@ CANONICAL_FISCAL_SOURCE_METADATA = {
         "page": 1,
         "authority": "Imprimerie Officielle de la Republique Tunisienne",
         "year": 2023,
+    },
+    "code_irpp_is_2025": {
+        "title": "Code de l IRPP et de l IS 2025",
+        "filename": "11.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2025,
     },
     "code_irpp_is_2022": {
         "title": "Code de l IRPP et de l IS 2022",
@@ -314,6 +325,13 @@ CANONICAL_FISCAL_SOURCE_METADATA = {
     "loi_finances_2026": {
         "title": "Loi de finances 2026",
         "filename": "115725.pdf",
+        "page": 1,
+        "authority": "Journal Officiel de la Republique Tunisienne",
+        "year": 2026,
+    },
+    "loi_finances_2026_ar": {
+        "title": "Loi de finances 2026 arabe",
+        "filename": "Loi2025_17Arabe.pdf",
         "page": 1,
         "authority": "Journal Officiel de la Republique Tunisienne",
         "year": 2026,
@@ -1410,6 +1428,8 @@ def irpp_is_doc_id_for_query(query: str) -> str:
     )
     if asks_for_code_edition and asks_for_irpp_is and "2023" in query:
         return "code_irpp_is_2023"
+    if asks_for_code_edition and asks_for_irpp_is and "2025" in query:
+        return "code_irpp_is_2025"
     if asks_for_code_edition and asks_for_irpp_is and "2022" in query:
         return "code_irpp_is_2022"
     if asks_for_code_edition and asks_for_irpp_is and "2021" in query:
@@ -1824,9 +1844,9 @@ def semantically_adjust_support_level(message: str, source: dict) -> dict:
             "alerte",
             "rapport special",
         ]
-    elif is_fixed_asset_component_depreciation_case(query) and doc_id in {"nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "code_irpp_is_2011", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
+    elif is_fixed_asset_component_depreciation_case(query) and doc_id in {"nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "code_irpp_is_2011", "code_irpp_is_2025", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
         required_any = ["amortissement", "mise en service", "pret a etre utilise", "composant", "duree d'utilisation", "duree d'utilite"]
-    elif is_receivable_subsequent_recovery_case(query) and doc_id in {"nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
+    elif is_receivable_subsequent_recovery_case(query) and doc_id in {"nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011", "code_irpp_is_2025", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
         required_any = ["creance", "provision", "depreciation", "recouvrement", "evenement posterieur", "cloture"]
 
     if required_any and not any(term in haystack for term in required_any):
@@ -2449,6 +2469,70 @@ def fastpath_loi_finances_tva_answer(message: str, legal_domain: str) -> dict | 
         "golden_kb_hits": [],
         "sources": sources,
         "model": "internal/loi-finances-tva-fastpath",
+        "fallback_mode": False,
+        "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
+def fastpath_loi_finances_overview_answer(message: str, legal_domain: str) -> dict | None:
+    query = match_key(message)
+    raw_message = message or ""
+    if legal_domain not in {"fiscalite", "general"}:
+        return None
+    has_arabic_finance_law = bool(re.search(r"قانون المالية|ميزانية الدولة|احكام الميزانية|أحكام الميزانية", raw_message, re.I))
+    if not (has_arabic_finance_law or re.search(r"loi de finances|budget 2026", query, re.I)):
+        return None
+
+    arabic_query = has_arabic_finance_law
+    primary_doc_id = "loi_finances_2026_ar" if arabic_query else "loi_finances_2026"
+    doc_ids = [primary_doc_id]
+    if primary_doc_id != "loi_finances_2026":
+        doc_ids.append("loi_finances_2026")
+    doc_ids.append("procedures_fiscales_2026")
+    sources = legal_sources_by_doc_ids(doc_ids)
+    if not sources:
+        return None
+
+    source_lines = summarize_source_titles(sources, limit=3)
+    if arabic_query:
+        answer = "\n\n".join([
+            "## الإجابة\n"
+            "قانون المالية لسنة 2026 هو النص التشريعي السنوي الذي يحدد أحكام الميزانية والتدابير المالية والجبائية للسنة المعنية. "
+            "في العمل المهني، يجب الرجوع إلى الفصل أو الإجراء المعني داخل النص، ثم ربطه بالمجلة أو القانون الجبائي الذي يعدله عند الاقتضاء.\n\n"
+            "يجب التثبت من موضوع الإجراء، تاريخ دخوله حيز التطبيق، الأشخاص أو المؤسسات المعنية، الأثر الجبائي أو التصريحي، والنصوص التطبيقية أو المذكرات العامة اللاحقة إن وجدت. "
+            "لا يجب استنتاج نسبة أو أجل أو واجب تصريحي محدد دون سند مباشر من الفصل المعني.",
+            "## نقاط انتباه\n"
+            "- قانون المالية قد يعدل أحكاما موجودة في مجلات جبائية أخرى.\n"
+            "- يجب التمييز بين حكم الميزانية، الحكم الجبائي، والنص التطبيقي.\n"
+            "- عند وجود نص فرنسي وعربي، يعتمد النص الرسمي المنشور بالرائد الرسمي مع التثبت من الصياغة الأصلية.",
+            f"## المصادر المستعملة\n{source_lines}",
+        ])
+    else:
+        answer = "\n\n".join([
+            "## Reponse\n"
+            "La loi de finances pour 2026 est le texte legislatif annuel qui fixe les dispositions budgetaires et les mesures fiscales applicables a l'annee concernee. "
+            "Pour une analyse de cabinet, elle doit etre lue avec les codes qu'elle modifie: IRPP/IS, TVA, procedures fiscales, enregistrement et timbre, fiscalite locale ou textes sectoriels selon le sujet.\n\n"
+            "Il faut identifier l'article concerne, sa date d'application, les contribuables vises, l'effet sur le calcul, la declaration ou le paiement, puis verifier les textes d'application et notes administratives publies ensuite. "
+            "Aucun taux, seuil ou delai ne doit etre affirme sans passage cible.",
+            "## Points de vigilance\n"
+            "- Une loi de finances peut modifier un code fiscal sans remplacer tout le code.\n"
+            "- Les mesures fiscales doivent etre rattachees au texte de base modifie.\n"
+            "- Les formulaires et notes administratives servent a l'application pratique, mais ne remplacent pas le texte legislatif.",
+            f"## Sources utilisees\n{source_lines}",
+        ])
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "legal_basis",
+        "preferred_source": "legal_corpus",
+        "response_style": "practical_analysis",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/loi-finances-overview-fastpath",
         "fallback_mode": False,
         "legal_domain": legal_domain,
         "question": message,
@@ -4379,6 +4463,41 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
             selected_sources=loi_finances_tva_fastpath.get("sources") or [],
             fallback_used=False,
             generator_path=loi_finances_tva_fastpath.get("model"),
+        )
+    loi_finances_overview_fastpath = fastpath_loi_finances_overview_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if loi_finances_overview_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": loi_finances_overview_fastpath.get("intent"),
+                "legal_domain": legal_domain,
+                "preferred_source": loi_finances_overview_fastpath.get("preferred_source"),
+                "response_style": loi_finances_overview_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(loi_finances_overview_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": loi_finances_overview_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            loi_finances_overview_fastpath,
+            request,
+            workflow="fastpath_loi_finances_overview",
+            case_analysis_enabled=False,
+            retrieval_domains=["fiscalite"],
+            selected_sources=loi_finances_overview_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=loi_finances_overview_fastpath.get("model"),
         )
     legal_hierarchy_fastpath = fastpath_legal_hierarchy_answer(
         message=message,
