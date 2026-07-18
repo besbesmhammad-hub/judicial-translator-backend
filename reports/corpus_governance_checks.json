@@ -1,0 +1,255 @@
+{
+  "passed": 31,
+  "total": 31,
+  "failures": [],
+  "results": [
+    {
+      "id": "cdpf_explicit_2026",
+      "query": "Selon le Code des droits et procedures fiscaux edition 2026, quel est le cadre general du controle fiscal ?",
+      "expected_doc_id": "procedures_fiscales_2026",
+      "actual_doc_id": "procedures_fiscales_2026",
+      "passed": true,
+      "note": "Explicit code edition must select the requested year."
+    },
+    {
+      "id": "cdpf_explicit_2025",
+      "query": "Selon le Code des droits et procedures fiscaux edition 2025, quel est le cadre general du controle fiscal ?",
+      "expected_doc_id": "procedures_fiscales_2025",
+      "actual_doc_id": "procedures_fiscales_2025",
+      "passed": true,
+      "note": "Explicit code edition must select the requested year."
+    },
+    {
+      "id": "cdpf_explicit_2024",
+      "query": "Selon le Code des droits et procedures fiscaux edition 2024, quel est le cadre general du controle fiscal ?",
+      "expected_doc_id": "procedures_fiscales_2024",
+      "actual_doc_id": "procedures_fiscales_2024",
+      "passed": true,
+      "note": "Explicit code edition must select the requested year."
+    },
+    {
+      "id": "cdpf_explicit_2023",
+      "query": "Selon le Code des droits et procedures fiscaux edition 2023, quel est le cadre general du controle fiscal ?",
+      "expected_doc_id": "procedures_fiscales_2023",
+      "actual_doc_id": "procedures_fiscales_2023",
+      "passed": true,
+      "note": "Explicit code edition must select the requested year."
+    },
+    {
+      "id": "cdpf_transaction_date_current_default",
+      "query": "Une verification fiscale porte sur une operation de 2023. Quels risques de procedure examiner ?",
+      "expected_doc_id": "procedures_fiscales_2026",
+      "actual_doc_id": "procedures_fiscales_2026",
+      "passed": true,
+      "note": "Transaction year alone must not downgrade the default source."
+    },
+    {
+      "id": "tva_explicit_2026",
+      "query": "Selon le Code TVA edition 2026, presente les obligations de facturation.",
+      "expected_doc_id": "tva_droit_consommation",
+      "actual_doc_id": "tva_droit_consommation",
+      "passed": true,
+      "note": "Explicit TVA edition must select the requested year."
+    },
+    {
+      "id": "tva_explicit_2025",
+      "query": "Selon le Code TVA edition 2025, presente les obligations de facturation.",
+      "expected_doc_id": "tva_droit_consommation_2025",
+      "actual_doc_id": "tva_droit_consommation_2025",
+      "passed": true,
+      "note": "Explicit TVA edition must select the requested year."
+    },
+    {
+      "id": "tva_explicit_2023",
+      "query": "Selon le Code TVA edition 2023, presente les obligations de facturation.",
+      "expected_doc_id": "tva_droit_consommation_2023",
+      "actual_doc_id": "tva_droit_consommation_2023",
+      "passed": true,
+      "note": "Explicit TVA edition must select the requested year."
+    },
+    {
+      "id": "tva_explicit_2021",
+      "query": "Selon le Code TVA edition 2021, presente les obligations de facturation.",
+      "expected_doc_id": "tva_droit_consommation_2021",
+      "actual_doc_id": "tva_droit_consommation_2021",
+      "passed": true,
+      "note": "Explicit TVA edition must select the requested year."
+    },
+    {
+      "id": "tva_explicit_2019",
+      "query": "Selon le Code TVA edition 2019, presente les obligations de facturation.",
+      "expected_doc_id": "tva_droit_consommation_2019",
+      "actual_doc_id": "tva_droit_consommation_2019",
+      "passed": true,
+      "note": "Explicit TVA edition must select the requested year."
+    },
+    {
+      "id": "tva_transaction_date_current_default",
+      "query": "Une facture de prestation date de 2021. Quel traitement TVA examiner ?",
+      "expected_doc_id": "tva_droit_consommation",
+      "actual_doc_id": "tva_droit_consommation",
+      "passed": true,
+      "note": "Transaction year alone must not select an old TVA code."
+    },
+    {
+      "id": "enregistrement_timbre_explicit_2026",
+      "query": "Selon le Code des droits d enregistrement et de timbre edition 2026, quel est le cadre applicable ?",
+      "expected_doc_id": "enregistrement_timbre",
+      "actual_doc_id": "enregistrement_timbre",
+      "passed": true,
+      "note": "Explicit enregistrement/timbre edition must select the requested year."
+    },
+    {
+      "id": "enregistrement_timbre_explicit_2025",
+      "query": "Selon le Code des droits d enregistrement et de timbre edition 2025, quel est le cadre applicable ?",
+      "expected_doc_id": "enregistrement_timbre_2025",
+      "actual_doc_id": "enregistrement_timbre_2025",
+      "passed": true,
+      "note": "Explicit enregistrement/timbre edition must select the requested year."
+    },
+    {
+      "id": "enregistrement_timbre_explicit_2022",
+      "query": "Selon le Code des droits d enregistrement et de timbre edition 2022, quel est le cadre applicable ?",
+      "expected_doc_id": "enregistrement_timbre_2022",
+      "actual_doc_id": "enregistrement_timbre_2022",
+      "passed": true,
+      "note": "Explicit enregistrement/timbre edition must select the requested year."
+    },
+    {
+      "id": "enregistrement_timbre_explicit_2020",
+      "query": "Selon le Code des droits d enregistrement et de timbre edition 2020, quel est le cadre applicable ?",
+      "expected_doc_id": "enregistrement_timbre_2020",
+      "actual_doc_id": "enregistrement_timbre_2020",
+      "passed": true,
+      "note": "Explicit enregistrement/timbre edition must select the requested year."
+    },
+    {
+      "id": "enregistrement_timbre_explicit_2018",
+      "query": "Selon le Code des droits d enregistrement et de timbre edition 2018, quel est le cadre applicable ?",
+      "expected_doc_id": "enregistrement_timbre_2018",
+      "actual_doc_id": "enregistrement_timbre_2018",
+      "passed": true,
+      "note": "Explicit enregistrement/timbre edition must select the requested year."
+    },
+    {
+      "id": "enregistrement_transaction_date_current_default",
+      "query": "Un acte signe en 2020 doit etre analyse. Quels droits d enregistrement verifier ?",
+      "expected_doc_id": "enregistrement_timbre",
+      "actual_doc_id": "enregistrement_timbre",
+      "passed": true,
+      "note": "Transaction year alone must not select an old registration code."
+    },
+    {
+      "id": "fiscalite_locale_explicit_2026",
+      "query": "Selon le Code de la fiscalite locale edition 2026, presente les taxes locales.",
+      "expected_doc_id": "fiscalite_locale_2026",
+      "actual_doc_id": "fiscalite_locale_2026",
+      "passed": true,
+      "note": "Explicit local-tax edition must select the requested year."
+    },
+    {
+      "id": "fiscalite_locale_explicit_2025",
+      "query": "Selon le Code de la fiscalite locale edition 2025, presente les taxes locales.",
+      "expected_doc_id": "fiscalite_locale_2025",
+      "actual_doc_id": "fiscalite_locale_2025",
+      "passed": true,
+      "note": "Explicit local-tax edition must select the requested year."
+    },
+    {
+      "id": "fiscalite_locale_explicit_2023",
+      "query": "Selon le Code de la fiscalite locale edition 2023, presente les taxes locales.",
+      "expected_doc_id": "fiscalite_locale_2023",
+      "actual_doc_id": "fiscalite_locale_2023",
+      "passed": true,
+      "note": "Explicit local-tax edition must select the requested year."
+    },
+    {
+      "id": "fiscalite_locale_explicit_2020",
+      "query": "Selon le Code de la fiscalite locale edition 2020, presente les taxes locales.",
+      "expected_doc_id": "fiscalite_locale_2020",
+      "actual_doc_id": "fiscalite_locale_2020",
+      "passed": true,
+      "note": "Explicit local-tax edition must select the requested year."
+    },
+    {
+      "id": "fiscalite_locale_explicit_2018",
+      "query": "Selon le Code de la fiscalite locale edition 2018, presente les taxes locales.",
+      "expected_doc_id": "fiscalite_locale_2018",
+      "actual_doc_id": "fiscalite_locale_2018",
+      "passed": true,
+      "note": "Explicit local-tax edition must select the requested year."
+    },
+    {
+      "id": "fiscalite_locale_transaction_date_current_default",
+      "query": "Une taxe locale due au titre de 2020 est contestee. Quel cadre verifier ?",
+      "expected_doc_id": "fiscalite_locale_2026",
+      "actual_doc_id": "fiscalite_locale_2026",
+      "passed": true,
+      "note": "Transaction year alone must not select an old local-tax code."
+    },
+    {
+      "id": "irpp_is_explicit_2025",
+      "query": "Selon le Code IRPP IS edition 2025, presente le cadre general.",
+      "expected_doc_id": "code_irpp_is_2025",
+      "actual_doc_id": "code_irpp_is_2025",
+      "passed": true,
+      "note": "Explicit IRPP/IS edition must select the requested year."
+    },
+    {
+      "id": "irpp_is_explicit_2023",
+      "query": "Selon le Code IRPP IS edition 2023, presente le cadre general.",
+      "expected_doc_id": "code_irpp_is_2023",
+      "actual_doc_id": "code_irpp_is_2023",
+      "passed": true,
+      "note": "Explicit IRPP/IS edition must select the requested year."
+    },
+    {
+      "id": "irpp_is_explicit_2022",
+      "query": "Selon le Code IRPP IS edition 2022, presente le cadre general.",
+      "expected_doc_id": "code_irpp_is_2022",
+      "actual_doc_id": "code_irpp_is_2022",
+      "passed": true,
+      "note": "Explicit IRPP/IS edition must select the requested year."
+    },
+    {
+      "id": "irpp_is_explicit_2021",
+      "query": "Selon le Code IRPP IS edition 2021, presente le cadre general.",
+      "expected_doc_id": "code_irpp_is_2021",
+      "actual_doc_id": "code_irpp_is_2021",
+      "passed": true,
+      "note": "Explicit IRPP/IS edition must select the requested year."
+    },
+    {
+      "id": "irpp_is_explicit_2020",
+      "query": "Selon le Code IRPP IS edition 2020, presente le cadre general.",
+      "expected_doc_id": "code_irpp_is_2020",
+      "actual_doc_id": "code_irpp_is_2020",
+      "passed": true,
+      "note": "Explicit IRPP/IS edition must select the requested year."
+    },
+    {
+      "id": "irpp_is_explicit_2019",
+      "query": "Selon le Code IRPP IS edition 2019, presente le cadre general.",
+      "expected_doc_id": "code_irpp_is_2019",
+      "actual_doc_id": "code_irpp_is_2019",
+      "passed": true,
+      "note": "Explicit IRPP/IS edition must select the requested year."
+    },
+    {
+      "id": "irpp_is_explicit_2011",
+      "query": "Selon le Code IRPP IS edition 2011, presente le cadre general.",
+      "expected_doc_id": "code_irpp_is_2011",
+      "actual_doc_id": "code_irpp_is_2011",
+      "passed": true,
+      "note": "Explicit IRPP/IS edition must select the requested year."
+    },
+    {
+      "id": "irpp_is_dividend_2025_current_default",
+      "query": "Une SARL distribue des dividendes en 2025. Quelles consequences fiscales examiner ?",
+      "expected_doc_id": "code_irpp_is_2025",
+      "actual_doc_id": "code_irpp_is_2025",
+      "passed": true,
+      "note": "Current cabinet question must use the latest available IRPP/IS source, not the old 2011 edition."
+    }
+  ]
+}

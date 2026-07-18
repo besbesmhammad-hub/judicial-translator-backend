@@ -75,6 +75,25 @@ def selected_source_headings(debug_trace: dict) -> list[str]:
     ]
 
 
+IRPP_IS_DOC_IDS = {
+    "code_irpp_is_2025",
+    "code_irpp_is_2023",
+    "code_irpp_is_2022",
+    "code_irpp_is_2021",
+    "code_irpp_is_2020",
+    "code_irpp_is_2019",
+    "code_irpp_is_2011",
+}
+
+
+def has_irpp_is_source(docs: list[str]) -> bool:
+    return any(doc in IRPP_IS_DOC_IDS for doc in docs)
+
+
+def is_irpp_is_source(doc_id: str | None) -> bool:
+    return bool(doc_id in IRPP_IS_DOC_IDS)
+
+
 def contains_any(normalized_answer: str, phrases: list[str]) -> bool:
     return any(normalize_for_match(phrase) in normalized_answer for phrase in phrases)
 
@@ -95,7 +114,10 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
     checks["not_generic_fallback"] = not contains_any(normalized, generic_forbidden)
     checks["no_guardrail_block"] = not bool(debug_trace.get("guardrail_blocked"))
     for doc_id in case.get("expected_selected_doc_ids", []):
-        checks[f"expected_doc_{doc_id}"] = doc_id in docs
+        if doc_id == "code_irpp_is_2011":
+            checks["expected_doc_irpp_is_family"] = has_irpp_is_source(docs)
+        else:
+            checks[f"expected_doc_{doc_id}"] = doc_id in docs
     for doc_id in case.get("forbidden_selected_doc_ids", []):
         checks[f"forbidden_doc_{doc_id}"] = doc_id not in docs
     for phrase in case.get("expected_missing_info_contains", []):
@@ -106,13 +128,13 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["dividends_mentions_withholding"] = contains_any(normalized, ["retenue a la source", "retenue operee"])
         checks["dividends_mentions_declaration"] = contains_any(normalized, ["obligations declaratives", "declaration", "reversement"])
         checks["dividends_mentions_beneficiary_status"] = contains_any(normalized, ["associe resident", "personne physique", "non-resident", "non resident"])
-        checks["dividends_uses_tax_sources"] = "code_irpp_is_2011" in docs and "loi_finances_2026" in docs
+        checks["dividends_uses_tax_sources"] = has_irpp_is_source(docs) and "loi_finances_2026" in docs
         if "non resident" in question:
             checks["nonresident_mentions_treaty"] = contains_any(normalized, ["convention fiscale", "beneficiaire etranger"])
 
     if ("tva" in case_id and ("france" in case_id or "client" in case_id)) or ("prestation" in question and "france" in question):
         checks["tva_uses_tva_source"] = "tva_droit_consommation" in docs
-        checks["tva_not_irpp_primary"] = not docs or docs[0] != "code_irpp_is_2011"
+        checks["tva_not_irpp_primary"] = not docs or not is_irpp_is_source(docs[0])
         checks["tva_mentions_territoriality"] = contains_any(normalized, ["territorialite", "client etranger", "etabli hors de tunisie"])
         checks["tva_no_placeholder"] = not contains_any(normalized, ["article [x]", "article x", "reference implicite", "source implicite"])
         if "non assujetti" in question:
@@ -145,7 +167,7 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["receivable_distinguishes_accounting_tax"] = contains_any(normalized, ["distinguer la constatation comptable", "deductibilite fiscale", "traitement comptable"])
         checks["receivable_mentions_individualized"] = contains_any(normalized, ["creance est individualisee", "client par client", "chaque creance"])
         checks["receivable_mentions_evidence"] = contains_any(normalized, ["justificatifs suffisants", "relances", "recouvrement", "balance agee"])
-        checks["receivable_uses_accounting_and_tax_sources"] = ("code_irpp_is_2011" in docs and any(doc.startswith(("nc_", "ias_")) for doc in docs))
+        checks["receivable_uses_accounting_and_tax_sources"] = (has_irpp_is_source(docs) and any(doc.startswith(("nc_", "ias_")) for doc in docs))
 
     is_cross_border_level3 = "cross_border" in case_id or ("120 000" in question and "france" in question and "consultant" in question)
 
@@ -162,7 +184,7 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["level3_mentions_supporting_docs"] = contains_any(normalized, ["justificatifs", "preuves", "contrat"])
         checks["level3_mentions_missing_facts"] = contains_any(normalized, ["informations manquantes", "statut tva du client", "ventilation du prix"])
         checks["level3_uses_tva_source"] = "tva_droit_consommation" in docs
-        checks["level3_uses_irpp_source"] = "code_irpp_is_2011" in docs
+        checks["level3_uses_irpp_source"] = has_irpp_is_source(docs)
         has_treaty_source = any(
             doc.startswith("convention_fiscale") or doc.startswith("boi_")
             for doc in docs
@@ -256,6 +278,15 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
         ["passage cible", "source-cadre", "source manquante", "article precis a verifier", "niveau d'appui", "limite:"],
     )
     for doc_id in case.get("expected_direct_or_framework_doc_ids", []):
+        if doc_id == "code_irpp_is_2011":
+            matching = [
+                source
+                for source in (debug_trace.get("selected_sources") or [])
+                if is_irpp_is_source(source.get("doc_id"))
+                and source.get("support_level") in {"direct_passage", "framework_source"}
+            ]
+            checks["irpp_is_family_direct_or_framework"] = bool(matching)
+            continue
         matching = [
             source
             for source in (debug_trace.get("selected_sources") or [])
@@ -271,15 +302,15 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
 
     if "creance" in case_id or "creances" in case_id or "creance douteuse" in question or "creances douteuses" in question:
         checks["receivable_has_direct_passage"] = "direct_passage" in supports
-        checks["receivable_has_tax_doc"] = "code_irpp_is_2011" in docs
+        checks["receivable_has_tax_doc"] = has_irpp_is_source(docs)
 
     if ("tva" in case_id and ("france" in case_id or "client" in case_id)) or ("prestation" in question and "france" in question):
         checks["tva_has_tva_doc"] = "tva_droit_consommation" in docs
-        checks["tva_no_irpp_primary"] = not docs or docs[0] != "code_irpp_is_2011"
+        checks["tva_no_irpp_primary"] = not docs or not is_irpp_is_source(docs[0])
         checks["tva_support_is_not_unclassified"] = any(level in {"direct_passage", "framework_source"} for level in supports)
 
     if "dividende" in case_id or "dividende" in question:
-        checks["dividends_uses_tax_framework"] = "code_irpp_is_2011" in docs and "loi_finances_2026" in docs
+        checks["dividends_uses_tax_framework"] = has_irpp_is_source(docs) and "loi_finances_2026" in docs
         checks["dividends_no_fake_article_precision"] = not contains_any(
             normalized,
             ["article [x]", "source implicite", "reference implicite"],
@@ -316,7 +347,7 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
 
     if "consulting_cash" in case_id:
         checks["consulting_no_ias7_source"] = "ias_7_tableau_flux_tresorerie" not in docs
-        checks["consulting_has_tax_or_accounting_source"] = "code_irpp_is_2011" in docs or "loi_comptable" in docs
+        checks["consulting_has_tax_or_accounting_source"] = has_irpp_is_source(docs) or "loi_comptable" in docs
 
     return {
         "checks": checks,
