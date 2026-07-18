@@ -13,6 +13,7 @@ STOPWORDS = {
 }
 SOURCE_TIER_WEIGHTS = {
     "primary_law": 1.12,
+    "primary_law_historical": 1.02,
     "implementing_regulation": 1.02,
     "accounting_standard": 1.08,
     "professional_text_collection": 0.93,
@@ -145,6 +146,11 @@ def record_matches_domain(record: dict, route: str) -> bool:
         return (
             doc_id in {
                 "code_irpp_is_2011",
+                "code_irpp_is_2023",
+                "code_irpp_is_2022",
+                "code_irpp_is_2021",
+                "code_irpp_is_2020",
+                "code_irpp_is_2019",
                 "code_comptabilite_publique",
                 "tva_droit_consommation",
                 "tva_droit_consommation_2025",
@@ -322,6 +328,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
     query_text = query.lower()
     domain_boosts = {
         "code_irpp_is_2011": r"\birpp\b|\bis\b|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés|benefice imposable|bénéfice imposable|retenue a la source|retenue à la source|plus-value|plus value",
+        "code_irpp_is_2023": r"(code|edition|mis a jour|selon le code).{0,80}(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2023|(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2023.{0,80}(code|edition|mis a jour|selon le code)",
+        "code_irpp_is_2022": r"(code|edition|mis a jour|selon le code).{0,80}(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2022|(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2022.{0,80}(code|edition|mis a jour|selon le code)",
+        "code_irpp_is_2021": r"(code|edition|mis a jour|selon le code).{0,80}(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2021|(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2021.{0,80}(code|edition|mis a jour|selon le code)",
+        "code_irpp_is_2020": r"(code|edition|mis a jour|selon le code).{0,80}(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2020|(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2020.{0,80}(code|edition|mis a jour|selon le code)",
+        "code_irpp_is_2019": r"(code|edition|mis a jour|selon le code).{0,80}(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2019|(irpp|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés).{0,80}2019.{0,80}(code|edition|mis a jour|selon le code)",
         "code_comptabilite_publique": r"comptabilite publique|code de la comptabilite publique|ordonnateur|comptable public|tresor public|recouvrement public",
         "tva_droit_consommation": r"\btva\b|taxe sur la valeur ajout|valeur ajoutee|droit de consommation|assujetti|deduction|deductions|exoner|restitution de la taxe",
         "tva_droit_consommation_2025": r"tva 2025|taxe sur la valeur ajoutee 2025|code de la taxe sur la valeur ajoutee 2025|mis a jour au 1er janvier 2025",
@@ -686,6 +697,23 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
             if score == 0:
                 score = 1.0
             score *= 2.8
+
+        asks_for_irpp_edition = bool(re.search(r"\bcode\b|edition|mis a jour|selon le code", query_text, re.I)) and bool(
+            re.search(r"\birpp\b|\bis\b|impot sur le revenu|impôt sur le revenu|impot sur les societes|impôt sur les sociétés", query_text, re.I)
+        )
+        if asks_for_irpp_edition:
+            historical_irpp_doc = {
+                "2023": "code_irpp_is_2023",
+                "2022": "code_irpp_is_2022",
+                "2021": "code_irpp_is_2021",
+                "2020": "code_irpp_is_2020",
+                "2019": "code_irpp_is_2019",
+            }
+            for year, historical_doc_id in historical_irpp_doc.items():
+                if year in query_text and record.get("doc_id") == historical_doc_id:
+                    score = (score * 5.8) + 34.0
+                elif year in query_text and record.get("doc_id") == "code_irpp_is_2011":
+                    score *= 0.55
 
         if record.get("source_tier") == "institutional_report" and not re.search(
             r"rapport moral|rapport d'activite|conseil national|ordre des experts|compagnie des comptables|cct",
@@ -1563,6 +1591,11 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         ):
             if record.get("doc_id") in {
                 "code_irpp_is_2011",
+                "code_irpp_is_2023",
+                "code_irpp_is_2022",
+                "code_irpp_is_2021",
+                "code_irpp_is_2020",
+                "code_irpp_is_2019",
                 "code_comptabilite_publique",
                 "tva_droit_consommation",
                 "tva_droit_consommation_2025",
