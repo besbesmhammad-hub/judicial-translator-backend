@@ -133,6 +133,27 @@ CANONICAL_FISCAL_SOURCE_METADATA = {
         "authority": "Ministere des Finances / legislation fiscale tunisienne",
         "year": 2026,
     },
+    "tva_droit_consommation_2023": {
+        "title": "Code TVA et droit de consommation 2023",
+        "filename": "Code-de-la-taxe-sur-la-valeur-ajoutee-2023_compressed.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2023,
+    },
+    "tva_droit_consommation_2021": {
+        "title": "Code TVA et droit de consommation 2021",
+        "filename": "Code-de-la-Taxe-sur-la-Valeur-Ajoutee-2021.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2021,
+    },
+    "tva_droit_consommation_2019": {
+        "title": "Code TVA et droit de consommation 2019",
+        "filename": "Code-de-la-Taxe-sur-la-Valeur-Ajoutee-2019.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2019,
+    },
     "procedures_fiscales_2026": {
         "title": "Code des droits et procedures fiscaux 2026",
         "filename": "مجلة-الحقوق-والإجراءات-الجبائية-2026.pdf",
@@ -146,6 +167,34 @@ CANONICAL_FISCAL_SOURCE_METADATA = {
         "page": 1,
         "authority": "Ministere des Finances / legislation fiscale tunisienne",
         "year": 2026,
+    },
+    "enregistrement_timbre_2025": {
+        "title": "Code des droits d enregistrement et du timbre 2025",
+        "filename": "Code-des-Droits-dEnregistrement-et-de-Timbre-2025.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2025,
+    },
+    "enregistrement_timbre_2022": {
+        "title": "Code des droits d enregistrement et du timbre 2022",
+        "filename": "CODE-DES-DROITS-DENREGISTREMENT-ET-DE-TIMBRE-2022.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2022,
+    },
+    "enregistrement_timbre_2020": {
+        "title": "Code des droits d enregistrement et du timbre 2020",
+        "filename": "Code-des-droits-denregistrement-et-de-timbre-2020.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2020,
+    },
+    "enregistrement_timbre_2018": {
+        "title": "Code des droits d enregistrement et du timbre 2018",
+        "filename": "Code-des-Droits-dEnregistrement-et-de-Timbre-2018-.pdf",
+        "page": 1,
+        "authority": "Ministere des Finances / legislation fiscale tunisienne",
+        "year": 2018,
     },
     "fiscalite_locale": {
         "title": "Code de la fiscalite locale 2017",
@@ -1225,6 +1274,18 @@ def tva_doc_id_for_query(query: str) -> str:
     return "tva_droit_consommation"
 
 
+def enregistrement_timbre_doc_id_for_query(query: str) -> str:
+    if "2025" in query:
+        return "enregistrement_timbre_2025"
+    if "2022" in query:
+        return "enregistrement_timbre_2022"
+    if "2020" in query:
+        return "enregistrement_timbre_2020"
+    if "2018" in query:
+        return "enregistrement_timbre_2018"
+    return "enregistrement_timbre"
+
+
 def tax_procedure_precision_rules(query: str) -> list[dict]:
     rules: list[dict] = []
     if (
@@ -1734,6 +1795,65 @@ def fastpath_tva_overview_answer(
         "model": "internal/tva-overview-fastpath",
         "fallback_mode": False,
         "legal_domain": legal_domain,
+        "question": message,
+    }
+
+
+def fastpath_enregistrement_timbre_answer(message: str, legal_domain: str) -> dict | None:
+    query = match_key(message)
+    if legal_domain not in {"fiscalite", "general"}:
+        return None
+    if not re.search(
+        r"enregistrement|timbre|droits d.enregistrement|code des droits d.enregistrement|acte de vente|bail|mutation",
+        query,
+        re.I,
+    ):
+        return None
+
+    doc_id = enregistrement_timbre_doc_id_for_query(query)
+    sources = legal_sources_by_doc_ids([doc_id, "procedures_fiscales_2026", "loi_finances_2026"])
+    if not sources:
+        return None
+
+    source_lines = summarize_source_titles(sources, limit=3)
+    year_label = str(CANONICAL_FISCAL_SOURCE_METADATA.get(doc_id, {}).get("year") or "").strip()
+    edition = f" edition {year_label}" if year_label else ""
+    answer = "\n\n".join([
+        "## Reponse\n"
+        f"Pour les droits d'enregistrement et de timbre{edition}, le raisonnement doit partir du "
+        "**Code des droits d'enregistrement et de timbre** applicable a la date de l'acte ou de la formalite. "
+        "Ce code sert a qualifier l'acte, identifier la formalite d'enregistrement ou de timbre, verifier "
+        "l'assiette taxable, les parties concernees, les exonérations ou regimes particuliers et les pieces a conserver.\n\n"
+        "Pour un dossier concret, le cabinet doit eviter de conclure directement a un droit, un taux ou un delai sans "
+        "le passage applicable. Il faut d'abord verifier :\n"
+        "- la nature exacte de l'acte: vente, bail, cession, mutation, donation, convention ou autre formalite ;\n"
+        "- la date de l'acte et la version du code applicable ;\n"
+        "- la base de calcul, le prix ou la valeur retenue ;\n"
+        "- les parties et leur qualite fiscale ;\n"
+        "- les exemptions, reductions ou regimes speciaux eventuels ;\n"
+        "- les justificatifs: acte, annexes, preuves de paiement, attestations et references d'enregistrement.",
+        "## Points de vigilance\n"
+        "Les lois de finances peuvent modifier certaines dispositions. Si la question vise une annee historique, "
+        "la reponse doit rester rattachee a cette edition; si elle vise une situation actuelle, il faut privilegier "
+        "la version la plus recente indexee.",
+        "## Sources utilisees\n"
+        f"{source_lines}",
+    ])
+
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "legal_basis",
+        "preferred_source": "legal_corpus",
+        "response_style": "practical_analysis",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/enregistrement-timbre-fastpath",
+        "fallback_mode": False,
+        "legal_domain": "fiscalite",
         "question": message,
     }
 
@@ -4072,6 +4192,41 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
             selected_sources=fiscal_code_comparison_fastpath.get("sources") or [],
             fallback_used=False,
             generator_path=fiscal_code_comparison_fastpath.get("model"),
+        )
+    enregistrement_timbre_fastpath = fastpath_enregistrement_timbre_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if enregistrement_timbre_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": enregistrement_timbre_fastpath.get("intent"),
+                "legal_domain": enregistrement_timbre_fastpath.get("legal_domain"),
+                "preferred_source": enregistrement_timbre_fastpath.get("preferred_source"),
+                "response_style": enregistrement_timbre_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(enregistrement_timbre_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": enregistrement_timbre_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            enregistrement_timbre_fastpath,
+            request,
+            workflow="fastpath_enregistrement_timbre",
+            case_analysis_enabled=False,
+            retrieval_domains=["fiscalite"],
+            selected_sources=enregistrement_timbre_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=enregistrement_timbre_fastpath.get("model"),
         )
     fiscal_framework_fastpath = fastpath_general_fiscal_framework_answer(
         message=message,
