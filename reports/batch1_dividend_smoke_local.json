@@ -1,0 +1,153 @@
+[
+  {
+    "id": "tax_dividendes_2026",
+    "question": "Une SARL tunisienne distribue des dividendes en 2026. Quelles retenues a la source faut il verifier avant paiement ?",
+    "commit_hash": null,
+    "workflow": "shareholder_split_tax_analysis",
+    "fallback_used": false,
+    "generator_path": "internal/case-analysis-playbook",
+    "selected_sources": [
+      {
+        "doc_id": "code_irpp_is_2025",
+        "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+        "page": 85,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "c bis",
+          "revenus distribues",
+          "10%"
+        ],
+        "excerpt_preview": "109\ncarte d’identification fiscale prouvant la soumission du bénéficiaire des \nhonoraires à l’impôt selon le régime réel. (Modifié Art 88-2 LF 2013-54 du \n30/12/2013)\n- (Abrogé Art 37-5 LF 2018-56 du 27/12/2018) [...]",
+        "score": 32.802
+      },
+      {
+        "doc_id": "loi_finances_2026",
+        "title": "Loi de finances pour 2026",
+        "page": 5,
+        "heading": "من الفقرةI",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "2026"
+        ],
+        "excerpt_preview": "عــدد148\n\nالرائ د الرسمي للجمهورية التونسية––\n\n12\n ديسمبر \n2025\n\nصفحـة4235\nترصد لفائدة حساب تنويع مصادر الضمان اﻻجتماعي:\n- \n نسبة50\n%\n\nمن معلوم الترسيم العقاري\nالمستوجب على هبات العقارات بين اﻷصول والفروع وبين اﻷزواج \n والمنصوص عليه بالفقرة\nالثانية من \n الفصل26\n\nمن القانون عدد88 [...]",
+        "score": 13
+      },
+      {
+        "doc_id": "procedures_fiscales_2026",
+        "title": "Code des droits et procédures fiscaux, édition 2026",
+        "page": 1,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [],
+        "excerpt_preview": "",
+        "score": 999.0
+      }
+    ],
+    "answer": "## Reponse\nPour cette distribution de dividendes, il faut traiter le paiement comme un dossier fiscal de revenus distribues. Faits transmis: Une SARL tunisienne distribue des dividendes en 2026. Quelles retenues a la source faut il verifier avant paiement ?. Avant paiement, le cabinet doit verifier la qualite exacte de l'associe ou de l'actionnaire, la retenue a la source eventuellement applicable, la declaration et le reversement, ainsi que le certificat ou la preuve de retenue remis au beneficiaire.\n\n## Application pratique\n- Beneficiaire: identifier s'il s'agit d'une personne physique residente, d'une personne morale residente ou d'un non-resident, car le traitement peut differer.\n- Droit interne: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues et la retenue a la source applicable a la date du paiement.\n- Lois de finances: verifier les modifications applicables a l'exercice ou a l'annee de distribution avant de retenir un taux ou une modalite definitive.\n- Declaration et reversement: preparer le montant brut, la retenue operee le cas echeant, le montant net, la declaration correspondante, la preuve de reversement et le certificat de retenue.\n- Pieces societaires: conserver decision de distribution, PV, comptes approuves, origine des reserves ou benefices distribues, identite fiscale du beneficiaire et preuve de paiement.\n- Informations manquantes: profil du beneficiaire, residence fiscale, date de paiement, article/taux direct, regime particulier et traitement conventionnel si le beneficiaire est non-resident.\n\n## Points de vigilance\n- Ne pas affirmer un taux ou un article tant que le passage direct sur les dividendes n'est pas confirme.\n- Ne pas confondre regularite societaire de la distribution et traitement fiscal du paiement.\n- Si le beneficiaire est non-resident, ajouter l'analyse de la convention fiscale et du certificat de residence.\n\n## Sources utilisees\n- Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025, page 85 - passage cible\n- Loi de finances pour 2026, page 5 - من الفقرةI - source-cadre, article precis a verifier\n- Code des droits et procédures fiscaux, édition 2026, page 1 - source-cadre, article precis a verifier\n- Niveau d'appui: au moins un passage cible a ete retrouve dans le corpus.\n- Limite: certaines conclusions restent a rattacher a l'article exact avant usage client."
+  },
+  {
+    "id": "level2_dividendes_associe_resident_prudent",
+    "question": "Une SARL tunisienne distribue 250 000 TND de dividendes en 2026 a un associe resident. Quelles sont les consequences fiscales ? Citez les bases legales.",
+    "commit_hash": null,
+    "workflow": "shareholder_split_tax_analysis",
+    "fallback_used": false,
+    "generator_path": "internal/case-analysis-playbook",
+    "selected_sources": [
+      {
+        "doc_id": "code_irpp_is_2025",
+        "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+        "page": 85,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "c bis",
+          "revenus distribues",
+          "10%"
+        ],
+        "excerpt_preview": "109\ncarte d’identification fiscale prouvant la soumission du bénéficiaire des \nhonoraires à l’impôt selon le régime réel. (Modifié Art 88-2 LF 2013-54 du \n30/12/2013)\n- (Abrogé Art 37-5 LF 2018-56 du 27/12/2018) [...]",
+        "score": 32.802
+      },
+      {
+        "doc_id": "loi_finances_2026",
+        "title": "Loi de finances pour 2026",
+        "page": 5,
+        "heading": "من الفقرةI",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "2026"
+        ],
+        "excerpt_preview": "عــدد148\n\nالرائ د الرسمي للجمهورية التونسية––\n\n12\n ديسمبر \n2025\n\nصفحـة4235\nترصد لفائدة حساب تنويع مصادر الضمان اﻻجتماعي:\n- \n نسبة50\n%\n\nمن معلوم الترسيم العقاري\nالمستوجب على هبات العقارات بين اﻷصول والفروع وبين اﻷزواج \n والمنصوص عليه بالفقرة\nالثانية من \n الفصل26\n\nمن القانون عدد88 [...]",
+        "score": 13
+      },
+      {
+        "doc_id": "procedures_fiscales_2026",
+        "title": "Code des droits et procédures fiscaux, édition 2026",
+        "page": 1,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [],
+        "excerpt_preview": "",
+        "score": 999.0
+      }
+    ],
+    "answer": "## Reponse\nPour cette distribution de dividendes, il faut traiter le paiement comme un dossier fiscal de revenus distribues. Faits transmis: Une SARL tunisienne distribue 250 000 TND de dividendes en 2026 a un associe resident. Quelles sont les consequences fiscales ? Citez les bases legales.. Avant paiement, le cabinet doit verifier la qualite exacte de l'associe ou de l'actionnaire, la retenue a la source eventuellement applicable, la declaration et le reversement, ainsi que le certificat ou la preuve de retenue remis au beneficiaire.\n\n## Application pratique\n- Beneficiaire: le dossier indique un associe resident; il faut encore preciser s'il s'agit d'une personne physique ou d'une personne morale, car le traitement peut differer.\n- Droit interne: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues et la retenue a la source applicable a la date du paiement.\n- Lois de finances: verifier les modifications applicables a l'exercice ou a l'annee de distribution avant de retenir un taux ou une modalite definitive.\n- Declaration et reversement: preparer le montant brut, la retenue operee le cas echeant, le montant net, la declaration correspondante, la preuve de reversement et le certificat de retenue.\n- Pieces societaires: conserver decision de distribution, PV, comptes approuves, origine des reserves ou benefices distribues, identite fiscale du beneficiaire et preuve de paiement.\n- Informations manquantes: qualite personne physique ou morale de l'associe resident, date de paiement, article/taux direct, regime particulier et origine des reserves distribuees.\n\n## Points de vigilance\n- Ne pas affirmer un taux ou un article tant que le passage direct sur les dividendes n'est pas confirme.\n- Ne pas confondre regularite societaire de la distribution et traitement fiscal du paiement.\n- Si le beneficiaire est non-resident, ajouter l'analyse de la convention fiscale et du certificat de residence.\n\n## Sources utilisees\n- Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025, page 85 - passage cible\n- Loi de finances pour 2026, page 5 - من الفقرةI - source-cadre, article precis a verifier\n- Code des droits et procédures fiscaux, édition 2026, page 1 - source-cadre, article precis a verifier\n- Niveau d'appui: au moins un passage cible a ete retrouve dans le corpus.\n- Limite: certaines conclusions restent a rattacher a l'article exact avant usage client."
+  },
+  {
+    "id": "level2_dividendes_associe_non_resident",
+    "question": "Une SARL tunisienne distribue des dividendes en 2026 a un associe non resident. Quels points fiscaux faut il verifier ?",
+    "commit_hash": null,
+    "workflow": "shareholder_split_tax_analysis",
+    "fallback_used": false,
+    "generator_path": "internal/case-analysis-playbook",
+    "selected_sources": [
+      {
+        "doc_id": "code_irpp_is_2025",
+        "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+        "page": 85,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "c bis",
+          "revenus distribues",
+          "10%"
+        ],
+        "excerpt_preview": "109\ncarte d’identification fiscale prouvant la soumission du bénéficiaire des \nhonoraires à l’impôt selon le régime réel. (Modifié Art 88-2 LF 2013-54 du \n30/12/2013)\n- (Abrogé Art 37-5 LF 2018-56 du 27/12/2018) [...]",
+        "score": 32.802
+      },
+      {
+        "doc_id": "loi_finances_2026",
+        "title": "Loi de finances pour 2026",
+        "page": 5,
+        "heading": "من الفقرةI",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "2026"
+        ],
+        "excerpt_preview": "عــدد148\n\nالرائ د الرسمي للجمهورية التونسية––\n\n12\n ديسمبر \n2025\n\nصفحـة4235\nترصد لفائدة حساب تنويع مصادر الضمان اﻻجتماعي:\n- \n نسبة50\n%\n\nمن معلوم الترسيم العقاري\nالمستوجب على هبات العقارات بين اﻷصول والفروع وبين اﻷزواج \n والمنصوص عليه بالفقرة\nالثانية من \n الفصل26\n\nمن القانون عدد88 [...]",
+        "score": 13
+      },
+      {
+        "doc_id": "procedures_fiscales_2026",
+        "title": "Code des droits et procédures fiscaux, édition 2026",
+        "page": 1,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [],
+        "excerpt_preview": "",
+        "score": 999.0
+      },
+      {
+        "doc_id": "convention_fiscale_applicable",
+        "title": "Convention fiscale applicable a l'associe non-resident",
+        "page": null,
+        "heading": "",
+        "support_level": "missing_source",
+        "matched_terms": [],
+        "excerpt_preview": "",
+        "score": 0.0
+      }
+    ],
+    "answer": "## Reponse\nPour une distribution de dividendes a un associe non-resident, l'analyse doit partir du regime interne tunisien, puis de la convention fiscale applicable au pays de residence du beneficiaire. Faits transmis: Une SARL tunisienne distribue des dividendes en 2026 a un associe non resident. Quels points fiscaux faut il verifier ?. Avant paiement, le cabinet doit verifier la retenue a la source, la declaration et le reversement, le certificat ou la preuve de retenue, et les documents permettant d'appliquer ou non une convention fiscale.\n\n## Application pratique\n- Droit interne: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues et la retenue a la source applicable aux dividendes verses a un non-resident.\n- Convention fiscale: le cabinet ne peut pas retenir un taux conventionnel sans identifier le pays de residence, le beneficiaire effectif, le certificat de residence fiscale et le passage direct de la convention fiscale applicable au pays de residence du beneficiaire.\n- Declaration et reversement: identifier la declaration applicable, la periode de reversement, le montant brut, la retenue operee et le montant net paye.\n- Certificat et pieces: conserver decision de distribution, PV, identite fiscale du beneficiaire, certificat de residence, preuve de paiement, calcul brut/retenue/net et certificat de retenue remis au beneficiaire.\n- Informations manquantes: pays de residence, qualite personne physique ou morale, beneficiaire effectif, date de paiement, convention applicable, article/taux direct, origine des reserves distribuees.\n\n## Points de vigilance\n- Ne pas appliquer le regime d'un beneficiaire resident a un beneficiaire non-resident.\n- Ne pas inventer de taux, delai ou article si le passage direct n'est pas disponible.\n- Si le pays ou le certificat de residence manque, la conclusion conventionnelle doit rester reservee.\n\n## Sources utilisees\n- Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025, page 85 - passage cible\n- Loi de finances pour 2026, page 5 - من الفقرةI - source-cadre, article precis a verifier\n- Code des droits et procédures fiscaux, édition 2026, page 1 - source-cadre, article precis a verifier\n- Convention fiscale applicable a l'associe non-resident - source manquante a indexer\n- Niveau d'appui: au moins un passage cible a ete retrouve dans le corpus.\n- Limite: certaines conclusions restent a rattacher a l'article exact avant usage client.\n- Source manquante: un texte indispensable a l'analyse doit etre ajoute au corpus."
+  }
+]
