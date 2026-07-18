@@ -75,11 +75,18 @@ def match_key(value: str) -> str:
 CLIENT_SOURCE_TITLES = {
     "code_irpp_is_2011": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS)",
     "tva_droit_consommation": "Code de la taxe sur la valeur ajoutée (loi n° 88-61 du 2 juin 1988), recueil officiel mis à jour au 1er janvier 2026",
+    "tva_droit_consommation_2023": "Code de la taxe sur la valeur ajoutée et droit de consommation, édition 2023",
+    "tva_droit_consommation_2021": "Code de la taxe sur la valeur ajoutée et droit de consommation, édition 2021",
+    "tva_droit_consommation_2019": "Code de la taxe sur la valeur ajoutée et droit de consommation, édition 2019",
     "procedures_fiscales_2026": "Code des droits et procédures fiscaux, édition 2026",
     "procedures_fiscales_2025": "Code des droits et procédures fiscaux, édition 2025",
     "procedures_fiscales_2024": "Code des droits et procédures fiscaux, édition 2024",
     "procedures_fiscales_2023": "Code des droits et procédures fiscaux, édition 2023",
     "enregistrement_timbre": "Code des droits d'enregistrement et de timbre, édition 2026",
+    "enregistrement_timbre_2025": "Code des droits d'enregistrement et de timbre, édition 2025",
+    "enregistrement_timbre_2022": "Code des droits d'enregistrement et de timbre, édition 2022",
+    "enregistrement_timbre_2020": "Code des droits d'enregistrement et de timbre, édition 2020",
+    "enregistrement_timbre_2018": "Code des droits d'enregistrement et de timbre, édition 2018",
     "fiscalite_locale": "Code de la fiscalité locale",
     "droits_taxes_hors_codes_2026": "Recueil des droits et taxes non incorporés dans les codes fiscaux, édition 2026",
     "droits_taxes_hors_codes_2025": "Recueil des droits et taxes non incorporés dans les codes fiscaux, édition 2025",
@@ -91,6 +98,9 @@ CLIENT_SOURCE_TITLES = {
 CLIENT_SOURCE_TITLE_ALIASES = {
     "Code de l IRPP et de l IS": CLIENT_SOURCE_TITLES["code_irpp_is_2011"],
     "Code TVA et droit de consommation 2026": CLIENT_SOURCE_TITLES["tva_droit_consommation"],
+    "Code TVA et droit de consommation 2023": CLIENT_SOURCE_TITLES["tva_droit_consommation_2023"],
+    "Code TVA et droit de consommation 2021": CLIENT_SOURCE_TITLES["tva_droit_consommation_2021"],
+    "Code TVA et droit de consommation 2019": CLIENT_SOURCE_TITLES["tva_droit_consommation_2019"],
     "Code des droits et procedures fiscaux 2026": CLIENT_SOURCE_TITLES["procedures_fiscales_2026"],
     "Code des droits et procedures fiscaux 2025": CLIENT_SOURCE_TITLES["procedures_fiscales_2025"],
     "Code des droits et procedures fiscaux 2024": CLIENT_SOURCE_TITLES["procedures_fiscales_2024"],
@@ -101,6 +111,10 @@ CLIENT_SOURCE_TITLE_ALIASES = {
     "Loi n 2016-71 portant loi de l investissement": CLIENT_SOURCE_TITLES["loi_investissement_2016_71"],
     "Loi n 2017-8 portant refonte du dispositif des avantages fiscaux": CLIENT_SOURCE_TITLES["loi_avantages_fiscaux_2017_8"],
     "Code des droits d enregistrement et du timbre 2026": CLIENT_SOURCE_TITLES["enregistrement_timbre"],
+    "Code des droits d enregistrement et du timbre 2025": CLIENT_SOURCE_TITLES["enregistrement_timbre_2025"],
+    "Code des droits d enregistrement et du timbre 2022": CLIENT_SOURCE_TITLES["enregistrement_timbre_2022"],
+    "Code des droits d enregistrement et du timbre 2020": CLIENT_SOURCE_TITLES["enregistrement_timbre_2020"],
+    "Code des droits d enregistrement et du timbre 2018": CLIENT_SOURCE_TITLES["enregistrement_timbre_2018"],
     "Code de la fiscalite locale 2017": CLIENT_SOURCE_TITLES["fiscalite_locale"],
     "Loi de finances 2026": CLIENT_SOURCE_TITLES["loi_finances_2026"],
 }
@@ -518,9 +532,10 @@ def source_precision_rules(message: str) -> list[dict]:
     france_case = "france" in query or "francais" in query or "francaise" in query
     treaty_doc_ids = detected_treaty_doc_ids(query)
     if is_cross_border_service_case(query):
+        tva_doc_id = tva_doc_id_for_query(query)
         rules = [
             {
-                "doc_id": "tva_droit_consommation",
+                "doc_id": tva_doc_id,
                 "terms": [
                     "مــيدان التطــبيق",
                     "البــاب األول",
@@ -616,7 +631,7 @@ def source_precision_rules(message: str) -> list[dict]:
         return [
             {"doc_id": "nc_03_revenus", "terms": ["revenu", "prestation de services", "realisation", "exercice"], "min_matches": 2},
             {"doc_id": "nc_01_norme_generale", "terms": ["periodicite", "rattachement", "produits", "exercice"], "min_matches": 2},
-            {"doc_id": "tva_droit_consommation", "terms": ["الفصل5", "إسداء الخدمات", "الفاتورة", "الأداء على القيمة المضافة"], "min_matches": 2},
+            {"doc_id": tva_doc_id_for_query(query), "terms": ["الفصل5", "إسداء الخدمات", "الفاتورة", "الأداء على القيمة المضافة"], "min_matches": 2},
             {"doc_id": "code_irpp_is_2011", "terms": ["benefice imposable", "produits", "exercice", "charges"], "min_matches": 2},
         ]
     if is_receivable_subsequent_recovery_case(query):
@@ -690,7 +705,7 @@ def source_precision_rules(message: str) -> list[dict]:
     ):
         return [
             {
-                "doc_id": "tva_droit_consommation",
+                "doc_id": tva_doc_id_for_query(query),
                 "terms": [
                     "مــيدان التطــبيق",
                     "البــاب األول",
@@ -1012,6 +1027,25 @@ def source_precision_rules(message: str) -> list[dict]:
                     rule for rule in social_rules if rule["doc_id"] not in explicit_statistical_doc_ids
                 ]
             return social_rules
+        if coverage_workflow.family == "tva":
+            selected_tva_doc_id = tva_doc_id_for_query(query)
+            rules = [
+                {
+                    "doc_id": selected_tva_doc_id if doc_id == "tva_droit_consommation" else doc_id,
+                    "terms": list(terms),
+                    "min_matches": min_matches,
+                }
+                for doc_id, terms, min_matches in coverage_workflow.source_terms
+            ]
+            seen_rule_doc_ids: set[str] = set()
+            deduped_rules: list[dict] = []
+            for rule in rules:
+                doc_id = rule["doc_id"]
+                if doc_id in seen_rule_doc_ids:
+                    continue
+                seen_rule_doc_ids.add(doc_id)
+                deduped_rules.append(rule)
+            return deduped_rules
         return [
             {"doc_id": doc_id, "terms": list(terms), "min_matches": min_matches}
             for doc_id, terms, min_matches in coverage_workflow.source_terms
@@ -1179,6 +1213,16 @@ def treaty_precision_rules(doc_ids: list[str]) -> list[dict]:
         }
         for doc_id in doc_ids
     ]
+
+
+def tva_doc_id_for_query(query: str) -> str:
+    if "2023" in query:
+        return "tva_droit_consommation_2023"
+    if "2021" in query:
+        return "tva_droit_consommation_2021"
+    if "2019" in query:
+        return "tva_droit_consommation_2019"
+    return "tva_droit_consommation"
 
 
 def tax_procedure_precision_rules(query: str) -> list[dict]:
@@ -2153,7 +2197,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     treaty_doc_ids = detected_treaty_doc_ids(query)
 
     if is_cross_border_service_case(query):
-        priority_doc_ids = ["tva_droit_consommation", "procedures_fiscales_2026", "code_irpp_is_2011", "loi_finances_2026"]
+        priority_doc_ids = [tva_doc_id_for_query(query), "procedures_fiscales_2026", "code_irpp_is_2011", "loi_finances_2026"]
         if "france" in query or "francais" in query or "francaise" in query:
             priority_doc_ids.extend([
                 "convention_fiscale_france_tunisie",
@@ -2198,7 +2242,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
         priority_doc_ids = ["code_irpp_is_2011", "loi_finances_2026", "procedures_fiscales_2026"]
         blocked_doc_ids = {"fiscalite_locale", "droits_taxes_hors_codes", "code_commerce_2014"}
     elif is_revenue_cutoff_tva_case(query):
-        priority_doc_ids = ["nc_03_revenus", "nc_01_norme_generale", "tva_droit_consommation", "code_irpp_is_2011"]
+        priority_doc_ids = ["nc_03_revenus", "nc_01_norme_generale", tva_doc_id_for_query(query), "code_irpp_is_2011"]
         blocked_doc_ids = {"audit_resume_gaida_normes_missions", "ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
     elif is_receivable_subsequent_recovery_case(query):
         priority_doc_ids = ["nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011"]
@@ -2497,6 +2541,15 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                     ]
                 priority_doc_ids = social_priority + [doc_id for doc_id in priority_doc_ids if doc_id not in set(social_priority)]
         if coverage_workflow.family == "tva":
+            selected_tva_doc_id = tva_doc_id_for_query(query)
+            priority_doc_ids = [
+                selected_tva_doc_id,
+                *[
+                    doc_id
+                    for doc_id in priority_doc_ids
+                    if doc_id != "tva_droit_consommation" and doc_id != selected_tva_doc_id
+                ],
+            ]
             blocked_doc_ids = {"code_societes_commerciales_2022", "ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
         elif coverage_workflow.family == "fiscalite_directe":
             blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
@@ -2516,7 +2569,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
         }
     elif ("prestations de services" in query or "prestation informatique" in query) and ("france" in query or "client etabli" in query or "client francais" in query):
         priority_doc_ids = [
-            "tva_droit_consommation",
+            tva_doc_id_for_query(query),
             "convention_fiscale_france_tunisie",
             "convention_fiscale_france_tunisie_texte_1973",
             "boi_france_tunisie_convention_fiscale_2012",
