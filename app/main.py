@@ -798,7 +798,7 @@ def source_precision_rules(message: str) -> list[dict]:
     procedure_rules = tax_procedure_precision_rules(query)
     if procedure_rules:
         return procedure_rules
-    if is_mixed_dividends_case(query):
+    if is_dividend_tax_case(query):
         rules = [
             {"doc_id": irpp_is_doc_id, "terms": ["article 52", "c bis", "revenus distribues", "10%"], "min_matches": 2},
             {"doc_id": "loi_finances_2026", "terms": ["dividende", "retenue", "2026"], "min_matches": 2},
@@ -1661,6 +1661,32 @@ def is_mixed_dividends_case(query: str) -> bool:
         (any(marker in query for marker in distribution_markers) and sum(1 for marker in profile_markers if marker in query) >= 2)
         or ("reserves" in query and "benefices distribues" in query)
     )
+
+
+def is_dividend_tax_case(query: str) -> bool:
+    if is_mixed_dividends_case(query):
+        return True
+    distribution_markers = ["dividende", "dividendes", "benefices distribues", "revenus distribues"]
+    tax_markers = [
+        "retenue", "source", "fiscal", "consequence", "declaration", "reversement",
+        "certificat", "associe", "actionnaire", "resident", "non resident",
+    ]
+    return any(marker in query for marker in distribution_markers) and any(marker in query for marker in tax_markers)
+
+
+def is_multi_beneficiary_dividend_case(query: str) -> bool:
+    if any(marker in query for marker in ["trois", "deux", "plusieurs", "300 000", "200 000", "100 000", "300000", "200000", "100000"]):
+        return True
+    profile_count = 0
+    if "personne physique" in query:
+        profile_count += 1
+    if "personne morale" in query or "societe tunisienne" in query or "sociÃ©tÃ© tunisienne" in query:
+        profile_count += 1
+    if "non resident" in query or "non-rÃ©sident" in query:
+        profile_count += 1
+    if ("resident" in query or "rÃ©sident" in query) and "non resident" not in query and "non-rÃ©sident" not in query:
+        profile_count += 1
+    return profile_count >= 2
 
 
 def is_revenue_cutoff_tva_case(query: str) -> bool:
@@ -2751,7 +2777,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "procedures_fiscales_2026",
         ]
         blocked_doc_ids = {"loi_comptable", "nc_01_norme_generale", "nc_03_revenus", "nc_04_stocks", "nc_05_immobilisations_corporelles"}
-    elif is_mixed_dividends_case(query):
+    elif is_dividend_tax_case(query):
         priority_doc_ids = [irpp_is_doc_id, "loi_finances_2026", "procedures_fiscales_2026"]
         blocked_doc_ids = {"fiscalite_locale", "droits_taxes_hors_codes", "code_commerce_2014"}
     elif is_revenue_cutoff_tva_case(query):
@@ -3198,38 +3224,102 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             },
         )
 
-    elif is_mixed_dividends_case(query):
+    elif is_dividend_tax_case(query):
         workflow_name = "shareholder_split_tax_analysis"
         returned_intent = "tax_calculation"
         returned_domain = "fiscalite"
-        answer = compose_structured_answer(
-            "practical_analysis",
-            {
-                "Reponse": (
-                    f"Cette distribution doit etre analysee beneficiaire par beneficiaire. Faits transmis: {facts_summary}. "
-                    "Le dossier ne peut pas recevoir une reponse globale, car les profils de beneficiaires ne portent pas le meme risque fiscal. "
-                    "Pour chacun, il faut verifier la retenue a la source, la declaration et le reversement, le certificat ou "
-                    f"la preuve de retenue, et pour un non-resident la {treaty_label}."
-                ),
-                "Application pratique": (
-                    "- Personne physique residente: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues, la retenue a la source applicable, "
-                    "son caractere eventuellement liberatoire ou imputable, et la justification remise au beneficiaire.\n"
-                    "- Societe tunisienne ou personne morale residente: verifier si le regime differe selon la qualite de personne morale residente, le traitement dans le resultat fiscal, "
-                    "et l'existence d'une retenue ou d'une dispense documentee.\n"
-                    f"- Associe non-resident: verifier la retenue interne tunisienne, puis la {treaty_label} avant de retenir un taux, "
-                    "une limitation ou une condition de residence beneficiale.\n"
-                    "- Declaration et reversement: identifier l'obligation declarative, la periode de reversement et les pieces a conserver pour chaque beneficiaire.\n"
-                    "- Certificats et justificatifs: conserver decision de distribution, PV, identite fiscale des beneficiaires, preuve de residence du non-resident, calcul brut/retenue/net et certificat de retenue.\n"
-                    "- Informations manquantes: forme exacte des associes, residence fiscale, beneficiaire effectif, convention applicable, article/taux direct, echeance declarative et origine des reserves distribuees."
-                ),
-                "Points de vigilance": (
-                    "- Ne pas appliquer le meme traitement aux trois associes.\n"
-                    "- Ne pas affirmer de taux ou d'article tant que le passage direct sur dividendes n'est pas indexe.\n"
-                    f"- La {treaty_label} doit etre verifiee pour tout beneficiaire non-resident avant d'arreter une conclusion client."
-                ),
-                "Sources utilisees": source_lines,
-            },
-        )
+        non_resident_dividend = "non resident" in query or "non-résident" in query or "non-rÃ©sident" in query
+        multi_beneficiary_dividend = is_multi_beneficiary_dividend_case(query)
+        dividend_treaty_label = "convention fiscale France-Tunisie" if france_case else "convention fiscale applicable au pays de residence du beneficiaire"
+        if multi_beneficiary_dividend:
+            answer = compose_structured_answer(
+                "practical_analysis",
+                {
+                    "Reponse": (
+                        f"Cette distribution doit etre analysee beneficiaire par beneficiaire. Faits transmis: {facts_summary}. "
+                        "Le dossier ne peut pas recevoir une reponse globale, car les profils de beneficiaires ne portent pas le meme risque fiscal. "
+                        "Pour chacun, il faut verifier la retenue a la source, la declaration et le reversement, le certificat ou "
+                        f"la preuve de retenue, et pour un non-resident la {dividend_treaty_label}."
+                    ),
+                    "Application pratique": (
+                        "- Personne physique residente: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues, la retenue a la source applicable, "
+                        "son caractere eventuellement liberatoire ou imputable, et la justification remise au beneficiaire.\n"
+                        "- Societe tunisienne ou personne morale residente: verifier si le regime differe selon la qualite de personne morale residente, le traitement dans le resultat fiscal, "
+                        "et l'existence d'une retenue ou d'une dispense documentee.\n"
+                        f"- Associe non-resident: verifier la retenue interne tunisienne, puis la {dividend_treaty_label} avant de retenir un taux, "
+                        "une limitation ou une condition de residence beneficiale.\n"
+                        "- Declaration et reversement: identifier l'obligation declarative, la periode de reversement et les pieces a conserver pour chaque beneficiaire.\n"
+                        "- Certificats et justificatifs: conserver decision de distribution, PV, identite fiscale des beneficiaires, preuve de residence du non-resident, calcul brut/retenue/net et certificat de retenue.\n"
+                        "- Informations manquantes: forme exacte des associes, residence fiscale, beneficiaire effectif, convention applicable, article/taux direct, echeance declarative et origine des reserves distribuees."
+                    ),
+                    "Points de vigilance": (
+                        "- Ne pas appliquer automatiquement le meme traitement a tous les beneficiaires.\n"
+                        "- Ne pas affirmer de taux ou d'article tant que le passage direct sur dividendes n'est pas indexe.\n"
+                        f"- La {dividend_treaty_label} doit etre verifiee pour tout beneficiaire non-resident avant d'arreter une conclusion client."
+                    ),
+                    "Sources utilisees": source_lines,
+                },
+            )
+        elif non_resident_dividend:
+            answer = compose_structured_answer(
+                "practical_analysis",
+                {
+                    "Reponse": (
+                        f"Pour une distribution de dividendes a un associe non-resident, l'analyse doit partir du regime interne tunisien, puis de la {dividend_treaty_label}. "
+                        f"Faits transmis: {facts_summary}. Avant paiement, le cabinet doit verifier la retenue a la source, la declaration et le reversement, "
+                        "le certificat ou la preuve de retenue, et les documents permettant d'appliquer ou non une convention fiscale."
+                    ),
+                    "Application pratique": (
+                        "- Droit interne: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues et la retenue a la source applicable aux dividendes verses a un non-resident.\n"
+                        f"- Convention fiscale: le cabinet ne peut pas retenir un taux conventionnel sans identifier le pays de residence, le beneficiaire effectif, le certificat de residence fiscale et le passage direct de la {dividend_treaty_label}.\n"
+                        "- Declaration et reversement: identifier la declaration applicable, la periode de reversement, le montant brut, la retenue operee et le montant net paye.\n"
+                        "- Certificat et pieces: conserver decision de distribution, PV, identite fiscale du beneficiaire, certificat de residence, preuve de paiement, calcul brut/retenue/net et certificat de retenue remis au beneficiaire.\n"
+                        "- Informations manquantes: pays de residence, qualite personne physique ou morale, beneficiaire effectif, date de paiement, convention applicable, article/taux direct, origine des reserves distribuees."
+                    ),
+                    "Points de vigilance": (
+                        "- Ne pas appliquer le regime d'un beneficiaire resident a un beneficiaire non-resident.\n"
+                        "- Ne pas inventer de taux, delai ou article si le passage direct n'est pas disponible.\n"
+                        "- Si le pays ou le certificat de residence manque, la conclusion conventionnelle doit rester reservee."
+                    ),
+                    "Sources utilisees": source_lines,
+                },
+            )
+        else:
+            resident_dividend = ("resident" in query or "rÃ©sident" in query or "résident" in query) and not non_resident_dividend
+            beneficiary_line = (
+                "- Beneficiaire: le dossier indique un associe resident; il faut encore preciser s'il s'agit d'une personne physique ou d'une personne morale, car le traitement peut differer.\n"
+                if resident_dividend
+                else "- Beneficiaire: identifier s'il s'agit d'une personne physique residente, d'une personne morale residente ou d'un non-resident, car le traitement peut differer.\n"
+            )
+            missing_line = (
+                "- Informations manquantes: qualite personne physique ou morale de l'associe resident, date de paiement, article/taux direct, regime particulier et origine des reserves distribuees."
+                if resident_dividend
+                else "- Informations manquantes: profil du beneficiaire, residence fiscale, date de paiement, article/taux direct, regime particulier et traitement conventionnel si le beneficiaire est non-resident."
+            )
+            answer = compose_structured_answer(
+                "practical_analysis",
+                {
+                    "Reponse": (
+                        f"Pour cette distribution de dividendes, il faut traiter le paiement comme un dossier fiscal de revenus distribues. Faits transmis: {facts_summary}. "
+                        "Avant paiement, le cabinet doit verifier la qualite exacte de l'associe ou de l'actionnaire, la retenue a la source eventuellement applicable, "
+                        "la declaration et le reversement, ainsi que le certificat ou la preuve de retenue remis au beneficiaire."
+                    ),
+                    "Application pratique": (
+                        beneficiary_line +
+                        "- Droit interne: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues et la retenue a la source applicable a la date du paiement.\n"
+                        "- Lois de finances: verifier les modifications applicables a l'exercice ou a l'annee de distribution avant de retenir un taux ou une modalite definitive.\n"
+                        "- Declaration et reversement: preparer le montant brut, la retenue operee le cas echeant, le montant net, la declaration correspondante, la preuve de reversement et le certificat de retenue.\n"
+                        "- Pieces societaires: conserver decision de distribution, PV, comptes approuves, origine des reserves ou benefices distribues, identite fiscale du beneficiaire et preuve de paiement.\n"
+                        + missing_line
+                    ),
+                    "Points de vigilance": (
+                        "- Ne pas affirmer un taux ou un article tant que le passage direct sur les dividendes n'est pas confirme.\n"
+                        "- Ne pas confondre regularite societaire de la distribution et traitement fiscal du paiement.\n"
+                        "- Si le beneficiaire est non-resident, ajouter l'analyse de la convention fiscale et du certificat de residence."
+                    ),
+                    "Sources utilisees": source_lines,
+                },
+            )
 
     elif is_revenue_cutoff_tva_case(query):
         workflow_name = "revenue_cutoff_tva_case"

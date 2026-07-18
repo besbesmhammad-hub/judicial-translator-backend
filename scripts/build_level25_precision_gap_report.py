@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_PATH = ROOT / "reports" / "benchmark_v2_governance.json"
-BASELINE_PATH = ROOT / "reports" / "live_hf_benchmark_v2_d868bc5.json"
-OUT_MD = ROOT / "reports" / "level25_precision_gap_report.md"
-OUT_JSON = ROOT / "reports" / "level25_precision_gap_report.json"
+CURRENT_PATH = Path(os.environ.get("LEVEL25_CURRENT_REPORT", ROOT / "reports" / "benchmark_v2_governance.json"))
+BASELINE_PATH = Path(os.environ.get("LEVEL25_BASELINE_REPORT", ROOT / "reports" / "live_hf_benchmark_v2_d868bc5.json"))
+OUT_MD = Path(os.environ.get("LEVEL25_OUT_MD", ROOT / "reports" / "level25_precision_gap_report.md"))
+OUT_JSON = Path(os.environ.get("LEVEL25_OUT_JSON", ROOT / "reports" / "level25_precision_gap_report.json"))
 
 SUPPORT_RANK = {
     "missing_source": 0,

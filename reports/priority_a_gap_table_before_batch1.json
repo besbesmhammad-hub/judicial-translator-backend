@@ -1,0 +1,624 @@
+[
+  {
+    "case_name": "tax_dividendes_2026",
+    "exact_question": "Une SARL tunisienne distribue des dividendes en 2026. Quelles retenues a la source faut il verifier avant paiement ?",
+    "current_workflow": "company_law_governance_case",
+    "current_selected_sources": [
+      {
+        "doc_id": "code_irpp_is_2025",
+        "page": 85,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "c bis",
+          "revenus distribues",
+          "10%"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "loi_finances_2026",
+        "page": 1,
+        "support_level": "framework_source",
+        "matched_terms": [],
+        "heading": ""
+      },
+      {
+        "doc_id": "procedures_fiscales_2026",
+        "page": 1,
+        "support_level": "framework_source",
+        "matched_terms": [],
+        "heading": ""
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "page": 1,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": "REPUBLIQUE TUNISIENNE"
+      },
+      {
+        "doc_id": "code_irpp_is_2011",
+        "page": 1,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": ""
+      }
+    ],
+    "current_final_answer": "## Reponse\nCe dossier releve de la famille cabinet suivante: Droit des societes: associes, dirigeants, comptes et distribution. Faits transmis: Une SARL tunisienne distribue des dividendes en 2026. Quelles retenues a la source faut il verifier avant paiement ?. La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct.\n\n## Application pratique\nIssues a traiter:\n- identifier la forme sociale, les organes competents et les decisions requises\n- separer validite societaire, impact comptable et consequences fiscales\n- verifier conventions reglem",
+    "why_failed_expert_pass": "Dividend answer must explicitly cover withholding, declaration/reversement, certificate/proof, and beneficiary profile.",
+    "failure_type": {
+      "issue_type": "weak routing",
+      "root_cause": "weak retrieval"
+    },
+    "exact_proposed_fix": "Route dividend + withholding questions to shareholder_split_tax_analysis, not company_law_governance_case; require retenue/declaration/certificate phrases.",
+    "generalizable_or_case_specific": "generalizable"
+  },
+  {
+    "case_name": "acct_goodwill_amortissement",
+    "exact_question": "Une societe peut elle amortir un goodwill et quels textes faut il verifier avant de conclure ?",
+    "current_workflow": "llm_provider",
+    "current_selected_sources": [
+      {
+        "doc_id": "ifrs_3_regroupements_entreprises",
+        "page": 5,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": "IFRS 3"
+      },
+      {
+        "doc_id": "ifrs_3_regroupements_entreprises",
+        "page": 8,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": "IFRS 3"
+      },
+      {
+        "doc_id": "nc_38_regroupements_entreprises",
+        "page": 10,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": ""
+      },
+      {
+        "doc_id": "nc_38_regroupements_entreprises",
+        "page": 9,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": ""
+      }
+    ],
+    "current_final_answer": "## Reponse\nNon, en principe le goodwill ne fait pas l’objet d’un amortissement systématique lorsqu’il est comptabilisé selon les normes IFRS 3 : l’écart d’acquisition (goodwill) doit être soumis à un test de dépréciation au moins annuellement et, le cas échéant, réduit de la perte de valeur constatée (voir IFRS 3 Regroupements d’entreprises, page 8, paragraphe concernant la mesure du goodwill comme excédent de la contrepartie transférée sur la juste valeur des actifs nets acquis).\n\n## Application pratique\n- Reconstituer les faits, montants et periodes.\n- Identifier le texte precis applicable.\n- Verifier les seuils, exceptions et pieces justificatives.\n\n## Points de vigilance\n- Verifier la da",
+    "why_failed_expert_pass": "Directly tagged support from IFRS 3/NC 38 on goodwill treatment and impairment test.",
+    "failure_type": {
+      "issue_type": "weak source-support formatting",
+      "root_cause": "missing article / weak retrieval"
+    },
+    "exact_proposed_fix": "Add source precision rules for IFRS 3 and NC 38 goodwill terms; do not accept unclassified sources for goodwill conclusions.",
+    "generalizable_or_case_specific": "generalizable"
+  },
+  {
+    "case_name": "level2_dividendes_associe_resident_prudent",
+    "exact_question": "Une SARL tunisienne distribue 250 000 TND de dividendes en 2026 a un associe resident. Quelles sont les consequences fiscales ? Citez les bases legales.",
+    "current_workflow": "shareholder_split_tax_analysis",
+    "current_selected_sources": [
+      {
+        "doc_id": "code_irpp_is_2025",
+        "page": 85,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "c bis",
+          "revenus distribues",
+          "10%"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "loi_finances_2026",
+        "page": 5,
+        "support_level": "framework_source",
+        "matched_terms": [
+          "2026"
+        ],
+        "heading": "من الفقرةI"
+      },
+      {
+        "doc_id": "procedures_fiscales_2026",
+        "page": 1,
+        "support_level": "framework_source",
+        "matched_terms": [],
+        "heading": ""
+      }
+    ],
+    "current_final_answer": "## Reponse\nCette distribution doit etre analysee beneficiaire par beneficiaire. Faits transmis: Une SARL tunisienne distribue 250 000 TND de dividendes en 2026 a un associe resident. Quelles sont les consequences fiscales ? Citez les bases legales.. Le dossier ne peut pas recevoir une reponse globale, car les profils de beneficiaires ne portent pas le meme risque fiscal. Pour chacun, il faut verifier la retenue a la source, la declaration et le reversement, le certificat ou la preuve de retenue, et pour un non-resident la convention fiscale applicable au pays du client.\n\n## Application pratique\n- Personne physique residente: verifier dans le Code de l'IRPP et de l'IS le regime des revenus di",
+    "why_failed_expert_pass": "Single resident shareholder analysis should apply facts directly instead of a generic beneficiary-by-beneficiary template.",
+    "failure_type": {
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation"
+    },
+    "exact_proposed_fix": "Use the current IRPP/IS direct passage plus finance-law framework to produce a fact-specific dividend checklist; avoid generic multi-beneficiary wording for one beneficiary.",
+    "generalizable_or_case_specific": "generalizable"
+  },
+  {
+    "case_name": "level2_tva_services_france_sources_tva",
+    "exact_question": "Une societe vend des prestations de services a un client etabli en France. Quel est le regime TVA applicable ?",
+    "current_workflow": "tva_operational_case",
+    "current_selected_sources": [
+      {
+        "doc_id": "tva_droit_consommation",
+        "page": 14,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "مــيدان التطــبيق",
+          "البــاب االول",
+          "مــيدان التطــبيق",
+          "العـملـيات الخـاضـعـة",
+          "تخضع العمليات",
+          "العمليات المنجزة",
+          "الفصل1"
+        ],
+        "heading": "I : تخضع العمليات المنجزة بالبالد التونسية بالمعنى المنصوص ع"
+      },
+      {
+        "doc_id": "procedures_fiscales_2026",
+        "page": 1,
+        "support_level": "framework_source",
+        "matched_terms": [],
+        "heading": ""
+      },
+      {
+        "doc_id": "loi_finances_2026",
+        "page": 6,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "loi de finances",
+          "2026",
+          "الاداء على القيمة المضافة"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "convention_fiscale_france_tunisie_texte_1973",
+        "page": 8,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "etablissement stable",
+          "benefices des entreprises"
+        ],
+        "heading": "Article 10"
+      },
+      {
+        "doc_id": "boi_france_tunisie_convention_fiscale_2012",
+        "page": 4,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "etablissement stable",
+          "benefices industriels et commerciaux",
+          "redevances"
+        ],
+        "heading": ""
+      }
+    ],
+    "current_final_answer": "## Reponse\nCe dossier releve de la famille cabinet suivante: TVA: territorialite, deduction, facturation et regularisation. Faits transmis: Une societe vend des prestations de services a un client etabli en France. Quel est le regime TVA applicable ?. La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct.\n\n## Application pratique\nIssues a traiter:\n- qualifier l'operation, le lieu d'utilisation et le statut du client\n- separer champ d'application, territorialite, exonération, exigibilite et droit a deduction\n- verifier les mentions de fa",
+    "why_failed_expert_pass": "Final answer must use retrieved TVA/treaty sources to conclude the checks for the exact B2B/B2C fact pattern.",
+    "failure_type": {
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation"
+    },
+    "exact_proposed_fix": "Turn retrieved TVA/treaty passages into a fact-sensitive answer: client status, place of use, invoicing, justificatifs, missing facts.",
+    "generalizable_or_case_specific": "generalizable"
+  },
+  {
+    "case_name": "level2_fraude_apres_rapport_cac",
+    "exact_question": "Un commissaire aux comptes decouvre une fraude apres l emission de son rapport. Que doit il faire ?",
+    "current_workflow": "audit_cac_response_case",
+    "current_selected_sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "page": 2,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "rapport",
+          "documentation"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "page": 3,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport"
+        ],
+        "heading": "PHASE DE PLANIFICATION"
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "page": 139,
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "information"
+        ],
+        "heading": "Article 416.- Si l'une des sociétés qui « fusionnent » )1(  est une société"
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "page": 1,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": "S"
+      }
+    ],
+    "current_final_answer": "## Reponse\nCe dossier releve de la famille cabinet suivante: Audit/CAC: risques, opinion, gouvernance et documentation. Faits transmis: Un commissaire aux comptes decouvre une fraude apres l emission de son rapport. Que doit il faire ?. La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct.\n\n## Application pratique\nIssues a traiter:\n- qualifier le fait d'audit et sa date par rapport au rapport\n- identifier les diligences complementaires, elements probants, communications a la gouvernance et documentation\n- evaluer l'incidence sur les co",
+    "why_failed_expert_pass": "CAC response must state concrete obligations by timing: communication, governance, reassessment of opinion/report, documentation.",
+    "failure_type": {
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation"
+    },
+    "exact_proposed_fix": "Create no new fastpath yet; strengthen audit_cac_response_case generation so timing changes before/after signature alter obligations.",
+    "generalizable_or_case_specific": "generalizable"
+  },
+  {
+    "case_name": "level2_amortissement_immobilisation_cloture",
+    "exact_question": "Comment analyser l amortissement d une immobilisation corporelle avant cloture ?",
+    "current_workflow": "accounting_closing_estimate_case",
+    "current_selected_sources": [
+      {
+        "doc_id": "nc_05_immobilisations_corporelles",
+        "page": 2,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "amortissement",
+          "valeur residuelle"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "ias_16_immobilisations_corporelles",
+        "page": 7,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "amortissement",
+          "duree d'utilite",
+          "valeur residuelle"
+        ],
+        "heading": "IAS 16"
+      },
+      {
+        "doc_id": "nc_01_norme_generale",
+        "page": 7,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "immobilisations",
+          "amortissement",
+          "etats financiers"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "nc_14_eventualites_post_cloture",
+        "page": 1,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": "NC 14"
+      },
+      {
+        "doc_id": "nc_39_parties_liees",
+        "page": 1,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": "Champ d'application"
+      }
+    ],
+    "current_final_answer": "## Reponse\nCe dossier releve de la famille cabinet suivante: Comptabilite: cut-off, estimations, actifs et cloture. Faits transmis: Comment analyser l amortissement d une immobilisation corporelle avant cloture ?. La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct.\n\n## Application pratique\nIssues a traiter:\n- identifier l'exercice de rattachement et la nature comptable de l'operation\n- distinguer comptabilisation, estimation, depreciation/provision, parties liees et information en notes\n- separer impacts comptables et retraitements f",
+    "why_failed_expert_pass": "Answer must mention ready-for-use/mise en service, depreciable base, useful life, method, accounting vs tax split.",
+    "failure_type": {
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation"
+    },
+    "exact_proposed_fix": "Strengthen accounting_closing_estimate_case wording to always cover mise en service/ready-for-use, base, useful life and tax distinction.",
+    "generalizable_or_case_specific": "generalizable"
+  },
+  {
+    "case_name": "level2_tva_services_client_francais_non_assujetti",
+    "exact_question": "Une societe tunisienne fournit une prestation informatique a un client francais non assujetti a la TVA. Quel regime TVA faut il verifier ?",
+    "current_workflow": "level3_multi_domain_case_analysis",
+    "current_selected_sources": [
+      {
+        "doc_id": "tva_droit_consommation",
+        "page": 14,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "مــيدان التطــبيق",
+          "البــاب االول",
+          "تخضع العمليات",
+          "العمليات المنجزة",
+          "الفصل1"
+        ],
+        "heading": "I : تخضع العمليات المنجزة بالبالد التونسية بالمعنى المنصوص ع"
+      },
+      {
+        "doc_id": "procedures_fiscales_2026",
+        "page": 1,
+        "support_level": "framework_source",
+        "matched_terms": [],
+        "heading": ""
+      },
+      {
+        "doc_id": "code_irpp_is_2025",
+        "page": 89,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "non resident",
+          "retenue a la source",
+          "beneficiaire",
+          "services"
+        ],
+        "heading": "68-1 LF 2024-48 du 09/12/2024)"
+      },
+      {
+        "doc_id": "loi_finances_2026",
+        "page": 6,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "loi de finances",
+          "2026",
+          "الاداء على القيمة المضافة"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "convention_fiscale_france_tunisie",
+        "page": 4,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "etablissement stable",
+          "chantier",
+          "montage"
+        ],
+        "heading": "Article 4"
+      }
+    ],
+    "current_final_answer": "## Reponse\nCe dossier doit etre traite comme une analyse fiscale transfrontaliere multi-issues, et non comme une simple question IRPP/IS. Les faits transmis doivent etre qualifies sans les remplacer par un cas standard: Une societe tunisienne fournit une prestation informatique a un client francais non assujetti a la TVA. Quel regime TVA faut il verifier ?. L'analyse doit separer au minimum la TVA tunisienne, la retenue a la source ou le risque d'imposition sur le paiement transfrontalier, la convention fiscale France-Tunisie, le risque d'etablissement stable, la facturation et les justificatifs.\n\n## Application pratique\n- TVA: verifier dans le Code de la taxe sur la valeur ajoutee si la pre",
+    "why_failed_expert_pass": "Final answer must use retrieved TVA/treaty sources to conclude the checks for the exact B2B/B2C fact pattern.",
+    "failure_type": {
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation"
+    },
+    "exact_proposed_fix": "Turn retrieved TVA/treaty passages into a fact-sensitive answer: client status, place of use, invoicing, justificatifs, missing facts.",
+    "generalizable_or_case_specific": "generalizable"
+  },
+  {
+    "case_name": "level2_dividendes_associe_non_resident",
+    "exact_question": "Une SARL tunisienne distribue des dividendes en 2026 a un associe non resident. Quels points fiscaux faut il verifier ?",
+    "current_workflow": "shareholder_split_tax_analysis",
+    "current_selected_sources": [
+      {
+        "doc_id": "code_irpp_is_2025",
+        "page": 85,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "c bis",
+          "revenus distribues",
+          "10%"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "loi_finances_2026",
+        "page": 5,
+        "support_level": "framework_source",
+        "matched_terms": [
+          "2026"
+        ],
+        "heading": "من الفقرةI"
+      },
+      {
+        "doc_id": "procedures_fiscales_2026",
+        "page": 1,
+        "support_level": "framework_source",
+        "matched_terms": [],
+        "heading": ""
+      },
+      {
+        "doc_id": "convention_fiscale_applicable",
+        "page": null,
+        "support_level": "missing_source",
+        "matched_terms": [],
+        "heading": ""
+      }
+    ],
+    "current_final_answer": "## Reponse\nCette distribution doit etre analysee beneficiaire par beneficiaire. Faits transmis: Une SARL tunisienne distribue des dividendes en 2026 a un associe non resident. Quels points fiscaux faut il verifier ?. Le dossier ne peut pas recevoir une reponse globale, car les profils de beneficiaires ne portent pas le meme risque fiscal. Pour chacun, il faut verifier la retenue a la source, la declaration et le reversement, le certificat ou la preuve de retenue, et pour un non-resident la convention fiscale applicable au pays du client.\n\n## Application pratique\n- Personne physique residente: verifier dans le Code de l'IRPP et de l'IS le regime des revenus distribues, la retenue a la source ",
+    "why_failed_expert_pass": "Country/treaty passage is missing; answer should reserve treaty rate and list residence certificate/treaty facts.",
+    "failure_type": {
+      "issue_type": "missing document",
+      "root_cause": "missing document"
+    },
+    "exact_proposed_fix": "Keep missing_source reservation for treaty until residence country/treaty passage is known; ask for country and certificate of tax residence.",
+    "generalizable_or_case_specific": "corpus-specific"
+  },
+  {
+    "case_name": "level2_fraude_avant_signature_rapport_cac",
+    "exact_question": "Un commissaire aux comptes decouvre une fraude avant la signature de son rapport. Que doit il faire ?",
+    "current_workflow": "audit_cac_response_case",
+    "current_selected_sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "page": 2,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "rapport",
+          "documentation"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "page": 3,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport"
+        ],
+        "heading": "PHASE DE PLANIFICATION"
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "page": 139,
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "information"
+        ],
+        "heading": "Article 416.- Si l'une des sociétés qui « fusionnent » )1(  est une société"
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "page": 1,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": "S"
+      }
+    ],
+    "current_final_answer": "## Reponse\nCe dossier releve de la famille cabinet suivante: Audit/CAC: risques, opinion, gouvernance et documentation. Faits transmis: Un commissaire aux comptes decouvre une fraude avant la signature de son rapport. Que doit il faire ?. La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct.\n\n## Application pratique\nIssues a traiter:\n- qualifier le fait d'audit et sa date par rapport au rapport\n- identifier les diligences complementaires, elements probants, communications a la gouvernance et documentation\n- evaluer l'incidence sur les ",
+    "why_failed_expert_pass": "CAC response must state concrete obligations by timing: communication, governance, reassessment of opinion/report, documentation.",
+    "failure_type": {
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation"
+    },
+    "exact_proposed_fix": "Create no new fastpath yet; strengthen audit_cac_response_case generation so timing changes before/after signature alter obligations.",
+    "generalizable_or_case_specific": "generalizable"
+  },
+  {
+    "case_name": "level2_amortissement_mise_en_service_novembre",
+    "exact_question": "Une immobilisation corporelle a ete achetee en septembre mais mise en service en novembre. Comment raisonner l amortissement ?",
+    "current_workflow": "fixed_asset_component_depreciation_case",
+    "current_selected_sources": [
+      {
+        "doc_id": "nc_05_immobilisations_corporelles",
+        "page": 2,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "amortissement",
+          "duree d'utilisation",
+          "valeur residuelle"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "ias_16_immobilisations_corporelles",
+        "page": 7,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "amortissement",
+          "parties",
+          "duree d'utilite"
+        ],
+        "heading": "IAS 16"
+      },
+      {
+        "doc_id": "code_irpp_is_2025",
+        "page": 14,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "amortissements",
+          "mise en service",
+          "date d'acquisition",
+          "exploitation"
+        ],
+        "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les"
+      },
+      {
+        "doc_id": "nc_01_norme_generale",
+        "page": 7,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "immobilisations",
+          "amortissements",
+          "etats financiers"
+        ],
+        "heading": ""
+      }
+    ],
+    "current_final_answer": "## Reponse\nCe dossier doit etre traite comme une immobilisation corporelle avec mise en service progressive et composant significatif. Faits transmis: Une immobilisation corporelle a ete achetee en septembre mais mise en service en novembre. Comment raisonner l amortissement ?. La date d'achat ou de facture ne suffit pas a declencher l'amortissement si la machine n'est pas encore prete a etre utilisee. Il faut rapprocher acquisition, livraison, installation, tests et mise en production. Si la date de production ou de disponibilite correspond a l'utilisation prevue, c'est cette date qui doit etre retenue pour le depart d'amortissement.\n\n## Application pratique\n- Cout d'entree: rattacher au co",
+    "why_failed_expert_pass": "Answer must mention ready-for-use/mise en service, depreciable base, useful life, method, accounting vs tax split.",
+    "failure_type": {
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation"
+    },
+    "exact_proposed_fix": "Strengthen accounting_closing_estimate_case wording to always cover mise en service/ready-for-use, base, useful life and tax distinction.",
+    "generalizable_or_case_specific": "generalizable"
+  },
+  {
+    "case_name": "level2_user_amortissement_date_depart_15_septembre",
+    "exact_question": "Une immobilisation est achetee le 15 septembre. A partir de quelle date commence son amortissement ? Quels textes ou normes faut-il consulter ?",
+    "current_workflow": "accounting_closing_estimate_case",
+    "current_selected_sources": [
+      {
+        "doc_id": "nc_05_immobilisations_corporelles",
+        "page": 2,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "amortissement",
+          "valeur residuelle"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "ias_16_immobilisations_corporelles",
+        "page": 7,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "amortissement",
+          "duree d'utilite",
+          "valeur residuelle"
+        ],
+        "heading": "IAS 16"
+      },
+      {
+        "doc_id": "nc_01_norme_generale",
+        "page": 7,
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "immobilisations",
+          "amortissement",
+          "etats financiers"
+        ],
+        "heading": ""
+      },
+      {
+        "doc_id": "nc_14_eventualites_post_cloture",
+        "page": 1,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": "NC 14"
+      },
+      {
+        "doc_id": "nc_39_parties_liees",
+        "page": 1,
+        "support_level": "unclassified",
+        "matched_terms": [],
+        "heading": "Champ d'application"
+      }
+    ],
+    "current_final_answer": "## Reponse\nCe dossier releve de la famille cabinet suivante: Comptabilite: cut-off, estimations, actifs et cloture. Faits transmis: Une immobilisation est achetee le 15 septembre. A partir de quelle date commence son amortissement ? Quels textes ou normes faut-il consulter ?. La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct.\n\n## Application pratique\nIssues a traiter:\n- identifier l'exercice de rattachement et la nature comptable de l'operation\n- distinguer comptabilisation, estimation, depreciation/provision, parties liees et infor",
+    "why_failed_expert_pass": "Answer must mention ready-for-use/mise en service, depreciable base, useful life, method, accounting vs tax split.",
+    "failure_type": {
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation"
+    },
+    "exact_proposed_fix": "Strengthen accounting_closing_estimate_case wording to always cover mise en service/ready-for-use, base, useful life and tax distinction.",
+    "generalizable_or_case_specific": "generalizable"
+  }
+]
