@@ -721,7 +721,35 @@ def source_precision_rules(message: str) -> list[dict]:
     france_case = "france" in query or "francais" in query or "francaise" in query
     irpp_is_doc_id = irpp_is_doc_id_for_query(query)
     treaty_doc_ids = detected_treaty_doc_ids(query)
-    if is_cross_border_service_case(query):
+    if is_tva_cross_border_service_case(query):
+        tva_doc_id = tva_doc_id_for_query(query)
+        return [
+            {
+                "doc_id": tva_doc_id,
+                "terms": [
+                    "مــيدان التطــبيق",
+                    "البــاب األول",
+                    "تخضع العمليات",
+                    "العمليات المنجزة",
+                    "إسداء الخدمات",
+                    "الخدمات",
+                    "الفصل1",
+                    "الفصل5",
+                ],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "procedures_fiscales_2026",
+                "terms": ["facture", "declaration", "controle", "recouvrement", "contentieux", "justificatifs"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "loi_finances_2026",
+                "terms": ["loi de finances", "2026", "tva", "الأداء على القيمة المضافة"],
+                "min_matches": 2,
+            },
+        ]
+    elif is_cross_border_service_case(query):
         tva_doc_id = tva_doc_id_for_query(query)
         rules = [
             {
@@ -1647,6 +1675,35 @@ def is_cross_border_service_case(query: str) -> bool:
             any(marker in query for marker in tunisian_markers)
             or ("regime fiscal" in query and ("facture" in query or "facturee" in query))
         )
+    )
+
+
+def is_tva_cross_border_service_case(query: str) -> bool:
+    foreign_markers = [
+        "france", "francais", "francaise", "client etranger", "client etabli",
+        "italie", "allemagne", "emirats", "algerie", "hors de tunisie",
+    ]
+    service_markers = [
+        "prestation", "prestations", "service", "services", "informatique",
+        "logiciel", "installation", "formation", "assistance", "support",
+        "maintenance", "consulting", "conseil",
+    ]
+    tva_markers = [
+        "regime tva", "regime fiscal tva", "traitement tva", "tva applicable",
+        "tva tunisienne", "tva tunisien", "sans tva", "export tva",
+        "taxe sur la valeur ajoutee", "droit a deduction tva", "analyse tva",
+        "exportation de services",
+    ]
+    multi_domain_markers = [
+        "retenue a la source", "convention fiscale", "etablissement stable",
+        "redevance", "royalties", "irpp", "impot sur les societes",
+        "risques fiscaux", "facturation et paiement", "avant facturation et paiement",
+    ]
+    return (
+        any(marker in query for marker in tva_markers)
+        and any(marker in query for marker in foreign_markers)
+        and any(marker in query for marker in service_markers)
+        and not any(marker in query for marker in multi_domain_markers)
     )
 
 
@@ -2735,7 +2792,111 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     treaty_doc_ids = detected_treaty_doc_ids(query)
     irpp_is_doc_id = irpp_is_doc_id_for_query(query)
 
-    if is_cross_border_service_case(query):
+    if is_tva_cross_border_service_case(query):
+        priority_doc_ids = [tva_doc_id_for_query(query), "procedures_fiscales_2026", "loi_finances_2026"]
+        blocked_doc_ids = {
+            *IRPP_IS_DOC_IDS,
+            "code_societes_commerciales_2022",
+            "guide_creation_sarl_tunisie",
+            "fiscalite_locale",
+            "code_commerce_2014",
+            "code_obligations_contrats_2015",
+        }
+    elif False and is_tva_cross_border_service_case(query):
+        workflow_name = "tva_operational_case"
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        non_assujetti = "non assujetti" in query or "non-assujetti" in query
+        assujetti = ("assujetti" in query or "societe etablie" in query) and not non_assujetti
+        used_in_tunisia = (
+            "utilise en tunisie" in query
+            or "utilisee en tunisie" in query
+            or "exploite en tunisie" in query
+            or "exploitee en tunisie" in query
+            or "usage en tunisie" in query
+            or "utilisation en tunisie" in query
+        )
+        used_abroad = (
+            "utilise a l'etranger" in query
+            or "utilise a l etranger" in query
+            or "utilisee a l'etranger" in query
+            or "utilisee a l etranger" in query
+            or "exploite a l'etranger" in query
+            or "exploite a l etranger" in query
+            or "exploitee a l'etranger" in query
+            or "exploitee a l etranger" in query
+            or "utilise en france" in query
+            or "utilisee en france" in query
+            or "exploite en france" in query
+            or "exploitee en france" in query
+        )
+        performed_in_france = "formation" in query and ("france" in query or "physiquement" in query or "sur place" in query)
+        performed_partly_tunisia = "partie" in query or "partiellement" in query or "depuis la tunisie" in query
+        missing_proof = "sans justificatif" in query or "sans preuve" in query or "aucun justificatif" in query or "no proof" in query
+        invoice_without_justification = "facture" in query and (
+            "sans justification" in query
+            or "aucune justification" in query
+            or "sans mention" in query
+            or "sans justificatif" in query
+        )
+        likely_treatment = (
+            "Si le service est rendu a un client etranger et effectivement utilise ou exploite hors de Tunisie avec justificatifs, le traitement peut relever d'une exportation de services, d'une operation hors champ tunisien ou d'une exonération a verifier dans le Code de la taxe sur la valeur ajoutee."
+        )
+        if used_in_tunisia:
+            likely_treatment = (
+                "Si le service est utilise ou exploite en Tunisie, il ne faut pas conclure automatiquement a une exportation de services: le risque de TVA tunisienne doit rester ouvert et documente."
+            )
+        elif used_abroad:
+            likely_treatment = (
+                "Si le service est utilise hors de Tunisie ou exploite hors de Tunisie, notamment en France, et que les preuves existent, l'analyse peut s'orienter vers un traitement d'exportation de services ou de non-imposition tunisienne a verifier dans le Code de la taxe sur la valeur ajoutee."
+            )
+        elif missing_proof or invoice_without_justification:
+            likely_treatment = (
+                "Sans preuve du client etranger, du lieu d'utilisation ou de l'exploitation hors de Tunisie, le cabinet ne peut pas securiser un traitement d'exportation de services ou d'exoneration."
+            )
+        client_status = (
+            "Le client non-assujetti doit etre analyse specifiquement: ne pas reprendre mecaniquement la solution d'un schema B2B, car le statut du preneur et le lieu d'utilisation doivent etre prouves."
+            if non_assujetti
+            else (
+                "Le client est presente comme assujetti ou comme societe etablie en France: cela renforce l'analyse B2B, mais ne dispense pas de prouver le lieu d'utilisation ou d'exploitation."
+                if assujetti
+                else "Le statut B2B/B2C du client n'est pas completement documente: il faut obtenir son identite, son pays d'etablissement et, si possible, son statut fiscal ou TVA."
+            )
+        )
+        execution_note = []
+        if performed_in_france:
+            execution_note.append("La formation ou l'intervention physiquement realisee en France doit etre separee du travail realise depuis la Tunisie; elle peut changer l'analyse du lieu d'execution et les preuves a conserver.")
+        if performed_partly_tunisia:
+            execution_note.append("La part realisee depuis la Tunisie et la part executee a l'etranger doivent etre ventilees si elles ne suivent pas le meme traitement TVA.")
+        if not execution_note:
+            execution_note.append("Il faut distinguer le lieu de realisation materielle du service et le lieu d'utilisation ou d'exploitation economique par le client.")
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Pour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. "
+                    f"Faits transmis: {facts_summary}. {likely_treatment} {client_status}"
+                ),
+                "Application pratique": (
+                    "- Qualification: identifier la nature exacte du service: prestation informatique, conseil, assistance, licence, support, installation, formation ou maintenance.\n"
+                    f"- Territorialite et lieu d'exploitation: {execution_note[0]}\n"
+                    "- B2B/B2C: verifier le statut du client francais ou etranger; un client non assujetti ne doit pas etre traite automatiquement comme une societe assujettie.\n"
+                    "- Facturation: verifier la mention du client etranger, l'adresse, la devise, la description du service, la periode, le lieu d'execution, le traitement TVA retenu et la reference documentaire justifiant ce traitement.\n"
+                    "- Justificatifs: conserver contrat ou commande, facture, preuve d'etablissement du client hors Tunisie, preuve de paiement, livrables, correspondances, feuilles de mission, PV d'installation ou de formation, et preuve du lieu d'utilisation ou d'exploitation.\n"
+                    "- Droit a deduction: ne le confirmer que si le Code de la taxe sur la valeur ajoutee et les pieces du dossier supportent le regime retenu; sinon le point reste source-cadre a verifier.\n"
+                    "- Procedure: verifier la declaration, les obligations de facture et les justificatifs au regard du Code des droits et procedures fiscaux lorsque les sources directes sont disponibles."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas citer le Code de l'IRPP et de l'IS comme base de la TVA.\n"
+                    "- Ne pas conclure seulement parce que le client est en France: il faut le statut du client, le lieu d'utilisation ou d'exploitation et les preuves.\n"
+                    "- Si le service est utilise en Tunisie, si les justificatifs manquent ou si la facture ne documente pas le regime, la conclusion doit rester reservee.\n"
+                    "- Les sources directes TVA supportent le champ d'application; les points de procedure, facturation et droit a deduction doivent rester source-cadre si le passage exact n'est pas retrouve."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_cross_border_service_case(query):
         priority_doc_ids = [tva_doc_id_for_query(query), "procedures_fiscales_2026", irpp_is_doc_id, "loi_finances_2026"]
         if "france" in query or "francais" in query or "francaise" in query:
             priority_doc_ids.extend([
@@ -3182,7 +3343,103 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
     treaty_label = "convention fiscale France-Tunisie" if france_case else "convention fiscale applicable au pays du client"
     foreign_client_label = "francais" if france_case else "etranger"
 
-    if is_cross_border_service_case(query):
+    if is_tva_cross_border_service_case(query):
+        workflow_name = "tva_operational_case"
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        non_assujetti = "non assujetti" in query or "non-assujetti" in query
+        assujetti = ("assujetti" in query or "societe etablie" in query) and not non_assujetti
+        used_in_tunisia = (
+            "utilise en tunisie" in query
+            or "utilisee en tunisie" in query
+            or "exploite en tunisie" in query
+            or "exploitee en tunisie" in query
+            or "usage en tunisie" in query
+            or "utilisation en tunisie" in query
+        )
+        used_abroad = (
+            "utilise a l'etranger" in query
+            or "utilise a l etranger" in query
+            or "utilisee a l'etranger" in query
+            or "utilisee a l etranger" in query
+            or "exploite a l'etranger" in query
+            or "exploite a l etranger" in query
+            or "exploitee a l'etranger" in query
+            or "exploitee a l etranger" in query
+            or "utilise en france" in query
+            or "utilisee en france" in query
+            or "exploite en france" in query
+            or "exploitee en france" in query
+        )
+        performed_in_france = "formation" in query and ("france" in query or "physiquement" in query or "sur place" in query)
+        performed_partly_tunisia = "partie" in query or "partiellement" in query or "depuis la tunisie" in query
+        missing_proof = "sans justificatif" in query or "sans preuve" in query or "aucun justificatif" in query or "no proof" in query
+        invoice_without_justification = "facture" in query and (
+            "sans justification" in query
+            or "aucune justification" in query
+            or "sans mention" in query
+            or "sans justificatif" in query
+        )
+        likely_treatment = (
+            "Si le service est rendu a un client etranger et effectivement utilise ou exploite hors de Tunisie avec justificatifs, "
+            "le traitement peut relever d'une exportation de services, d'une operation hors champ tunisien ou d'une exoneration a verifier dans le Code de la taxe sur la valeur ajoutee."
+        )
+        if used_in_tunisia:
+            likely_treatment = (
+                "Si le service est utilise ou exploite en Tunisie, il ne faut pas conclure automatiquement a une exportation de services: le risque de TVA tunisienne doit rester ouvert et documente."
+            )
+        elif used_abroad:
+            likely_treatment = (
+                "Si le service est utilise hors de Tunisie ou exploite hors de Tunisie, notamment en France, et que les preuves existent, "
+                "l'analyse peut s'orienter vers un traitement d'exportation de services ou de non-imposition tunisienne a verifier dans le Code de la taxe sur la valeur ajoutee."
+            )
+        elif missing_proof or invoice_without_justification:
+            likely_treatment = (
+                "Sans preuve du client etranger, du lieu d'utilisation ou de l'exploitation hors de Tunisie, le cabinet ne peut pas securiser un traitement d'exportation de services ou d'exoneration."
+            )
+        client_status = (
+            "Le client non-assujetti doit etre analyse specifiquement: ne pas reprendre mecaniquement la solution d'un schema B2B, car le statut du preneur et le lieu d'utilisation doivent etre prouves."
+            if non_assujetti
+            else (
+                "Le client est presente comme assujetti ou comme societe etablie en France: cela renforce l'analyse B2B, mais ne dispense pas de prouver le lieu d'utilisation ou d'exploitation."
+                if assujetti
+                else "Le statut B2B/B2C du client n'est pas completement documente: il faut obtenir son identite, son pays d'etablissement et, si possible, son statut fiscal ou TVA."
+            )
+        )
+        execution_note = []
+        if performed_in_france:
+            execution_note.append("La formation ou l'intervention physiquement realisee en France doit etre separee du travail realise depuis la Tunisie; elle peut changer l'analyse du lieu d'execution et les preuves a conserver.")
+        if performed_partly_tunisia:
+            execution_note.append("La part realisee depuis la Tunisie et la part executee a l'etranger doivent etre ventilees si elles ne suivent pas le meme traitement TVA.")
+        if not execution_note:
+            execution_note.append("Il faut distinguer le lieu de realisation materielle du service et le lieu d'utilisation ou d'exploitation economique par le client.")
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Pour cette prestation de services transfrontaliere, la base TVA doit etre le Code de la taxe sur la valeur ajoutee, pas le Code de l'IRPP et de l'IS. "
+                    f"Faits transmis: {facts_summary}. {likely_treatment} {client_status}"
+                ),
+                "Application pratique": (
+                    "- Qualification: identifier la nature exacte du service: prestation informatique, conseil, assistance, licence, support, installation, formation ou maintenance.\n"
+                    f"- Territorialite et lieu d'exploitation: {execution_note[0]}\n"
+                    "- B2B/B2C: verifier le statut du client francais ou etranger; un client non assujetti ne doit pas etre traite automatiquement comme une societe assujettie.\n"
+                    "- Facturation: verifier la mention du client etranger, l'adresse, la devise, la description du service, la periode, le lieu d'execution, le traitement TVA retenu et la reference documentaire justifiant ce traitement.\n"
+                    "- Justificatifs: conserver contrat ou commande, facture, preuve d'etablissement du client hors Tunisie, preuve de paiement, livrables, correspondances, feuilles de mission, PV d'installation ou de formation, et preuve du lieu d'utilisation ou d'exploitation.\n"
+                    "- Droit a deduction: ne le confirmer que si le Code de la taxe sur la valeur ajoutee et les pieces du dossier supportent le regime retenu; sinon le point reste source-cadre a verifier.\n"
+                    "- Procedure: verifier la declaration, les obligations de facture et les justificatifs au regard du Code des droits et procedures fiscaux lorsque les sources directes sont disponibles."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas citer le Code de l'IRPP et de l'IS comme base de la TVA.\n"
+                    "- Ne pas conclure seulement parce que le client est en France: il faut le statut du client, le lieu d'utilisation ou d'exploitation et les preuves.\n"
+                    "- Si le service est utilise en Tunisie, si les justificatifs manquent ou si la facture ne documente pas le regime, la conclusion doit rester reservee.\n"
+                    "- Les sources directes TVA supportent le champ d'application; les points de procedure, facturation et droit a deduction doivent rester source-cadre si le passage exact n'est pas retrouve."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_cross_border_service_case(query):
         workflow_name = "level3_multi_domain_case_analysis"
         returned_intent = "legal_basis"
         returned_domain = "fiscalite"
