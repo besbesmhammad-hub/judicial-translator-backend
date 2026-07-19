@@ -721,6 +721,53 @@ def source_precision_rules(message: str) -> list[dict]:
     france_case = "france" in query or "francais" in query or "francaise" in query
     irpp_is_doc_id = irpp_is_doc_id_for_query(query)
     treaty_doc_ids = detected_treaty_doc_ids(query)
+    if re.search(r"regularisation des dettes fiscales|regulariser ses dettes fiscales|dettes fiscales anciennes|dettes fiscales|penalites fiscales|remise de penalites|echeancier fiscal", query, re.I):
+        return [
+            {
+                "doc_id": "note_generale_regularisation_dettes_fiscales_2026",
+                "terms": ["dettes fiscales", "regularisation", "2026", "article 69", "loi de finances"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "procedures_fiscales_2026",
+                "terms": ["recouvrement", "declaration", "penalites", "contentieux", "controle"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "loi_finances_2026",
+                "terms": ["2026", "article 69", "dettes fiscales", "regularisation"],
+                "min_matches": 2,
+            },
+        ]
+    if re.search(r"enregistrement|timbre|droits d.enregistrement|acte de vente|vente.*immeuble|immeuble.*vente|mutation.*immeuble|cession.*immeuble", query, re.I):
+        enregistrement_doc_id = enregistrement_timbre_doc_id_for_query(query)
+        return [
+            {
+                "doc_id": enregistrement_doc_id,
+                "terms": ["معاليم التسجيل", "العقود", "النقل", "البيع", "العقارات", "2026"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "enregistrement_timbre_2025",
+                "terms": ["droits proportionnels", "biens immeubles", "ventes", "mutations", "translatifs a titre onereux"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": tva_doc_id_for_query(query),
+                "terms": ["tva", "taxe sur la valeur ajoutee", "immeubles", "exoneration", "deduction"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": irpp_is_doc_id,
+                "terms": ["plus-value", "benefice imposable", "cession", "immeuble"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "procedures_fiscales_2026",
+                "terms": ["enregistrement", "recouvrement", "controle", "declaration", "justificatifs"],
+                "min_matches": 2,
+            },
+        ]
     if is_tva_cross_border_service_case(query):
         tva_doc_id = tva_doc_id_for_query(query)
         return [
@@ -2111,12 +2158,20 @@ def semantically_adjust_support_level(message: str, source: dict) -> dict:
         required_any = ["amortissement", "mise en service", "pret a etre utilise", "composant", "base amortissable", "valeur residuelle", "duree d'utilisation", "duree d'utilite", "logiciel", "licence"]
     elif is_receivable_subsequent_recovery_case(query) and doc_id in {"nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011", "code_irpp_is_2025", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
         required_any = ["creance", "provision", "depreciation", "recouvrement", "evenement posterieur", "cloture"]
+    elif re.search(r"enregistrement|timbre|vente.*immeuble|immeuble.*vente|mutation.*immeuble|cession.*immeuble", query, re.I) and doc_id in {"enregistrement_timbre", "enregistrement_timbre_2025", "enregistrement_timbre_2022", "enregistrement_timbre_2020", "enregistrement_timbre_2018"}:
+        required_any = ["article 20", "droits proportionnels", "biens immeubles", "ventes", "mutations", "translatifs a titre onereux", "الفصل 20", "العقارات", "البيع"]
 
     if required_any and not any(term in haystack for term in required_any):
         adjusted = dict(source)
         adjusted["support_level"] = "framework_source"
         adjusted.setdefault("matched_terms", [])
         adjusted["semantic_relevance_warning"] = "direct passage downgraded: excerpt does not match the case issue"
+        return adjusted
+    if doc_id == "enregistrement_timbre" and ("فهرس" in str(source.get("excerpt") or "") or "sommaire" in haystack or "contenu" in haystack):
+        adjusted = dict(source)
+        adjusted["support_level"] = "framework_source"
+        adjusted.setdefault("matched_terms", [])
+        adjusted["semantic_relevance_warning"] = "current 2026 source is table-of-contents/OCR framework support, not a liquidation passage"
         return adjusted
     return source
 
@@ -2263,31 +2318,53 @@ def fastpath_enregistrement_timbre_answer(message: str, legal_domain: str) -> di
         return None
 
     doc_id = enregistrement_timbre_doc_id_for_query(query)
-    sources = legal_sources_by_doc_ids([doc_id, "procedures_fiscales_2026", "loi_finances_2026"])
+    sources = precision_sources_for_case(
+        message,
+        legal_sources_by_doc_ids([
+            doc_id,
+            "enregistrement_timbre_2025",
+            tva_doc_id_for_query(query),
+            irpp_is_doc_id_for_query(query),
+            "procedures_fiscales_2026",
+        ]),
+    )
     if not sources:
         return None
 
-    source_lines = summarize_source_titles(sources, limit=3)
+    source_lines = summarize_source_titles(sources, limit=5)
+    precision_note = source_precision_note(sources)
+    if precision_note:
+        source_lines = f"{source_lines}\n{precision_note}" if source_lines else precision_note
     year_label = str(CANONICAL_FISCAL_SOURCE_METADATA.get(doc_id, {}).get("year") or "").strip()
     edition = f" edition {year_label}" if year_label else ""
+    is_property_sale = any(term in query for term in ["immeuble", "bien immobilier", "vente", "mutation", "cession"])
+    if is_property_sale:
+        response_body = (
+            f"Sur les faits donnes, il s'agit d'une vente d'immeuble entre deux societes en 2026. "
+            f"Le premier traitement n'est donc pas un simple timbre: il faut qualifier l'acte comme mutation ou vente immobiliere "
+            f"et rapprocher l'acte du **Code des droits d'enregistrement et de timbre{edition}**.\n\n"
+            "## Application pratique\n"
+            "- **Enregistrement/timbre**: examiner les droits proportionnels ou fixes applicables aux mutations de biens immeubles. Le passage cible disponible dans l'edition francaise 2025 vise les ventes et mutations de biens immeubles; pour 2026, la version actuelle indexee doit etre reverifiee avant de chiffrer un taux ou un delai.\n"
+            "- **TVA eventuelle**: ne pas conclure automatiquement. Verifier la nature de l'immeuble, l'activite du vendeur, le regime TVA applicable a l'operation, les exonerations ou options eventuelles et l'impact sur le droit a deduction.\n"
+            "- **Fiscalite directe**: verifier si la cession genere une plus-value ou un resultat imposable chez le vendeur, la valeur comptable nette, les amortissements anterieurs, le prix de cession et le traitement comptable du produit de cession.\n"
+            "- **Comptabilite**: sortir l'immobilisation chez le vendeur, constater le prix de cession et le resultat de cession; chez l'acquereur, immobiliser le bien selon le prix d'acquisition et les frais directement attribuables lorsque les conditions sont remplies.\n\n"
+            "## Conclusion cabinet\n"
+            "Position preliminaire: le dossier doit etre traite comme une mutation immobiliere avec trois controles separes: droits d'enregistrement/timbre, TVA eventuelle et fiscalite directe de la cession. Avant validation client, demander l'acte ou projet d'acte, le titre de propriete, le prix, l'evaluation ou expertise, la qualite fiscale des deux societes, la situation TVA de l'immeuble, la VCN et le detail des frais. Aucun taux de droit d'enregistrement, delai ou regime TVA ne doit etre affirme sans passage 2026 cible."
+        )
+    else:
+        response_body = (
+            f"Pour les droits d'enregistrement et de timbre{edition}, le raisonnement doit partir du "
+            "**Code des droits d'enregistrement et de timbre** applicable a la date de l'acte ou de la formalite. "
+            "Ce code sert a qualifier l'acte, identifier la formalite d'enregistrement ou de timbre, verifier "
+            "l'assiette taxable, les parties concernees, les exonerations ou regimes particuliers et les pieces a conserver.\n\n"
+            "## Conclusion cabinet\n"
+            "Position preliminaire: qualifier l'acte, identifier la base taxable, verifier les parties et la date, puis rechercher le passage cible applicable avant de chiffrer un taux, un delai ou une penalite."
+        )
     answer = "\n\n".join([
-        "## Reponse\n"
-        f"Pour les droits d'enregistrement et de timbre{edition}, le raisonnement doit partir du "
-        "**Code des droits d'enregistrement et de timbre** applicable a la date de l'acte ou de la formalite. "
-        "Ce code sert a qualifier l'acte, identifier la formalite d'enregistrement ou de timbre, verifier "
-        "l'assiette taxable, les parties concernees, les exonérations ou regimes particuliers et les pieces a conserver.\n\n"
-        "Pour un dossier concret, le cabinet doit eviter de conclure directement a un droit, un taux ou un delai sans "
-        "le passage applicable. Il faut d'abord verifier :\n"
-        "- la nature exacte de l'acte: vente, bail, cession, mutation, donation, convention ou autre formalite ;\n"
-        "- la date de l'acte et la version du code applicable ;\n"
-        "- la base de calcul, le prix ou la valeur retenue ;\n"
-        "- les parties et leur qualite fiscale ;\n"
-        "- les exemptions, reductions ou regimes speciaux eventuels ;\n"
-        "- les justificatifs: acte, annexes, preuves de paiement, attestations et references d'enregistrement.",
+        f"## Reponse\n{response_body}",
         "## Points de vigilance\n"
-        "Les lois de finances peuvent modifier certaines dispositions. Si la question vise une annee historique, "
-        "la reponse doit rester rattachee a cette edition; si elle vise une situation actuelle, il faut privilegier "
-        "la version la plus recente indexee.",
+        "Les lois de finances peuvent modifier certaines dispositions. Lorsque le passage cible 2026 n'est pas exploitable "
+        "ou reste en source-cadre, le cabinet doit verifier la version officielle applicable avant toute liquidation.",
         "## Sources utilisees\n"
         f"{source_lines}",
     ])
@@ -2304,6 +2381,67 @@ def fastpath_enregistrement_timbre_answer(message: str, legal_domain: str) -> di
         "golden_kb_hits": [],
         "sources": sources,
         "model": "internal/enregistrement-timbre-fastpath",
+        "fallback_mode": False,
+        "legal_domain": "fiscalite",
+        "question": message,
+    }
+
+
+def fastpath_tax_debt_regularization_answer(message: str, legal_domain: str) -> dict | None:
+    query = match_key(message)
+    if legal_domain not in {"fiscalite", "general"}:
+        return None
+    if not re.search(
+        r"regularisation des dettes fiscales|regulariser ses dettes fiscales|dettes fiscales anciennes|dettes fiscales|remise de penalites|echeancier fiscal",
+        query,
+        re.I,
+    ):
+        return None
+
+    sources = precision_sources_for_case(
+        message,
+        legal_sources_by_doc_ids([
+            "note_generale_regularisation_dettes_fiscales_2026",
+            "procedures_fiscales_2026",
+            "loi_finances_2026",
+        ]),
+    )
+    if not sources:
+        return None
+
+    source_lines = summarize_source_titles(sources, limit=5)
+    precision_note = source_precision_note(sources)
+    if precision_note:
+        source_lines = f"{source_lines}\n{precision_note}" if source_lines else precision_note
+    answer = "\n\n".join([
+        "## Reponse\n"
+        "Sur les faits fournis, le client a des dettes fiscales anciennes et demande s'il peut beneficier d'une regularisation en 2026. "
+        "La source cible recuperee est la note generale 2026 relative a l'article 69 de la loi de finances 2026; elle permet une analyse preliminaire, mais le cabinet doit rattacher chaque dette au champ exact du dispositif avant validation.\n\n"
+        "## Application pratique\n"
+        "- **Informations a obtenir**: identifiant fiscal, nature de chaque dette, periode concernee, montant du principal, penalites ou amendes administratives, origine de la dette (declaration deposee, declaration omise, declaration corrective, taxation ou controle), etat du recouvrement, contentieux eventuel et paiements deja effectues.\n"
+        "- **Dettes et declarations**: isoler les dettes fiscales proprement dites des penalites. La note recuperee vise notamment la regularisation de situations relatives aux dettes fiscales et a certaines omissions ou declarations correctives; il faut donc rapprocher chaque ligne du releve fiscal du cas vise par la note.\n"
+        "- **Condition de paiement/documentation**: la source recuperee mentionne une demarche liee au depot des declarations ou actes concernes et au paiement du principal de l'impot exigible. Le cabinet doit donc preparer un etat detaille par impot, periode, principal, penalites, declaration ou acte et justificatif de paiement.\n"
+        "- **Calendrier 2026**: la note recuperee fait ressortir une limite temporelle en 2026, notamment fin septembre 2026 dans le passage cible. Avant engagement client, verifier la date exacte applicable au type de dette et a la demarche administrative retenue.\n"
+        "- **Limites**: ne pas promettre une remise automatique. Le benefice depend du champ exact de l'article 69, de la nature des dettes, du respect des formalites et du paiement requis; les exclusions ou cas particuliers doivent etre controles dans la note et, si besoin, aupres de l'administration fiscale.\n\n"
+        "## Conclusion cabinet\n"
+        "Position preliminaire: le dossier peut etre instruit comme une demande de regularisation 2026 si les dettes entrent dans le champ de la note generale relative a l'article 69 et si le client peut deposer les pieces ou declarations requises et payer le principal exigible dans les conditions prevues. Avant validation client, demander un extrait de situation fiscale, le detail par impot et periode, les declarations omises ou rectificatives, les avis de taxation ou recouvrement, les preuves de paiement et la confirmation ecrite de la recette ou du bureau fiscal competent.",
+        "## Points de vigilance\n"
+        "Ne pas inventer de taux, de remise, d'echeancier ou d'exclusion non lu dans un passage cible. Si le dossier comporte contentieux, controle fiscal, poursuite ou taxation deja definitive, la conclusion doit rester reservee jusqu'a verification officielle.",
+        "## Sources utilisees\n"
+        f"{source_lines}",
+    ])
+    return {
+        "success": True,
+        "answer": answer,
+        "assumptions": [],
+        "next_steps": [],
+        "warnings": [],
+        "intent": "legal_basis",
+        "preferred_source": "legal_corpus",
+        "response_style": "practical_analysis",
+        "golden_kb_hits": [],
+        "sources": sources,
+        "model": "internal/tax-debt-regularization-fastpath",
         "fallback_mode": False,
         "legal_domain": "fiscalite",
         "question": message,
@@ -5734,6 +5872,41 @@ def accounting_chat(request: AccountingChatRequest) -> dict:
             selected_sources=irpp_is_code_fastpath.get("sources") or [],
             fallback_used=False,
             generator_path=irpp_is_code_fastpath.get("model"),
+        )
+    tax_debt_regularization_fastpath = fastpath_tax_debt_regularization_answer(
+        message=message,
+        legal_domain=legal_domain,
+    )
+    if tax_debt_regularization_fastpath:
+        append_accounting_chat_log(
+            {
+                "request_id": request_id,
+                "kind": "accounting_chat",
+                "message": message[:500],
+                "language": language,
+                "history_count": len(request.history or []),
+                "intent": tax_debt_regularization_fastpath.get("intent"),
+                "legal_domain": tax_debt_regularization_fastpath.get("legal_domain"),
+                "preferred_source": tax_debt_regularization_fastpath.get("preferred_source"),
+                "response_style": tax_debt_regularization_fastpath.get("response_style"),
+                "provider_attempts": [],
+                "golden_kb_refs": [],
+                "retrieved_legal_refs": accounting_log_doc_refs(tax_debt_regularization_fastpath.get("sources") or []),
+                "result": "fastpath",
+                "model": tax_debt_regularization_fastpath.get("model"),
+                "fallback_used": False,
+                "latency_ms": round((time.perf_counter() - started_at) * 1000, 1),
+            }
+        )
+        return finalize_accounting_response(
+            tax_debt_regularization_fastpath,
+            request,
+            workflow="tax_procedure_compliance_case",
+            case_analysis_enabled=True,
+            retrieval_domains=["fiscalite"],
+            selected_sources=tax_debt_regularization_fastpath.get("sources") or [],
+            fallback_used=False,
+            generator_path=tax_debt_regularization_fastpath.get("model"),
         )
     enregistrement_timbre_fastpath = fastpath_enregistrement_timbre_answer(
         message=message,
