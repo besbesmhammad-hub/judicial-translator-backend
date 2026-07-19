@@ -1,0 +1,222 @@
+{
+  "base_url": "http://127.0.0.1:8131",
+  "dataset": "reports\\facturation_electronique_dataset.jsonl",
+  "generated_at_unix": 1784462090,
+  "summary": {
+    "total_cases": 1,
+    "ok_cases": 1,
+    "failed_cases": 0,
+    "intent_match_count": 1,
+    "preferred_source_match_count": 1,
+    "response_style_match_count": 1,
+    "all_sections_present_count": 1,
+    "source_precision_pass_count": 1,
+    "source_precision_failure_count": 0,
+    "safe_pass_count": 1,
+    "safe_failure_count": 0,
+    "expert_pass_count": 1,
+    "expert_failure_count": 0,
+    "content_quality_pass_count": 1,
+    "content_quality_failure_count": 0,
+    "avg_latency_ms": 15663.6
+  },
+  "summary_by_expected_intent": {
+    "legal_basis": {
+      "count": 1,
+      "ok_cases": 1,
+      "failed_cases": 0,
+      "intent_match_count": 1,
+      "preferred_source_match_count": 1,
+      "response_style_match_count": 1,
+      "all_sections_present_count": 1,
+      "safe_pass_count": 1,
+      "expert_pass_count": 1,
+      "avg_latency_ms": 15663.6
+    }
+  },
+  "summary_by_actual_intent": {
+    "legal_basis": {
+      "count": 1,
+      "ok_cases": 1,
+      "failed_cases": 0,
+      "intent_match_count": 1,
+      "preferred_source_match_count": 1,
+      "response_style_match_count": 1,
+      "all_sections_present_count": 1,
+      "safe_pass_count": 1,
+      "expert_pass_count": 1,
+      "avg_latency_ms": 15663.6
+    }
+  },
+  "results": [
+    {
+      "id": "tax_facturation_electronique",
+      "question": "Quelles obligations de facturation electronique doivent etre verifiees en Tunisie avant de changer le processus de facturation d un client ?",
+      "ok": true,
+      "latency_ms": 15663.6,
+      "expected_intent": "legal_basis",
+      "actual_intent": "legal_basis",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "tax_electronic_invoice_compliance_case",
+      "actual_workflow": "tax_electronic_invoice_compliance_case",
+      "workflow_match": true,
+      "section_checks": {
+        "Reponse": true,
+        "Application pratique": true,
+        "Points de vigilance": true,
+        "Sources utilisees": true
+      },
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "facturation electronique": true,
+        "note generale 2026": true,
+        "loi de finances pour 2026": true,
+        "article 53": true,
+        "prestations de services": true,
+        "conservation": true,
+        "transmission": true,
+        "champ d'application": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "fallback_after_provider_failure": false,
+        "Les sources disponibles ne permettent pas de produire une reponse suffisamment fiable": false,
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "note_generale_facturation_electronique_2026_direct_or_framework": true,
+        "electronic_invoice_has_note_2026": true,
+        "electronic_invoice_support_classified": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "framework_source",
+        "framework_source"
+      ],
+      "source_headings": [
+        "وخاصة الفصل األول الفقرةII"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 3,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "facturation-",
+        "environment": "local-facturation",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "legal_basis",
+        "workflow": "tax_electronic_invoice_compliance_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "fiscalite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "note_generale_facturation_electronique_2026",
+            "title": "Note generale sur l extension de la facturation electronique 2026",
+            "page": 5,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "facturation electronique",
+              "2026"
+            ],
+            "excerpt_preview": "5\nيخصم الخاضعون بصفة جملية من مبلغ األداء على القيمة المضافة\nالمطلوب\nطبقا أل حكام الفصلين األول\nوالثاني من مجلة األداء على القيمة المضاف ة مبلغ األداء\nالذي\nأثقل فعال \n مشترياتهم المحلية لدى خاضعين او التسليمات ألنفسهم و الواردات [...]",
+            "score": 21.586
+          },
+          {
+            "doc_id": "tva_droit_consommation",
+            "title": "Code de la taxe sur la valeur ajoutée (loi n° 88-61 du 2 juin 1988), recueil officiel mis à jour au 1er janvier 2026",
+            "page": 12,
+            "heading": "وخاصة الفصل األول الفقرةII",
+            "support_level": "framework_source",
+            "matched_terms": [
+              "tva"
+            ],
+            "excerpt_preview": "12\n\nرزنامة تطبيق األداء على القيمة المضافة\nفي قطاع تجارة الجملة\n\nأمر عدد1222\n\nلسنة1989\n\nمؤرخ في25\n\nأوت1989\n\nيتعلق بضبط رزنامة األداء\nعلى القيمة ال\nمضافة.\n، إن رئيس الجمهورية\nبعد اإلطالع على القانون عدد61\n\nلسنة1988\n\nالمؤرخ في2\n\nجوان1988\n والمتعل ق [...]",
+            "score": 15.899
+          },
+          {
+            "doc_id": "procedures_fiscales_2026",
+            "title": "Code des droits et procédures fiscaux, édition 2026",
+            "page": 1,
+            "heading": "",
+            "support_level": "framework_source",
+            "matched_terms": [],
+            "excerpt_preview": "",
+            "score": 999.0
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "tax_electronic_invoice_compliance_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "note_generale_facturation_electronique_2026",
+          "title": "Note generale sur l extension de la facturation electronique 2026",
+          "page": 5,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "facturation electronique",
+            "2026"
+          ],
+          "excerpt_preview": "5\nيخصم الخاضعون بصفة جملية من مبلغ األداء على القيمة المضافة\nالمطلوب\nطبقا أل حكام الفصلين األول\nوالثاني من مجلة األداء على القيمة المضاف ة مبلغ األداء\nالذي\nأثقل فعال \n مشترياتهم المحلية لدى خاضعين او التسليمات ألنفسهم و الواردات [...]",
+          "score": 21.586
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "title": "Code de la taxe sur la valeur ajoutée (loi n° 88-61 du 2 juin 1988), recueil officiel mis à jour au 1er janvier 2026",
+          "page": 12,
+          "heading": "وخاصة الفصل األول الفقرةII",
+          "support_level": "framework_source",
+          "matched_terms": [
+            "tva"
+          ],
+          "excerpt_preview": "12\n\nرزنامة تطبيق األداء على القيمة المضافة\nفي قطاع تجارة الجملة\n\nأمر عدد1222\n\nلسنة1989\n\nمؤرخ في25\n\nأوت1989\n\nيتعلق بضبط رزنامة األداء\nعلى القيمة ال\nمضافة.\n، إن رئيس الجمهورية\nبعد اإلطالع على القانون عدد61\n\nلسنة1988\n\nالمؤرخ في2\n\nجوان1988\n والمتعل ق [...]",
+          "score": 15.899
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "title": "Code des droits et procédures fiscaux, édition 2026",
+          "page": 1,
+          "heading": "",
+          "support_level": "framework_source",
+          "matched_terms": [],
+          "excerpt_preview": "",
+          "score": 999.0
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nLa facturation electronique doit etre traitee comme un sujet de conformite fiscale et TVA, pas comme une simple question informatique. Faits transmis: Quelles obligations de facturation electronique doivent etre verifiees en Tunisie avant de changer le processus de facturation d un client ?. La source prioritaire indexee est la note generale 2026 relative a l'extension de la facturation electronique, rattachee a l'article 53 de la loi de finances pour 2026. Avant de changer le processus d'un client, il faut verifier si son activite, ses operations et sa date d'application entrent dans le champ vise, notamment pour les prestations de services.\n\n## Application pratique\n- Champ d'app",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    }
+  ]
+}
