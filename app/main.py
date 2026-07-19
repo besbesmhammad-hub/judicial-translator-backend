@@ -5404,7 +5404,7 @@ async def translate(request: TranslateRequest) -> dict:
 
 
 @app.post("/v1/accounting-chat")
-async def accounting_chat(request: AccountingChatRequest) -> dict:
+def accounting_chat(request: AccountingChatRequest) -> dict:
     request_id = uuid.uuid4().hex[:12]
     started_at = time.perf_counter()
     message = request.message.strip()
@@ -6059,11 +6059,11 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
     max_output_tokens = min(config.LLM_MAX_TOKENS, accounting_chat_max_tokens(answer_style, query_intent))
     last_error: Exception | None = None
     provider_attempts: list[dict] = []
-    async with httpx.AsyncClient(timeout=httpx.Timeout(config.LLM_PROVIDER_TIMEOUT, connect=8.0)) as client:
+    with httpx.Client(timeout=httpx.Timeout(config.LLM_PROVIDER_TIMEOUT, connect=8.0)) as client:
         for route in routes:
             body = provider_body(route, messages, max_output_tokens, json_mode=True)
             try:
-                response = await client.post(
+                response = client.post(
                     route["endpoint"],
                     headers=route["headers"],
                     json=body,
@@ -6071,7 +6071,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                 )
                 if response.status_code == 400 and route.get("api_style") != "gemini":
                     body.pop("response_format", None)
-                    response = await client.post(
+                    response = client.post(
                         route["endpoint"],
                         headers=route["headers"],
                         json=body,
@@ -6114,7 +6114,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                         },
                     ]
                     repair_body = provider_body(route, repair_messages, max_output_tokens, json_mode=True)
-                    repair_response = await client.post(
+                    repair_response = client.post(
                         route["endpoint"],
                         headers=route["headers"],
                         json=repair_body,
@@ -6122,7 +6122,7 @@ async def accounting_chat(request: AccountingChatRequest) -> dict:
                     )
                     if repair_response.status_code == 400 and route.get("api_style") != "gemini":
                         repair_body.pop("response_format", None)
-                        repair_response = await client.post(
+                        repair_response = client.post(
                             route["endpoint"],
                             headers=route["headers"],
                             json=repair_body,
