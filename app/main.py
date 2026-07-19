@@ -3733,14 +3733,23 @@ def _money_values_from_query(query: str) -> list[int]:
 
 
 def cabinet_answer_standard_block(workflow_name: str, query: str, answer: str) -> str:
+    normalized_query = match_key(query)
     normalized_answer = match_key(answer)
     if "## conclusion cabinet" in normalized_answer:
         return ""
 
     if workflow_name == "revenue_cutoff_tva_case":
-        if "janvier" in query and "decembre 2026" in query and "decembre 2025" in query:
+        starts_december_2025 = (
+            ("1 decembre 2025" in normalized_query or "1er decembre 2025" in normalized_query or "decembre 2025" in normalized_query)
+            and ("30 novembre 2026" in normalized_query or "novembre 2026" in normalized_query)
+            and ("31 decembre 2025" in normalized_query or "cloture" in normalized_query)
+        )
+        starts_after_closing = "janvier" in normalized_query and "decembre 2026" in normalized_query and "decembre 2025" in normalized_query
+        if starts_december_2025:
+            quantification = "Dans le cas donne, le contrat couvre le 1er decembre 2025 au 30 novembre 2026 et la cloture est au 31/12/2025: decembre 2025 est deja rendu. Le traitement preliminaire est donc 1/12 en produit 2025 et 11/12 en produit constate d'avance pour 2026, sous reserve du contrat, de la facture et de l'absence de clause particuliere."
+        elif starts_after_closing:
             quantification = "Dans le cas donne, le contrat facture/encaisse en decembre 2025 couvre janvier a decembre 2026: au 31/12/2025, le revenu n'est pas encore gagne; le traitement preliminaire est donc 0/12 en produit 2025 et 12/12 en produit constate d'avance, sous reserve de la facture et du contrat."
-        elif "contrat annuel" in query and ("un mois" in query or "1 mois" in query or "decembre" in query):
+        elif "contrat annuel" in normalized_query and ("un mois" in normalized_query or "1 mois" in normalized_query or "decembre" in normalized_query):
             quantification = "Si le contrat annuel a commence un mois avant la cloture, le calcul attendu est 1/12 en produit de l'exercice courant et 11/12 en produit constate d'avance, a ajuster selon les dates exactes du contrat."
         else:
             quantification = "Calculer la part gagnee selon la formule: montant facture x mois de service rendus avant cloture / duree totale couverte; le solde non gagne est traite comme produit constate d'avance."
