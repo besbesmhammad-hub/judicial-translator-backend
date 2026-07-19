@@ -1,0 +1,895 @@
+[
+  {
+    "id": "audit_fraude_post_cloture",
+    "before": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Le commissaire aux comptes decouvre une fraude apres la cloture. Quels devoirs faut il analyser avant de rediger la position du cabinet ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "audit_anomalie_apres_rapport",
+    "before": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Un commissaire aux comptes decouvre une anomalie significative apres l emission de son rapport. Que prevoit la reglementation ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "level2_fraude_apres_rapport_cac",
+    "before": "workflow=audit_cac_response_case safe=False expert=False source=True",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Un commissaire aux comptes decouvre une fraude apres l emission de son rapport. Que doit il faire ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "level2_fraude_avant_signature_rapport_cac",
+    "before": "workflow=audit_cac_response_case safe=False expert=False source=True",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Un commissaire aux comptes decouvre une fraude avant la signature de son rapport. Que doit il faire ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "batch3_audit_fraud_before_report",
+    "before": "new",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Une fraude significative est decouverte par le CAC avant la signature du rapport. La direction accepte de corriger les comptes. Quelle demarche d audit et quel impact sur l opinion ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "batch3_audit_fraud_after_report",
+    "before": "new",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Le commissaire aux comptes apprend apres l emission de son rapport qu une fraude existait deja a la date de cloture. Que doit-il analyser avant toute communication externe ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "batch3_audit_fraud_material_not_pervasive",
+    "before": "new",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Une anomalie frauduleuse est significative mais limitee a un poste des etats financiers. La direction refuse de corriger. Quelle consequence possible sur l opinion du CAC ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "batch3_audit_fraud_material_pervasive",
+    "before": "new",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Une fraude est significative et generalisee dans les comptes, et la direction refuse toute correction. Quelle opinion le commissaire aux comptes doit-il envisager ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "batch3_audit_management_corrects",
+    "before": "new",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Le CAC detecte une anomalie significative avant rapport, la direction corrige les etats financiers et les notes. Quelles diligences restent necessaires ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "batch3_audit_management_refuses_correction",
+    "before": "new",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Le CAC identifie une anomalie significative mais la direction refuse de corriger les comptes et refuse d ajouter une information en notes. Comment raisonner l opinion ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "batch3_audit_scope_limitation_no_alternative",
+    "before": "new",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "L auditeur ne peut pas obtenir d elements probants suffisants et aucune procedure alternative fiable n est possible. Quelle analyse de limitation de travaux et d opinion ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "batch3_audit_subsequent_event_after_board",
+    "before": "new",
+    "after": "workflow=audit_cac_response_case safe=True expert=True source=True",
+    "question": "Un evenement posterieur significatif est decouvert apres approbation des comptes par le conseil mais avant ou apres emission du rapport. Que doit verifier le CAC ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "anomalie",
+          "rapport",
+          "evenements posterieurs",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 41
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "fraude",
+          "anomalie",
+          "planification",
+          "rapport",
+          "risque"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 53
+      },
+      {
+        "doc_id": "code_societes_commerciales_2022",
+        "title": "Code des societes commerciales",
+        "page": 95,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "commissaire aux comptes",
+          "rapport",
+          "irregularite",
+          "information"
+        ],
+        "excerpt_preview": "Imprimerie Officielle de la République Tunisienne\n95\ncommissaires aux comptes et de divergence entre leurs avis, ils doivent \nrédiger un rapport commun qui indique l’opinion de chacun d’eux.\nLes commissaires aux comptes doivent déclarer expressément dans [...]",
+        "score": 42.285
+      },
+      {
+        "doc_id": "textes_profession_comptable_2018",
+        "title": "Textes relatifs aux comptables, experts-comptables et commissaires aux comptes",
+        "page": 85,
+        "heading": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "commissaires aux comptes",
+          "experts comptables"
+        ],
+        "excerpt_preview": "3 . بالنسبة إلى مطالب الترسيم المقدمة طبقا لأحكام الفقرة الثالثة منالفصل\n 8 من القانون عدد 16 لسنة 2002 المؤرخ في 4 فيفري 2002 المذكور أعلاه:\n . نسخة مطابقة للأصل من التصريح بالوجود المتعلق بممارسة  BLA محاسب [...]",
+        "score": 26.989
+      }
+    ]
+  },
+  {
+    "id": "batch3_audit_going_concern_insufficient_disclosure",
+    "before": "new",
+    "after": "workflow=going_concern_case_analysis safe=True expert=True source=True",
+    "question": "Une incertitude significative sur la continuite d exploitation existe, mais les notes aux etats financiers sont insuffisantes. Quel impact possible sur le rapport et l opinion d audit ?",
+    "answer_preview": "",
+    "sources": [
+      {
+        "doc_id": "cadre_conceptuel_comptable",
+        "title": "Cadre conceptuel de la comptabilite financiere",
+        "page": 7,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "continuite de l'exploitation",
+          "entreprise poursuit",
+          "avenir previsible"
+        ],
+        "excerpt_preview": "Les hypothèses sous-jacentes et les conventions comptables découlent d'un environnement \néconomique, social et légal particulier et elles constituent une base pour l'élaboration des normes \ncomptables et la recherche de solutions appropriées aux problèmes comptables posés. [...]",
+        "score": 31.584
+      },
+      {
+        "doc_id": "nc_01_norme_generale",
+        "title": "NC 01 Norme comptable generale",
+        "page": 10,
+        "heading": "",
+        "support_level": "direct_passage",
+        "matched_terms": [
+          "etats financiers",
+          "informations"
+        ],
+        "excerpt_preview": "Méthode autorisée \n51. La méthode autorisée consiste essentiellement à classer les produits et les charges en fonction de \nleur nature. La présentation selon cette méthode est autorisée pour tenir compte de la culture [...]",
+        "score": 21.6
+      },
+      {
+        "doc_id": "audit_resume_gaida_normes_missions",
+        "title": "Resume des normes d audit, d assurance et des missions connexes",
+        "page": 3,
+        "heading": "",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "continuite",
+          "rapport",
+          "opinion",
+          "elements probants"
+        ],
+        "excerpt_preview": "Résumé des normes internationales d’audit ,\nd’assurance et de missions connexes\nABC Audit & Conseil\nEnseignant : Maher GAIDA\n3\n© 2015\nISA 450 - Évaluation des anomalies détectées au cours de l’audit.................................. 63 [...]",
+        "score": 31
+      },
+      {
+        "doc_id": "audit_resume_acceptation_controle_qualite",
+        "title": "Resume audit acceptation de mission et controle qualite",
+        "page": 3,
+        "heading": "PHASE DE PLANIFICATION",
+        "support_level": "framework_source",
+        "matched_terms": [
+          "planification",
+          "risque",
+          "rapport"
+        ],
+        "excerpt_preview": "PHASE DE PLANIFICATION\nla planification de l’audit (ISA 300)\nL’auditeur a une obligation\n\nfaire participer dans le processus de la planification  \n ▪ l’associé responsable de la mission \n ▪ les membres clés de l’équipe de mission\nLa prise de connaissance [...]",
+        "score": 33
+      }
+    ]
+  }
+]

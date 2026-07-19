@@ -1,0 +1,2045 @@
+{
+  "summary": {
+    "total_cases": 78,
+    "ok_cases": 78,
+    "failed_cases": 0,
+    "intent_match_count": 70,
+    "preferred_source_match_count": 72,
+    "response_style_match_count": 72,
+    "all_sections_present_count": 72,
+    "source_precision_pass_count": 75,
+    "source_precision_failure_count": 3,
+    "safe_pass_count": 69,
+    "safe_failure_count": 9,
+    "expert_pass_count": 68,
+    "expert_failure_count": 10,
+    "content_quality_pass_count": 68,
+    "content_quality_failure_count": 10,
+    "avg_latency_ms": 5905.1
+  },
+  "gap_count": 10,
+  "gaps": [
+    {
+      "id": "acct_credit_bail_machine",
+      "question": "Une machine est acquise en credit-bail. Comment analyser son traitement comptable avant passation des ecritures ?",
+      "workflow": "fallback_after_provider_failure",
+      "selected_sources": [
+        {
+          "doc_id": "ias_17_contrats_location",
+          "page": 2,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": "IAS 17"
+        },
+        {
+          "doc_id": "ias_17_contrats_location",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": "IAS 17"
+        },
+        {
+          "doc_id": "nc_41_contrats_location",
+          "page": 11,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        },
+        {
+          "doc_id": "nc_41_contrats_location",
+          "page": 12,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        }
+      ],
+      "support_levels": [
+        "unclassified"
+      ],
+      "missing": "no_guardrail_block",
+      "issue_type": "weak answer generation / provider fallback",
+      "root_cause": "weak answer generation",
+      "answer_status": "safe_pass only",
+      "priority": "B",
+      "source_precision_pass": true,
+      "expert_pass": false,
+      "safe_pass": true,
+      "substance_failures": [
+        "no_guardrail_block"
+      ],
+      "source_precision_failures": [],
+      "recommended_fix": "Investigate weak answer generation / provider fallback; compare final answer against selected source excerpts."
+    },
+    {
+      "id": "acct_goodwill_amortissement",
+      "question": "Une societe peut elle amortir un goodwill et quels textes faut il verifier avant de conclure ?",
+      "workflow": "llm_provider",
+      "selected_sources": [
+        {
+          "doc_id": "ifrs_3_regroupements_entreprises",
+          "page": 5,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": "IFRS 3"
+        },
+        {
+          "doc_id": "ifrs_3_regroupements_entreprises",
+          "page": 8,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": "IFRS 3"
+        },
+        {
+          "doc_id": "nc_38_regroupements_entreprises",
+          "page": 10,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        },
+        {
+          "doc_id": "nc_38_regroupements_entreprises",
+          "page": 9,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        }
+      ],
+      "support_levels": [
+        "unclassified"
+      ],
+      "missing": "Directly tagged support from IFRS 3/NC 38 on goodwill treatment and impairment test.",
+      "issue_type": "weak source-support formatting",
+      "root_cause": "missing article / weak retrieval",
+      "answer_status": "fail",
+      "priority": "A",
+      "source_precision_pass": false,
+      "expert_pass": false,
+      "safe_pass": false,
+      "substance_failures": [],
+      "source_precision_failures": [
+        "source_precision_visible",
+        "amortization_has_direct_passage"
+      ],
+      "recommended_fix": "Add source precision rules for IFRS 3 and NC 38 goodwill terms; do not accept unclassified sources for goodwill conclusions."
+    },
+    {
+      "id": "general_lois_tva_tunisie",
+      "question": "Donnez-moi les lois de TVA en Tunisie généralement.",
+      "workflow": "fastpath",
+      "selected_sources": [
+        {
+          "doc_id": "tva_droit_consommation",
+          "page": 2,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        }
+      ],
+      "support_levels": [
+        "unclassified"
+      ],
+      "missing": "Fastpath answer is good, but source support labels are unclassified and source-precision wording is not visible.",
+      "issue_type": "weak source-support formatting",
+      "root_cause": "missing article / weak retrieval",
+      "answer_status": "fail",
+      "priority": "B",
+      "source_precision_pass": false,
+      "expert_pass": false,
+      "safe_pass": false,
+      "substance_failures": [],
+      "source_precision_failures": [
+        "source_precision_visible"
+      ],
+      "recommended_fix": "Classify canonical fastpath sources as framework_source/direct_passage and include the existing source-support wording in debug/output checks."
+    },
+    {
+      "id": "loi_finances_modifie_code_tva",
+      "question": "Une loi de finances peut-elle modifier le Code TVA ?",
+      "workflow": "fastpath",
+      "selected_sources": [
+        {
+          "doc_id": "tva_droit_consommation",
+          "page": 2,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        }
+      ],
+      "support_levels": [
+        "unclassified"
+      ],
+      "missing": "Fastpath answer is good, but source support labels are unclassified and source-precision wording is not visible.",
+      "issue_type": "weak source-support formatting",
+      "root_cause": "missing article / weak retrieval",
+      "answer_status": "fail",
+      "priority": "B",
+      "source_precision_pass": false,
+      "expert_pass": false,
+      "safe_pass": false,
+      "substance_failures": [],
+      "source_precision_failures": [
+        "source_precision_visible"
+      ],
+      "recommended_fix": "Classify canonical fastpath sources as framework_source/direct_passage and include the existing source-support wording in debug/output checks."
+    },
+    {
+      "id": "level2_amortissement_immobilisation_cloture",
+      "question": "Comment analyser l amortissement d une immobilisation corporelle avant cloture ?",
+      "workflow": "accounting_closing_estimate_case",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "page": 2,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "valeur residuelle"
+          ],
+          "heading": ""
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "page": 7,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilite",
+            "valeur residuelle"
+          ],
+          "heading": "IAS 16"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "page": 7,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "immobilisations",
+            "amortissement",
+            "etats financiers"
+          ],
+          "heading": ""
+        },
+        {
+          "doc_id": "nc_14_eventualites_post_cloture",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": "NC 14"
+        },
+        {
+          "doc_id": "nc_39_parties_liees",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": "Champ d'application"
+        }
+      ],
+      "support_levels": [
+        "direct_passage",
+        "unclassified"
+      ],
+      "missing": "Answer must mention ready-for-use/mise en service, depreciable base, useful life, method, accounting vs tax split.",
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation",
+      "answer_status": "fail",
+      "priority": "A",
+      "source_precision_pass": true,
+      "expert_pass": false,
+      "safe_pass": false,
+      "substance_failures": [
+        "amortization_mentions_service_date",
+        "amortization_mentions_accounting_basis"
+      ],
+      "source_precision_failures": [],
+      "recommended_fix": "Strengthen accounting_closing_estimate_case wording to always cover mise en service/ready-for-use, base, useful life and tax distinction."
+    },
+    {
+      "id": "level2_provision_creances_douteuses_deductible",
+      "question": "Dans quelles conditions une provision pour creances douteuses est elle deductible ?",
+      "workflow": "receivable_impairment_subsequent_event",
+      "selected_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "page": 35,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "creances",
+            "depreciation",
+            "provision"
+          ],
+          "heading": ""
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "page": 1,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "provision",
+            "obligation",
+            "creances douteuses"
+          ],
+          "heading": "IAS 37"
+        },
+        {
+          "doc_id": "ias_10_evenements_post_cloture",
+          "page": 2,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "evenements posterieurs",
+            "date de cloture",
+            "ajuster"
+          ],
+          "heading": "IAS 10"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "page": 10,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "creances douteuses",
+            "provision",
+            "deductible",
+            "depreciation"
+          ],
+          "heading": "ARTICLE 12 : Le résultat net est établi après déduction de toutes charges"
+        }
+      ],
+      "support_levels": [
+        "direct_passage"
+      ],
+      "missing": "Answer must stay focused on accounting provision and fiscal deductibility conditions; avoid irrelevant post-closing recovery unless facts include it.",
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation",
+      "answer_status": "fail",
+      "priority": "B",
+      "source_precision_pass": true,
+      "expert_pass": false,
+      "safe_pass": false,
+      "substance_failures": [],
+      "source_precision_failures": [],
+      "recommended_fix": "Split generic receivable definition from subsequent-event workflow; only discuss post-closing recovery when present in facts."
+    },
+    {
+      "id": "level2_amortissement_mise_en_service_novembre",
+      "question": "Une immobilisation corporelle a ete achetee en septembre mais mise en service en novembre. Comment raisonner l amortissement ?",
+      "workflow": "fixed_asset_component_depreciation_case",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "page": 2,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilisation",
+            "valeur residuelle"
+          ],
+          "heading": ""
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "page": 7,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "parties",
+            "duree d'utilite"
+          ],
+          "heading": "IAS 16"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "page": 14,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissements",
+            "mise en service",
+            "date d'acquisition",
+            "exploitation"
+          ],
+          "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "page": 7,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "immobilisations",
+            "amortissements",
+            "etats financiers"
+          ],
+          "heading": ""
+        }
+      ],
+      "support_levels": [
+        "direct_passage"
+      ],
+      "missing": "Answer must mention ready-for-use/mise en service, depreciable base, useful life, method, accounting vs tax split.",
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation",
+      "answer_status": "fail",
+      "priority": "A",
+      "source_precision_pass": true,
+      "expert_pass": false,
+      "safe_pass": false,
+      "substance_failures": [],
+      "source_precision_failures": [],
+      "recommended_fix": "Strengthen accounting_closing_estimate_case wording to always cover mise en service/ready-for-use, base, useful life and tax distinction."
+    },
+    {
+      "id": "level2_provision_creance_douteuse_sans_justificatifs",
+      "question": "Dans quelles conditions une provision pour creance douteuse peut elle etre deductibile si aucune action de recouvrement ni justificatifs ne sont disponibles ?",
+      "workflow": "direct_tax_deductibility_adjustment_case",
+      "selected_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "page": 10,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "creances douteuses",
+            "provision",
+            "deductible",
+            "depreciation"
+          ],
+          "heading": "ARTICLE 12 : Le résultat net est établi après déduction de toutes charges"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "page": 35,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "provision",
+            "depreciation",
+            "creances"
+          ],
+          "heading": ""
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "page": 1,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "provision",
+            "obligation",
+            "depreciation",
+            "creances douteuses"
+          ],
+          "heading": "IAS 37"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "page": 1,
+          "support_level": "framework_source",
+          "matched_terms": [],
+          "heading": ""
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        }
+      ],
+      "support_levels": [
+        "direct_passage",
+        "framework_source",
+        "unclassified"
+      ],
+      "missing": "Answer must stay focused on accounting provision and fiscal deductibility conditions; avoid irrelevant post-closing recovery unless facts include it.",
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation",
+      "answer_status": "fail",
+      "priority": "B",
+      "source_precision_pass": true,
+      "expert_pass": false,
+      "safe_pass": false,
+      "substance_failures": [
+        "receivable_mentions_individualized"
+      ],
+      "source_precision_failures": [],
+      "recommended_fix": "Split generic receivable definition from subsequent-event workflow; only discuss post-closing recovery when present in facts."
+    },
+    {
+      "id": "level2_user_amortissement_date_depart_15_septembre",
+      "question": "Une immobilisation est achetee le 15 septembre. A partir de quelle date commence son amortissement ? Quels textes ou normes faut-il consulter ?",
+      "workflow": "accounting_closing_estimate_case",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "page": 2,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "valeur residuelle"
+          ],
+          "heading": ""
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "page": 7,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilite",
+            "valeur residuelle"
+          ],
+          "heading": "IAS 16"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "page": 7,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "immobilisations",
+            "amortissement",
+            "etats financiers"
+          ],
+          "heading": ""
+        },
+        {
+          "doc_id": "nc_14_eventualites_post_cloture",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": "NC 14"
+        },
+        {
+          "doc_id": "nc_39_parties_liees",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": "Champ d'application"
+        }
+      ],
+      "support_levels": [
+        "direct_passage",
+        "unclassified"
+      ],
+      "missing": "Answer must mention ready-for-use/mise en service, depreciable base, useful life, method, accounting vs tax split.",
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation",
+      "answer_status": "fail",
+      "priority": "A",
+      "source_precision_pass": true,
+      "expert_pass": false,
+      "safe_pass": false,
+      "substance_failures": [
+        "amortization_mentions_service_date",
+        "amortization_mentions_accounting_basis"
+      ],
+      "source_precision_failures": [],
+      "recommended_fix": "Strengthen accounting_closing_estimate_case wording to always cover mise en service/ready-for-use, base, useful life and tax distinction."
+    },
+    {
+      "id": "level2_user_creance_douteuse_comptable_fiscal",
+      "question": "Une societe constate une creance douteuse. Dans quelles conditions une provision est-elle comptablement et fiscalement deductible ?",
+      "workflow": "receivable_impairment_subsequent_event",
+      "selected_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "page": 35,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "creances",
+            "depreciation",
+            "provision"
+          ],
+          "heading": ""
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "page": 1,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "provision",
+            "obligation",
+            "creances douteuses"
+          ],
+          "heading": "IAS 37"
+        },
+        {
+          "doc_id": "ias_10_evenements_post_cloture",
+          "page": 2,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "evenements posterieurs",
+            "date de cloture",
+            "ajuster"
+          ],
+          "heading": "IAS 10"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "page": 10,
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "creances douteuses",
+            "provision",
+            "deductible",
+            "depreciation"
+          ],
+          "heading": "ARTICLE 12 : Le résultat net est établi après déduction de toutes charges"
+        }
+      ],
+      "support_levels": [
+        "direct_passage"
+      ],
+      "missing": "Answer must stay focused on accounting provision and fiscal deductibility conditions; avoid irrelevant post-closing recovery unless facts include it.",
+      "issue_type": "weak answer generation",
+      "root_cause": "weak answer generation",
+      "answer_status": "fail",
+      "priority": "B",
+      "source_precision_pass": true,
+      "expert_pass": false,
+      "safe_pass": false,
+      "substance_failures": [],
+      "source_precision_failures": [],
+      "recommended_fix": "Split generic receivable definition from subsequent-event workflow; only discuss post-closing recovery when present in facts."
+    }
+  ],
+  "improvements": [
+    {
+      "id": "tax_dividendes_2026",
+      "question": "Une SARL tunisienne distribue des dividendes en 2026. Quelles retenues a la source faut il verifier avant paiement ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ]
+    },
+    {
+      "id": "tva_export_client_etranger",
+      "question": "Une societe exportatrice tunisienne facture un client etranger. Quel regime TVA faut il verifier avant emission de la facture ?",
+      "movements": [
+        "tva_droit_consommation: unclassified -> framework_source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "convention_fiscale_france_tunisie",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "boi_france_tunisie_convention_fiscale_2012",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "tax_non_resident_services",
+      "question": "Une entreprise tunisienne paie un prestataire non resident pour des services administratifs. Quels textes fiscaux faut il verifier avant paiement ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "code_obligations_contrats_2015",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "convention_fiscale_applicable",
+          "support_level": "missing_source"
+        }
+      ]
+    },
+    {
+      "id": "tax_regularisation_dettes",
+      "question": "Un client veut regulariser ses dettes fiscales et demander une remise de penalites. Quelle approche de cabinet faut il suivre ?",
+      "movements": [
+        "code_irpp_is_2011: unclassified -> direct_passage"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "note_generale_regularisation_dettes_fiscales_2026",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "droits_taxes_hors_codes",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "formulaire_declaration_mensuelle_ar_2026",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "formulaire_declaration_is_2026",
+          "support_level": "framework_source"
+        }
+      ]
+    },
+    {
+      "id": "tax_dividendes_associe_resident_2026",
+      "question": "Une SARL tunisienne distribue 250 000 TND de dividendes en 2026 a un associe resident. Quelles sont les consequences fiscales ? Citez les bases legales.",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ]
+    },
+    {
+      "id": "acct_provision_clients_douteux",
+      "question": "Comment traiter une provision pour clients douteux en fin d exercice ?",
+      "movements": [
+        "nc_01_norme_generale: unclassified -> direct_passage"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "nc_34_microcredit_revenus",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "nc_19_etats_financiers_intermediaires",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_14_eventualites_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_39_parties_liees",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_03_revenus",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_04_stocks",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "audit_fraude_post_cloture",
+      "question": "Le commissaire aux comptes decouvre une fraude apres la cloture. Quels devoirs faut il analyser avant de rediger la position du cabinet ?",
+      "movements": [
+        "code_societes_commerciales_2022: framework_source -> direct_passage"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "audit_resume_gaida_normes_missions",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "audit_resume_acceptation_controle_qualite",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_societes_commerciales_2022",
+          "support_level": "framework_source"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "audit_resume_gaida_normes_missions",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "audit_resume_acceptation_controle_qualite",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "code_societes_commerciales_2022",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "textes_profession_comptable_2018",
+          "support_level": "framework_source"
+        }
+      ]
+    },
+    {
+      "id": "audit_anomalie_apres_rapport",
+      "question": "Un commissaire aux comptes decouvre une anomalie significative apres l emission de son rapport. Que prevoit la reglementation ?",
+      "movements": [
+        "audit_resume_acceptation_controle_qualite: unclassified -> framework_source",
+        "audit_resume_gaida_normes_missions: unclassified -> framework_source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "audit_resume_acceptation_controle_qualite",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "audit_resume_gaida_normes_missions",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "rapport_cac_innorpi_2021",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "audit_resume_gaida_normes_missions",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "audit_resume_acceptation_controle_qualite",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "code_societes_commerciales_2022",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "textes_profession_comptable_2018",
+          "support_level": "framework_source"
+        }
+      ]
+    },
+    {
+      "id": "def_retenue_source",
+      "question": "Qu est ce que la retenue a la source ?",
+      "movements": [
+        "code_irpp_is_2011: unclassified -> direct_passage"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "droits_taxes_hors_codes",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "loi_comptable",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "convention_fiscale_france_tunisie",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "cmp_tva_collectee_deductible",
+      "question": "Quelle difference entre TVA collectee et TVA deductible ?",
+      "movements": [
+        "tva_droit_consommation: unclassified -> framework_source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "convention_fiscale_france_tunisie",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "boi_france_tunisie_convention_fiscale_2012",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "general_lois_fiscales_tunisie",
+      "question": "Quelles sont les lois de fiscalite en Tunisie generalement ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "enregistrement_timbre",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "fiscalite_locale",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "enregistrement_timbre",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "fiscalite_locale_2026",
+          "support_level": "unclassified"
+        }
+      ]
+    },
+    {
+      "id": "general_lois_fiscales_tunisie_donnez_moi",
+      "question": "Donnez-moi les lois de fiscalité en Tunisie généralement.",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "enregistrement_timbre",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "fiscalite_locale",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "enregistrement_timbre",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "fiscalite_locale_2026",
+          "support_level": "unclassified"
+        }
+      ]
+    },
+    {
+      "id": "cmp_procedures_fiscales_vs_irpp_is",
+      "question": "Quelle est la difference entre le Code des procedures fiscales et le Code de l IRPP et de l IS ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "unclassified"
+        }
+      ]
+    },
+    {
+      "id": "sources_droit_fiscal_tunisien",
+      "question": "Quelles sont les principales sources du droit fiscal tunisien ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "enregistrement_timbre",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "fiscalite_locale",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "enregistrement_timbre",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "fiscalite_locale_2026",
+          "support_level": "unclassified"
+        }
+      ]
+    },
+    {
+      "id": "hierarchie_normes_fiscales_tunisie",
+      "question": "Quelle est la hierarchie des normes en droit fiscal tunisien ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "unclassified"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "unclassified"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "unclassified"
+        }
+      ]
+    },
+    {
+      "id": "level2_dividendes_associe_resident_prudent",
+      "question": "Une SARL tunisienne distribue 250 000 TND de dividendes en 2026 a un associe resident. Quelles sont les consequences fiscales ? Citez les bases legales.",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ]
+    },
+    {
+      "id": "level2_fraude_apres_rapport_cac",
+      "question": "Un commissaire aux comptes decouvre une fraude apres l emission de son rapport. Que doit il faire ?",
+      "movements": [
+        "code_societes_commerciales_2022: framework_source -> direct_passage"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "audit_resume_gaida_normes_missions",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "audit_resume_acceptation_controle_qualite",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_societes_commerciales_2022",
+          "support_level": "framework_source"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "audit_resume_gaida_normes_missions",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "audit_resume_acceptation_controle_qualite",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "code_societes_commerciales_2022",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "textes_profession_comptable_2018",
+          "support_level": "framework_source"
+        }
+      ]
+    },
+    {
+      "id": "level2_provision_creances_douteuses_deductible",
+      "question": "Dans quelles conditions une provision pour creances douteuses est elle deductible ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_10_evenements_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level2_dividendes_associe_non_resident",
+      "question": "Une SARL tunisienne distribue des dividendes en 2026 a un associe non resident. Quels points fiscaux faut il verifier ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "convention_fiscale_applicable",
+          "support_level": "missing_source"
+        }
+      ]
+    },
+    {
+      "id": "level2_fraude_avant_signature_rapport_cac",
+      "question": "Un commissaire aux comptes decouvre une fraude avant la signature de son rapport. Que doit il faire ?",
+      "movements": [
+        "code_societes_commerciales_2022: framework_source -> direct_passage"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "audit_resume_gaida_normes_missions",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "audit_resume_acceptation_controle_qualite",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_societes_commerciales_2022",
+          "support_level": "framework_source"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "audit_resume_gaida_normes_missions",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "audit_resume_acceptation_controle_qualite",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "code_societes_commerciales_2022",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "textes_profession_comptable_2018",
+          "support_level": "framework_source"
+        }
+      ]
+    },
+    {
+      "id": "level2_amortissement_mise_en_service_novembre",
+      "question": "Une immobilisation corporelle a ete achetee en septembre mais mise en service en novembre. Comment raisonner l amortissement ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level2_provision_creance_douteuse_sans_justificatifs",
+      "question": "Dans quelles conditions une provision pour creance douteuse peut elle etre deductibile si aucune action de recouvrement ni justificatifs ne sont disponibles ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "unclassified"
+        }
+      ]
+    },
+    {
+      "id": "level2_user_dividendes_cloture_2025_avril_2026",
+      "question": "Une SARL tunisienne cloture son exercice le 31 decembre 2025 et decide en avril 2026 de distribuer 250 000 TND de dividendes a un associe personne physique residente. Quels impots, retenues a la source et obligations declaratives doivent etre examines ? Citez les bases legales.",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        }
+      ]
+    },
+    {
+      "id": "level2_user_creance_douteuse_comptable_fiscal",
+      "question": "Une societe constate une creance douteuse. Dans quelles conditions une provision est-elle comptablement et fiscalement deductible ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_14_eventualites_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_12_impots_resultat",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_10_evenements_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level3_cross_border_it_services_france_120k",
+      "question": "Une societe tunisienne de services informatiques facture 120 000 EUR a une societe francaise. Une partie du travail est realisee depuis la Tunisie, mais deux consultants tunisiens se deplacent en France pendant 20 jours pour l installation et la formation. Quels risques fiscaux et obligations faut il analyser avant facturation et paiement ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "convention_fiscale_france_tunisie",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "convention_fiscale_france_tunisie",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level3_mixed_dividends_three_shareholders",
+      "question": "Une SARL tunisienne distribue 300 000 TND de dividendes a une personne physique residente, 200 000 TND a une societe tunisienne et 100 000 TND a un associe francais non resident. Quelle analyse fiscale faut il faire avant paiement ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "convention_fiscale_france_tunisie",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "loi_finances_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "convention_fiscale_france_tunisie",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "convention_fiscale_france_tunisie_texte_1973",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level3_annual_maintenance_upfront_cutoff_tva",
+      "question": "Une societe facture et encaisse en decembre 2025 un contrat annuel de maintenance couvrant janvier a decembre 2026. Comment traiter le revenu, la fiscalite et la TVA avant cloture ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "nc_03_revenus",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "nc_03_revenus",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "tva_droit_consommation",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level3_creance_douteuse_recouvrement_post_cloture",
+      "question": "Une societe a une creance douteuse de 180 000 TND en retard depuis 14 mois, avec plusieurs relances documentees. Apres la cloture, elle recupere 30 000 TND. Comment analyser la provision comptable, l evenement posterieur et la deductibilite fiscale ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_10_evenements_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_10_evenements_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level3_creance_douteuse_recouvrement_post_cloture_accents",
+      "question": "Une société a une créance douteuse de 180 000 TND en retard depuis 14 mois, avec plusieurs relances documentées. Après la clôture, elle récupère 30 000 TND. Comment analyser la provision comptable, l’événement postérieur et la déductibilité fiscale ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_10_evenements_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_10_evenements_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level3_creance_client_ecritures_deductibilite_post_cloture",
+      "question": "Une société a une créance client de 180 000 TND échue depuis 14 mois. Elle a envoyé plusieurs relances, a récupéré 30 000 TND après clôture, et envisage de provisionner le solde. Quelles écritures et quelles conditions fiscales de déductibilité doivent être examinées ? Comment traiter l’encaissement postérieur à la clôture ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_10_evenements_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_10_evenements_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level3_related_party_property_below_market",
+      "question": "Une societe vend un immeuble a son gerant a un prix inferieur a la valeur de marche. Quels risques comptables, fiscaux, juridiques et d audit faut il analyser ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "nc_39_parties_liees",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_societes_commerciales_2022",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "audit_resume_gaida_normes_missions",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "nc_39_parties_liees",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_societes_commerciales_2022",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "audit_resume_gaida_normes_missions",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level3_consulting_cash_weak_evidence",
+      "question": "Une societe comptabilise une charge de consulting avec seulement une facture et un paiement en especes. Peut on confirmer la deductibilite fiscale ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "loi_comptable",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "loi_comptable",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "procedures_fiscales_2026",
+          "support_level": "framework_source"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level3_accounting_provision_not_tax_deductible",
+      "question": "Une provision est comptabilisee selon les normes comptables mais elle n est pas fiscalement deductible. Comment traiter l ecart entre comptabilite et fiscalite ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_14_eventualites_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_12_impots_resultat",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "ias_37_provisions_passifs_actifs_eventuels",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_14_eventualites_post_cloture",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_12_impots_resultat",
+          "support_level": "direct_passage"
+        }
+      ]
+    },
+    {
+      "id": "level3_fixed_asset_component_depreciation_machine",
+      "question": "Une societe achete une machine le 15 septembre, la recoit le 20 septembre, l installe le 10 octobre, effectue des tests jusqu au 25 octobre et commence la production le 1er novembre. Une piece majeure doit etre remplacee tous les 3 ans. Comment analyser la date de debut d amortissement, les composants, le traitement comptable et le traitement fiscal ?",
+      "movements": [
+        "old/historical source -> current source"
+      ],
+      "old_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2011",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        }
+      ],
+      "current_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "support_level": "direct_passage"
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "support_level": "direct_passage"
+        }
+      ]
+    }
+  ]
+}
