@@ -301,7 +301,7 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
 
     is_case_analysis = any(
         token in case_id or token in question
-        for token in ["dividende", "tva", "france", "fraude", "anomalie", "amortissement", "creance", "creances", "goodwill", "ecart d acquisition"]
+        for token in ["dividende", "tva", "france", "fraude", "anomalie", "amortissement", "creance", "creances", "goodwill", "ecart d acquisition", "facturation_electronique", "facturation electronique", "facture electronique"]
     )
     if not is_case_analysis:
         return {"checks": checks, "passed": True, "support_levels": supports, "headings": headings}
@@ -347,6 +347,10 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
         checks["goodwill_has_heading_or_excerpt"] = bool(headings) or any(
             source.get("excerpt_preview") for source in (debug_trace.get("selected_sources") or [])
         )
+
+    if "facturation_electronique" in case_id or "facturation electronique" in question or "facture electronique" in question:
+        checks["electronic_invoice_has_note_2026"] = "note_generale_facturation_electronique_2026" in docs
+        checks["electronic_invoice_support_classified"] = any(level in {"direct_passage", "framework_source"} for level in supports)
 
     if "creance" in case_id or "creances" in case_id or "creance douteuse" in question or "creances douteuses" in question:
         checks["receivable_has_direct_passage"] = "direct_passage" in supports

@@ -823,6 +823,12 @@ def source_precision_rules(message: str) -> list[dict]:
         return rules
     if is_treaty_overview_query(query) and treaty_doc_ids:
         return treaty_precision_rules(treaty_doc_ids)
+    if is_electronic_invoice_case(query):
+        return [
+            {"doc_id": "note_generale_facturation_electronique_2026", "terms": ["facturation electronique", "2026", "loi de finances", "article 53", "services"], "min_matches": 2},
+            {"doc_id": tva_doc_id_for_query(query), "terms": ["facture", "facturation", "tva", "article 18", "deduction"], "min_matches": 2},
+            {"doc_id": "procedures_fiscales_2026", "terms": ["facture", "declaration", "controle", "justificatifs", "sanctions"], "min_matches": 2},
+        ]
     procedure_rules = tax_procedure_precision_rules(query)
     if procedure_rules:
         return procedure_rules
@@ -1845,6 +1851,33 @@ def is_receivable_subsequent_recovery_case(query: str) -> bool:
     )
 
 
+def is_electronic_invoice_case(query: str) -> bool:
+    invoice_markers = [
+        "facturation electronique",
+        "facture electronique",
+        "factures electroniques",
+        "e-facturation",
+        "efacturation",
+        "fawtara",
+        "foutara",
+    ]
+    process_markers = [
+        "obligation",
+        "obligations",
+        "changer le processus",
+        "processus de facturation",
+        "emission",
+        "emettre",
+        "conservation",
+        "transmission",
+        "systeme",
+        "2026",
+        "service",
+        "services",
+    ]
+    return any(marker in query for marker in invoice_markers) and any(marker in query for marker in process_markers)
+
+
 def is_fixed_asset_component_depreciation_case(query: str) -> bool:
     asset_markers = ["machine", "immobilisation", "equipement", "ligne de production", "actif", "moteur"]
     issue_markers = [
@@ -2048,6 +2081,8 @@ def semantically_adjust_support_level(message: str, source: dict) -> dict:
             "opinion",
             "gouvernance",
         ]
+    elif is_electronic_invoice_case(query) and doc_id in {"note_generale_facturation_electronique_2026", "tva_droit_consommation", "tva_droit_consommation_2025", "procedures_fiscales_2026"}:
+        required_any = ["facturation electronique", "facture", "factures", "loi de finances", "article 53", "services", "2026"]
     elif is_goodwill_accounting_case(query) and doc_id in {"nc_38_regroupements_entreprises", "ifrs_3_regroupements_entreprises", "ias_36_depreciation_actifs", "ias_38_immobilisations_incorporelles", "nc_06_immobilisations_incorporelles"}:
         required_any = ["goodwill", "ecart d'acquisition", "fonds commercial", "regroupement", "acquisition", "depreciation", "duree d'utilite", "amortissement"]
     elif is_fixed_asset_depreciation_case(query) and doc_id in {"nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "nc_06_immobilisations_incorporelles", "ias_38_immobilisations_incorporelles", "code_irpp_is_2011", "code_irpp_is_2025", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
@@ -3043,6 +3078,16 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     elif is_receivable_subsequent_recovery_case(query):
         priority_doc_ids = ["nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", irpp_is_doc_id]
         blocked_doc_ids = {"fiscalite_locale", "code_commerce_2014", "nct_44_takaful_controle_interne"}
+    elif is_electronic_invoice_case(query):
+        priority_doc_ids = ["note_generale_facturation_electronique_2026", tva_doc_id_for_query(query), "procedures_fiscales_2026"]
+        blocked_doc_ids = {
+            "ias_7_tableau_flux_tresorerie",
+            "audit_resume_gaida_normes_missions",
+            "code_societes_commerciales_2022",
+            "fiscalite_locale",
+            "code_commerce_2014",
+            "code_obligations_contrats_2015",
+        }
     elif is_goodwill_accounting_case(query):
         priority_doc_ids = [
             "nc_38_regroupements_entreprises",
@@ -3956,6 +4001,38 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Ne pas maintenir une provision brute si un recouvrement posterieur modifie l'exposition restante.\n"
                     "- Ne pas deduire fiscalement une provision globale ou forfaitaire sans dossier client par client.\n"
                     "- Distinguer clairement preuve posterieure d'une situation existante et evenement nouveau."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_electronic_invoice_case(query):
+        workflow_name = "tax_electronic_invoice_compliance_case"
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    "La facturation electronique doit etre traitee comme un sujet de conformite fiscale et TVA, pas comme une simple question informatique. "
+                    f"Faits transmis: {facts_summary}. "
+                    "La source prioritaire indexee est la note generale 2026 relative a l'extension de la facturation electronique, rattachee a l'article 53 de la loi de finances pour 2026. "
+                    "Avant de changer le processus d'un client, il faut verifier si son activite, ses operations et sa date d'application entrent dans le champ vise, notamment pour les prestations de services."
+                ),
+                "Application pratique": (
+                    "- Champ d'application: identifier le secteur du client, son statut TVA, la nature des operations, les clients concernes et si les prestations de services sont visees par l'extension 2026.\n"
+                    "- Date d'effet: verifier la date d'entree en application applicable au client; la note 2026 mentionne l'extension a compter du 1er janvier 2026 pour les operations visees.\n"
+                    "- Processus: cartographier emission, validation, numerotation, mentions obligatoires, envoi au client, conservation, annulation/avoir et rapprochement avec la declaration fiscale.\n"
+                    "- Systeme autorise: verifier l'adhesion ou l'interfacage au systeme/operateur autorise, la conservation des factures electroniques et la transmission aux services competents lorsque le texte l'exige.\n"
+                    "- TVA et deduction: verifier que les factures emises et recues respectent les conditions de forme utiles a la TVA, au droit a deduction et au controle fiscal.\n"
+                    "- Justificatifs: conserver decision de migration, parametrage, contrat prestataire ou plateforme, preuves de tests, procedures internes, habilitations, journal des emissions et preuves de conservation/transmission.\n"
+                    "- Informations manquantes: activite exacte, regime fiscal, assujettissement TVA, categorie de clients, date de bascule, outil utilise, modalites de conservation et textes applicables au secteur."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas generaliser l'obligation a tous les clients sans verifier le champ d'application exact et la date applicable.\n"
+                    "- Ne pas inventer de sanction, delai ou categorie obligatoire si le passage direct n'est pas retrouve.\n"
+                    "- Distinguer obligation d'emettre une facture reguliere, obligation d'utiliser la facturation electronique, conservation et transmission.\n"
+                    "- Si le dossier concerne une periode ou un secteur particulier, verifier la version du Code TVA, la note 2026 et les procedures fiscales applicables."
                 ),
                 "Sources utilisees": source_lines,
             },
