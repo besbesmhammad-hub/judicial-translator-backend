@@ -859,6 +859,14 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": "ias_10_evenements_post_cloture", "terms": ["evenements posterieurs", "date de cloture", "ajuster", "non ajuster"], "min_matches": 2},
             {"doc_id": irpp_is_doc_id, "terms": ["creances douteuses", "provision", "deductible", "depreciation"], "min_matches": 2},
         ]
+    if is_goodwill_accounting_case(query):
+        return [
+            {"doc_id": "nc_38_regroupements_entreprises", "terms": ["goodwill", "ecart d'acquisition", "regroupement", "acquisition", "amortissement", "depreciation"], "min_matches": 2},
+            {"doc_id": "ifrs_3_regroupements_entreprises", "terms": ["goodwill", "regroupement d'entreprises", "acquisition", "contrepartie", "depreciation"], "min_matches": 2},
+            {"doc_id": "ias_36_depreciation_actifs", "terms": ["goodwill", "test de depreciation", "unite generatrice", "valeur recouvrable"], "min_matches": 2},
+            {"doc_id": "ias_38_immobilisations_incorporelles", "terms": ["goodwill genere en interne", "immobilisation incorporelle", "duree d'utilite", "amortissement"], "min_matches": 2},
+            {"doc_id": "nc_06_immobilisations_incorporelles", "terms": ["fonds commercial", "immobilisations incorporelles", "amortissement", "duree d'utilisation"], "min_matches": 2},
+        ]
     if is_fixed_asset_component_depreciation_case(query):
         return [
             {"doc_id": "nc_05_immobilisations_corporelles", "terms": ["amortissement", "duree d'utilisation", "composants", "valeur residuelle", "mise en service"], "min_matches": 2},
@@ -866,6 +874,19 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": irpp_is_doc_id, "terms": ["amortissements", "mise en service", "composantes", "date d'acquisition", "exploitation"], "min_matches": 2},
             {"doc_id": "nc_01_norme_generale", "terms": ["immobilisations", "amortissements", "etats financiers", "estimation"], "min_matches": 2},
         ]
+    if is_fixed_asset_depreciation_case(query):
+        rules = [
+            {"doc_id": "nc_05_immobilisations_corporelles", "terms": ["amortissement", "duree d'utilisation", "valeur residuelle", "depreciation", "base amortissable"], "min_matches": 2},
+            {"doc_id": "ias_16_immobilisations_corporelles", "terms": ["amortissement", "pret a etre utilisee", "duree d'utilite", "valeur residuelle", "composant"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["amortissements", "mise en service", "date d'acquisition", "exploitation", "deduction"], "min_matches": 2},
+        ]
+        if "logiciel" in query or "licence" in query or "incorporel" in query or "incorporelle" in query:
+            rules = [
+                {"doc_id": "nc_06_immobilisations_incorporelles", "terms": ["immobilisations incorporelles", "logiciel", "amortissement", "duree d'utilisation"], "min_matches": 2},
+                {"doc_id": "ias_38_immobilisations_incorporelles", "terms": ["immobilisation incorporelle", "duree d'utilite", "amortissement", "licence"], "min_matches": 2},
+                *rules,
+            ]
+        return rules
     if is_going_concern_case(query):
         return [
             {"doc_id": "cadre_conceptuel_comptable", "terms": ["continuite de l'exploitation", "entreprise poursuit", "avenir previsible"], "min_matches": 2},
@@ -1816,6 +1837,8 @@ def is_receivable_subsequent_recovery_case(query: str) -> bool:
             or "posterieur" in query
             or "deductibilite" in query
             or "deductible" in query
+            or "deductibile" in query
+            or "deductib" in query
             or "deduire" in query
             or "fiscal" in query
         )
@@ -1829,7 +1852,48 @@ def is_fixed_asset_component_depreciation_case(query: str) -> bool:
         "mise en service", "mise en production", "pret a fonctionner", "pret a etre utilise",
         "production", "composant", "piece majeure", "taux fiscal", "duree comptable",
     ]
-    return any(marker in query for marker in asset_markers) and sum(1 for marker in issue_markers if marker in query) >= 2
+    has_component_marker = any(marker in query for marker in ["composant", "composants", "piece majeure", "moteur", "remplacee tous les 3 ans", "remplacer tous les 3 ans"])
+    has_multi_stage_commissioning = (
+        any(marker in query for marker in asset_markers)
+        and "installation" in query
+        and "tests" in query
+        and ("mise en production" in query or "commence la production" in query)
+    )
+    return (
+        any(marker in query for marker in asset_markers)
+        and sum(1 for marker in issue_markers if marker in query) >= 2
+        and (has_component_marker or has_multi_stage_commissioning)
+    )
+
+
+def is_fixed_asset_depreciation_case(query: str) -> bool:
+    if (
+        any(marker in query for marker in ["actionnaire", "associe", "gerant", "dirigeant", "partie liee"])
+        and any(marker in query for marker in ["cede", "cession", "vend", "vente", "prix tres bas", "valeur de marche", "validation comptable"])
+    ):
+        return False
+    asset_markers = [
+        "immobilisation", "immobilisations", "machine", "equipement", "vehicule",
+        "actif corporel", "corporelle", "corporelles", "logiciel", "licence",
+        "immobilisation incorporelle", "incorporelle", "incorporelles",
+    ]
+    depreciation_markers = [
+        "amortissement", "amortir", "amortissable", "dotation", "mise en service",
+        "mise en production", "pret a fonctionner", "pret a etre utilise", "date commence",
+        "date de depart", "duree d'utilite", "base amortissable", "valeur residuelle",
+        "composant", "composants", "taux fiscal", "deductibilite", "fiscal",
+    ]
+    return any(marker in query for marker in asset_markers) and any(marker in query for marker in depreciation_markers)
+
+
+def is_goodwill_accounting_case(query: str) -> bool:
+    return (
+        "goodwill" in query
+        or "ecart d acquisition" in query
+        or "ecart d'acquisition" in query
+        or "fonds commercial" in query
+        or ("regroupement" in query and "entreprise" in query)
+    )
 
 
 def is_going_concern_case(query: str) -> bool:
@@ -1984,8 +2048,10 @@ def semantically_adjust_support_level(message: str, source: dict) -> dict:
             "opinion",
             "gouvernance",
         ]
-    elif is_fixed_asset_component_depreciation_case(query) and doc_id in {"nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "code_irpp_is_2011", "code_irpp_is_2025", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
-        required_any = ["amortissement", "mise en service", "pret a etre utilise", "composant", "duree d'utilisation", "duree d'utilite"]
+    elif is_goodwill_accounting_case(query) and doc_id in {"nc_38_regroupements_entreprises", "ifrs_3_regroupements_entreprises", "ias_36_depreciation_actifs", "ias_38_immobilisations_incorporelles", "nc_06_immobilisations_incorporelles"}:
+        required_any = ["goodwill", "ecart d'acquisition", "fonds commercial", "regroupement", "acquisition", "depreciation", "duree d'utilite", "amortissement"]
+    elif is_fixed_asset_depreciation_case(query) and doc_id in {"nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "nc_06_immobilisations_incorporelles", "ias_38_immobilisations_incorporelles", "code_irpp_is_2011", "code_irpp_is_2025", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
+        required_any = ["amortissement", "mise en service", "pret a etre utilise", "composant", "base amortissable", "valeur residuelle", "duree d'utilisation", "duree d'utilite", "logiciel", "licence"]
     elif is_receivable_subsequent_recovery_case(query) and doc_id in {"nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", "code_irpp_is_2011", "code_irpp_is_2025", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
         required_any = ["creance", "provision", "depreciation", "recouvrement", "evenement posterieur", "cloture"]
 
@@ -2977,6 +3043,21 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     elif is_receivable_subsequent_recovery_case(query):
         priority_doc_ids = ["nc_01_norme_generale", "ias_37_provisions_passifs_actifs_eventuels", "ias_10_evenements_post_cloture", irpp_is_doc_id]
         blocked_doc_ids = {"fiscalite_locale", "code_commerce_2014", "nct_44_takaful_controle_interne"}
+    elif is_goodwill_accounting_case(query):
+        priority_doc_ids = [
+            "nc_38_regroupements_entreprises",
+            "ifrs_3_regroupements_entreprises",
+            "ias_36_depreciation_actifs",
+            "ias_38_immobilisations_incorporelles",
+            "nc_06_immobilisations_incorporelles",
+        ]
+        blocked_doc_ids = {
+            "ias_7_tableau_flux_tresorerie",
+            "audit_resume_gaida_normes_missions",
+            "fiscalite_locale",
+            "tva_droit_consommation",
+            "droits_taxes_hors_codes",
+        }
     elif is_fixed_asset_component_depreciation_case(query):
         priority_doc_ids = ["nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", irpp_is_doc_id, "nc_01_norme_generale"]
         blocked_doc_ids = {
@@ -2989,6 +3070,23 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "cours_audit_chiheb_ghanmi",
             "audit_controle_qualite_imed_ennouri",
             "cours_audit_imed_ennouri",
+        }
+    elif is_fixed_asset_depreciation_case(query):
+        priority_doc_ids = ["nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", irpp_is_doc_id, "nc_01_norme_generale"]
+        if "logiciel" in query or "licence" in query or "incorporel" in query or "incorporelle" in query:
+            priority_doc_ids = ["nc_06_immobilisations_incorporelles", "ias_38_immobilisations_incorporelles", *priority_doc_ids]
+        blocked_doc_ids = {
+            "droits_taxes_hors_codes",
+            "fiscalite_locale",
+            "ias_7_tableau_flux_tresorerie",
+            "audit_resume_gaida_normes_missions",
+            "audit_resume_chakroun_scan",
+            "audit_resume_acceptation_controle_qualite",
+            "cours_audit_chiheb_ghanmi",
+            "audit_controle_qualite_imed_ennouri",
+            "cours_audit_imed_ennouri",
+            "nc_14_eventualites_post_cloture",
+            "nc_39_parties_liees",
         }
     elif is_going_concern_case(query):
         priority_doc_ids = ["cadre_conceptuel_comptable", "nc_01_norme_generale", "audit_resume_gaida_normes_missions", "audit_resume_acceptation_controle_qualite"]
@@ -3433,6 +3531,116 @@ def compose_audit_cac_case_answer(query: str, facts_summary: str, source_lines: 
     )
 
 
+def compose_fixed_asset_depreciation_answer(query: str, facts_summary: str, source_lines: str) -> str:
+    has_purchase_date = any(marker in query for marker in ["15 septembre", "achete", "achetee", "acquisition", "facture"])
+    has_installation = any(marker in query for marker in ["installation", "installe", "installee", "tests", "essais"])
+    has_service = any(marker in query for marker in ["mise en service", "mise en production", "pret a fonctionner", "pret a etre utilise"])
+    has_component = any(marker in query for marker in ["composant", "composants", "piece majeure", "remplacee tous les 3 ans", "moteur"])
+    is_intangible = any(marker in query for marker in ["logiciel", "licence", "incorporel", "incorporelle", "incorporelles"])
+    is_vehicle = "vehicule" in query or "voiture" in query or "tourisme" in query
+
+    asset_kind = "immobilisation incorporelle" if is_intangible else "immobilisation corporelle"
+    timing = (
+        "La date d'acquisition ou de facture ne suffit pas a elle seule: l'amortissement commence quand l'actif est pret ou disponible pour son utilisation prevue."
+        if has_purchase_date else
+        "Le point de depart doit etre rattache a la date a laquelle l'actif est pret ou disponible pour l'utilisation prevue par l'entreprise."
+    )
+    if has_installation and not has_service:
+        timing += " Si l'actif est livre mais pas encore installe ou teste, il faut reserver la date de depart jusqu'a la preuve qu'il est pret a fonctionner."
+    if has_service:
+        timing += " La mise en service, mise en production ou disponibilite technique documentee est donc le repere central."
+    if any(marker in query for marker in ["aucun pv", "sans pv", "pas de pv", "rapport de tests n est disponible", "aucun rapport", "sans rapport"]):
+        timing += " Sans PV de mise en service, rapport de tests ou preuve equivalente, le cabinet ne peut pas fixer definitivement le depart d'amortissement."
+
+    component_note = (
+        "- Composants: si une partie significative a une duree d'utilisation differente du reste de l'actif, l'approche par composants doit etre analysee et documentee separement.\n"
+        if has_component else
+        "- Composants: verifier s'il existe des parties significatives avec durees d'utilisation distinctes; si oui, les ventiler separement.\n"
+    )
+    fiscal_note = (
+        "- Fiscalite: comparer la dotation comptable avec les regles fiscales applicables; pour un vehicule, verifier en plus les limites ou exclusions fiscales propres a ce type d'actif sans inventer de plafond si le passage exact n'est pas cite.\n"
+        if is_vehicle else
+        "- Fiscalite: distinguer l'amortissement comptable de l'amortissement fiscal deductible; verifier la date de mise en service/exploitation, les taux ou limites fiscaux et les reintegrations eventuelles dans le Code IRPP/IS applicable.\n"
+    )
+    intangible_note = (
+        "- Nature incorporelle: pour un logiciel ou une licence, verifier le droit controle, la duree d'utilisation, la duree contractuelle, les frais activables et les regles NC 06/IAS 38 applicables.\n"
+        if is_intangible else
+        ""
+    )
+
+    return compose_structured_answer(
+        "practical_analysis",
+        {
+            "Reponse": (
+                f"L'analyse porte sur une {asset_kind}. Faits transmis: {facts_summary}. "
+                f"{timing} Il faut determiner la base amortissable, la duree d'utilite, la valeur residuelle eventuelle, la methode d'amortissement et l'impact fiscal separement du traitement comptable."
+            ),
+            "Application pratique": (
+                "- Date de depart: separer acquisition, facture, livraison, installation, tests, mise en service et mise en production. L'acquisition n'est le point de depart que si l'actif est deja pret a fonctionner dans les conditions prevues.\n"
+                "- Base amortissable: partir du cout d'entree de l'actif, ajouter les couts directement necessaires a sa mise en etat de fonctionner, puis retrancher la valeur residuelle eventuelle si elle est significative et documentee.\n"
+                "- Duree d'utilite: estimer la duree economique d'utilisation attendue, la reviser si les faits changent, et ne pas reprendre automatiquement un taux fiscal comme duree comptable.\n"
+                "- Methode: choisir un mode d'amortissement coherent avec la consommation des avantages economiques et calculer la dotation prorata temporis a partir de la date de disponibilite.\n"
+                f"{component_note}"
+                f"{intangible_note}"
+                f"{fiscal_note}"
+                "- Documentation: facture, contrat, bon de livraison, PV d'installation, PV de tests, PV de mise en service, fiche immobilisation, ventilation des composants, note de duree d'utilite, tableau d'amortissement et justification fiscale."
+            ),
+            "Points de vigilance": (
+                "- Ne pas demarrer l'amortissement a la date d'achat par automatisme si l'actif n'est pas pret a etre utilise.\n"
+                "- Ne pas confondre date comptable de mise en service et conditions fiscales de deductibilite.\n"
+                "- Ne pas inventer de taux, plafond ou article fiscal sans passage direct.\n"
+                "- Si les pieces de mise en service manquent, conclure prudemment et demander les justificatifs avant validation client."
+            ),
+            "Sources utilisees": source_lines,
+        },
+    )
+
+
+def compose_goodwill_accounting_answer(query: str, facts_summary: str, source_lines: str) -> str:
+    internal = any(marker in query for marker in ["genere en interne", "interne", "cree par la societe", "developpe en interne"])
+    acquired = any(marker in query for marker in ["acquis", "acquise", "acquisition", "regroupement", "fusion", "business combination", "rachat"])
+    impairment = any(marker in query for marker in ["depreciation", "impairment", "perte de valeur", "indice", "test"])
+
+    context_note = (
+        "Un goodwill genere en interne ne doit pas etre traite comme un goodwill acquis: il faut verifier s'il peut etre reconnu comme actif identifiable ou s'il doit rester non comptabilise comme goodwill interne."
+        if internal else
+        "Un goodwill acquis apparait normalement dans un contexte de regroupement d'entreprises ou d'acquisition; il faut verifier le prix d'acquisition, les actifs et passifs identifiables et l'ecart d'acquisition calcule."
+        if acquired else
+        "Avant de conclure, il faut d'abord savoir si le goodwill est interne ou acquis dans un regroupement d'entreprises."
+    )
+    impairment_note = (
+        "S'il existe un indice de perte de valeur apres acquisition, un test de depreciation doit etre documente avant toute conclusion."
+        if impairment else
+        "Meme lorsqu'un amortissement est envisage selon le referentiel applicable, les indices de perte de valeur doivent etre surveilles."
+    )
+
+    return compose_structured_answer(
+        "practical_analysis",
+        {
+            "Reponse": (
+                f"Le goodwill ne se traite pas comme une immobilisation ordinaire. Faits transmis: {facts_summary}. "
+                f"{context_note} La conclusion depend du referentiel applicable: normes tunisiennes/NC 38 pour le traitement local, IFRS 3 et IAS 36 pour un referentiel IFRS, avec distinction entre amortissement et test de depreciation."
+            ),
+            "Application pratique": (
+                "- Identifier l'origine: goodwill genere en interne, fonds commercial isole, ou goodwill acquis dans un regroupement d'entreprises.\n"
+                "- Goodwill interne: verifier s'il existe un actif incorporel identifiable; a defaut, ne pas comptabiliser un goodwill interne comme actif par simple valorisation de reputation ou clientele.\n"
+                "- Goodwill acquis: verifier le dossier d'acquisition, la juste valeur des actifs/passifs identifiables, le prix paye et le calcul de l'ecart d'acquisition.\n"
+                "- Amortissement vs depreciation: ne pas affirmer une dotation automatique. Sous IFRS, le goodwill est traite via test de depreciation; sous referentiel tunisien, verifier NC 38 et la duree d'utilite retenue avant toute position sur l'amortissement.\n"
+                f"- Perte de valeur: {impairment_note}\n"
+                "- Fiscalite: verifier separement si une charge comptable liee au goodwill est fiscalement deductible; ne pas conclure sans article fiscal direct.\n"
+                "- Documentation: contrat d'acquisition, evaluation, allocation du prix, calcul du goodwill, referentiel applique, decision de duree d'utilite, test de depreciation et note de jugement."
+            ),
+            "Points de vigilance": (
+                "- Ne pas confondre goodwill interne, fonds commercial, immobilisation incorporelle identifiable et goodwill acquis.\n"
+                "- Ne pas appliquer IFRS 3 si les comptes sont etablis uniquement selon le referentiel tunisien, sauf demande explicite ou contexte IFRS.\n"
+                "- Ne pas marquer une source comme passage cible si elle ne traite pas explicitement goodwill, regroupement, amortissement ou depreciation.\n"
+                "- Si les passages exacts NC/IFRS ne sont pas retrouves, la reponse doit rester source-cadre."
+            ),
+            "Sources utilisees": source_lines,
+        },
+    )
+
+
 def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, legal_sources: list[dict]) -> dict | None:
     query = match_key(message)
     sources = case_analysis_sources(message, legal_sources)
@@ -3740,18 +3948,24 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Evaluer la provision: limiter la depreciation a l'exposition restante apres analyse des chances de recouvrement.\n"
                     "- Encaissement apres cloture: determiner s'il confirme une information deja existante a la cloture; dans ce cas il peut ajuster l'estimation. "
                     "S'il resulte d'un evenement nouveau, il peut etre non ajustant mais a divulguer si significatif.\n"
-                    "- Fiscalite: verifier les conditions de deductibilite, l'individualisation de la creance, les justificatifs, les actions de recouvrement et le calcul conserve au dossier.\n"
+                    "- Fiscalite: verifier dans le Code de l'IRPP et de l'IS les conditions de deductibilite fiscale: la creance est individualisee client par client, les justificatifs suffisants existent, les actions de recouvrement sont documentees et le calcul est conserve au dossier.\n"
                     "- Documentation: balance agee, relances, correspondances, accord de paiement, preuve d'encaissement posterieur et note de jugement de direction. "
                     "Sans solde exact, balance agee, relances ou actions de recouvrement, le cabinet ne peut pas conclure a une provision fiscalement deductible."
                 ),
                 "Points de vigilance": (
                     "- Ne pas maintenir une provision brute si un recouvrement posterieur modifie l'exposition restante.\n"
-                    "- Ne pas deduire fiscalement une provision globale sans dossier client par client.\n"
+                    "- Ne pas deduire fiscalement une provision globale ou forfaitaire sans dossier client par client.\n"
                     "- Distinguer clairement preuve posterieure d'une situation existante et evenement nouveau."
                 ),
                 "Sources utilisees": source_lines,
             },
         )
+
+    elif is_goodwill_accounting_case(query):
+        workflow_name = "goodwill_accounting_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_goodwill_accounting_answer(query, facts_summary, source_lines)
 
     elif is_fixed_asset_component_depreciation_case(query):
         workflow_name = "fixed_asset_component_depreciation_case"
@@ -3787,6 +4001,12 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                 "Sources utilisees": source_lines,
             },
         )
+
+    elif is_fixed_asset_depreciation_case(query):
+        workflow_name = "fixed_asset_depreciation_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_fixed_asset_depreciation_answer(query, facts_summary, source_lines)
 
     elif is_going_concern_case(query):
         workflow_name = "going_concern_case_analysis"

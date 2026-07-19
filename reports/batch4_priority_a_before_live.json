@@ -1,0 +1,277 @@
+﻿[
+    {
+        "question":  "Une societe peut elle amortir un goodwill et quels textes faut il verifier avant de conclure ?",
+        "workflow":  null,
+        "commit_hash":  "83445e72d7f6",
+        "fallback_used":  false,
+        "generator_path":  "kilo/nvidia/nemotron-3-super-120b-a12b:free",
+        "selected_sources":  [
+                                 {
+                                     "doc_id":  "ifrs_3_regroupements_entreprises",
+                                     "title":  "IFRS 3 Regroupements d entreprises",
+                                     "page":  5,
+                                     "heading":  "IFRS 3",
+                                     "support_level":  "unclassified",
+                                     "matched_terms":  [
+
+                                                       ],
+                                     "excerpt_preview":  "les paragraphes 15 Ã  18 \nde cette norme.\nComptabiliser et Ã©valuer le goodwill ou le profit rÃ©sultant dâune \nacquisition Ã  des conditions avantageuses\n32 \nLâacquÃ©reur doit comptabiliser le goodwill Ã  la date dâacquisition, Ã©valuÃ© comme Ã©tant lâexcÃ©dent de (a) [...]",
+                                     "score":  226.793
+                                 },
+                                 {
+                                     "doc_id":  "ifrs_3_regroupements_entreprises",
+                                     "title":  "IFRS 3 Regroupements d entreprises",
+                                     "page":  8,
+                                     "heading":  "IFRS 3",
+                                     "support_level":  "unclassified",
+                                     "matched_terms":  [
+
+                                                       ],
+                                     "excerpt_preview":  "peu aprÃ¨s la date dâacquisition pour un montant sensiblement \ndiffÃ©rent de sa juste valeur provisoire Ã©valuÃ©e Ã  cette date est probablement indicative dâune erreur dans le \nmontant provisoire.\n48 [...]",
+                                     "score":  203.777
+                                 },
+                                 {
+                                     "doc_id":  "nc_38_regroupements_entreprises",
+                                     "title":  "NC 38 Regroupements d\u0027entreprises",
+                                     "page":  10,
+                                     "heading":  "",
+                                     "support_level":  "unclassified",
+                                     "matched_terms":  [
+
+                                                       ],
+                                     "excerpt_preview":  "Par consÃ©quent, si la durÃ©e d\u0027utilitÃ© du goodwill avait Ã©tÃ© estimÃ©e infÃ©rieure Ã  vingt ans lors de \nsa comptabilisation initiale mais si la durÃ©e d\u0027utilitÃ© estimÃ©e est par la suite Ã©tendue et excÃ¨de vingt [...]",
+                                     "score":  159.816
+                                 },
+                                 {
+                                     "doc_id":  "nc_38_regroupements_entreprises",
+                                     "title":  "NC 38 Regroupements d\u0027entreprises",
+                                     "page":  9,
+                                     "heading":  "",
+                                     "support_level":  "unclassified",
+                                     "matched_terms":  [
+
+                                                       ],
+                                     "excerpt_preview":  "9 \n40. Le mode d\u0027amortissement utilisÃ© doit traduire le rythme attendu de consommation des avantages \nÃ©conomiques futurs rÃ©sultant du goodwill. Sauf Ã©lÃ©ments probants et convaincants qu\u0027un autre mode \nest plus appropriÃ© en la circonstance, le mode linÃ©aire doit Ãªtre appliquÃ©. [...]",
+                                     "score":  155.418
+                                 }
+                             ],
+        "answer":  "## Reponse\n## Reponse\nEn principe, le goodwill (Ã©cart dâacquisition) nâest pas amorti selon les normes IFRSâ¯; il doit Ãªtre soumis Ã  un test de dÃ©prÃ©ciation au moins annuellement. En revanche, le rÃ©fÃ©rentiel comptable tunisien (NCâ¯38â¯Regroupements dâentreprises) prÃ©voit la possibilitÃ© dâamortir le goodwill lorsquâil possÃ¨de une durÃ©e dâutilitÃ© dÃ©terminÃ©e, sous rÃ©serve de rÃ©aliser un test de dÃ©prÃ©ciation si cette durÃ©e dÃ©passe vingt ans ou si des indices de perte de valeur apparaissent.\n\n## Application pratique\n- Reconstituer les faits, montants et periodes.\n- Identifier le texte precis applicable.\n- Verifier les seuils, exceptions et pieces justificatives.\n\n## Points de vigilance\n- Verifier la date du texte, les lois de finances ulterieures et les circonstances du client.\n\n## Sources utilisees\n- IFRS 3 Regroupements d entreprises, page 5 - IFRS 3\n- IFRS 3 Regroupements d entreprises, page 8 - IFRS 3\n- NC 38 Regroupements d\u0027entreprises, page 10"
+    },
+    {
+        "question":  "Comment analyser l amortissement d une immobilisation corporelle avant cloture ?",
+        "workflow":  "accounting_closing_estimate_case",
+        "commit_hash":  "83445e72d7f6",
+        "fallback_used":  false,
+        "generator_path":  "internal/case-analysis-playbook",
+        "selected_sources":  [
+                                 {
+                                     "doc_id":  "nc_05_immobilisations_corporelles",
+                                     "title":  "NC 05 Immobilisations corporelles",
+                                     "page":  2,
+                                     "heading":  "",
+                                     "support_level":  "direct_passage",
+                                     "matched_terms":  [
+                                                           "amortissement",
+                                                           "valeur residuelle"
+                                                       ],
+                                     "excerpt_preview":  "DÃ©finitions \n06. Dans la prÃ©sente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les Ã©lÃ©ments d\u0027actif physiques et tangibles qui : a. ayant un potentiel de gÃ©nÃ©rer des avantages futurs, sont dÃ©tenus par une entreprise [...]",
+                                     "score":  21.516
+                                 },
+                                 {
+                                     "doc_id":  "ias_16_immobilisations_corporelles",
+                                     "title":  "IAS 16 Immobilisations corporelles",
+                                     "page":  7,
+                                     "heading":  "IAS 16",
+                                     "support_level":  "direct_passage",
+                                     "matched_terms":  [
+                                                           "amortissement",
+                                                           "duree d\u0027utilite",
+                                                           "valeur residuelle"
+                                                       ],
+                                     "excerpt_preview":  "IAS 16\nÂ© IFRS Foundation \n7\n47 \nUne entitÃ© peut choisir dâamortir sÃ©parÃ©ment les parties dâun Ã©lÃ©ment dont le coÃ»t nâest pas significatif par \nrapport au coÃ»t total de lâÃ©lÃ©ment.\n48 [...]",
+                                     "score":  31.8
+                                 },
+                                 {
+                                     "doc_id":  "nc_01_norme_generale",
+                                     "title":  "NC 01 Norme comptable generale",
+                                     "page":  7,
+                                     "heading":  "",
+                                     "support_level":  "direct_passage",
+                                     "matched_terms":  [
+                                                           "immobilisations",
+                                                           "amortissement",
+                                                           "etats financiers"
+                                                       ],
+                                     "excerpt_preview":  "7 \nL\u0027existence d\u0027un tel accord avant l\u0027approbation des Ã©tats financiers fournit l\u0027Ã©vidence que la substance \ndu passif Ã  la date de clÃ´ture Ã©tait Ã  long terme.\n\nInformations Ã  prÃ©senter dans le corps du bilan \n38. [...]",
+                                     "score":  31.201
+                                 },
+                                 {
+                                     "doc_id":  "nc_14_eventualites_post_cloture",
+                                     "title":  "NC 14 Eventualites et evenements posterieurs a la cloture",
+                                     "page":  1,
+                                     "heading":  "NC 14",
+                                     "support_level":  "unclassified",
+                                     "matched_terms":  [
+
+                                                       ],
+                                     "excerpt_preview":  "1\n\nNC 14\n\nNorme comptable relative aux Ã©ventualitÃ©s et \nÃ©vÃ©nements postÃ©rieurs Ã  la date de clÃ´ture",
+                                     "score":  999.0
+                                 },
+                                 {
+                                     "doc_id":  "nc_39_parties_liees",
+                                     "title":  "NC 39 Informations sur les parties liees",
+                                     "page":  1,
+                                     "heading":  "Champ d\u0027application",
+                                     "support_level":  "unclassified",
+                                     "matched_terms":  [
+
+                                                       ],
+                                     "excerpt_preview":  "Champ d\u0027application \n1. La prÃ©sente norme doit Ãªtre appliquÃ©e pour le traitement des parties liÃ©es et des transactions entre \nune entreprise prÃ©sentant les Ã©tats financiers et les parties qui lui sont liÃ©es. Les dispositions de la [...]",
+                                     "score":  999.0
+                                 }
+                             ],
+        "answer":  "## Reponse\nCe dossier releve de la famille cabinet suivante: Comptabilite: cut-off, estimations, actifs et cloture. Faits transmis: Comment analyser l amortissement d une immobilisation corporelle avant cloture ?. La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct.\n\n## Application pratique\nIssues a traiter:\n- identifier l\u0027exercice de rattachement et la nature comptable de l\u0027operation\n- distinguer comptabilisation, estimation, depreciation/provision, parties liees et information en notes\n- separer impacts comptables et retraitements fiscaux eventuels\n- documenter jugement, calcul, documentation et justificatifs, pieces de cloture et evenement posterieur\n\nFaits et pieces a completer avant conclusion client:\n- date de cloture\n- date de facture\n- date de service\n- montant\n- piece justificative\n- mode de calcul\n- referentiel applique\n\nMethode de reponse: appliquer les sources prioritaires de la famille, distinguer les impacts comptables, fiscaux, societaires, audit ou procedure selon le cas, puis indiquer ce qui est directement supporte par un passage direct et ce qui reste source-cadre. Les justificatifs doivent etre controles avant toute conclusion client.\n\n## Points de vigilance\n- Ne pas inventer de taux, delai, article, seuil ou conclusion juridique sans passage direct.\n- Si les faits sont incomplets, conclure prudemment: le cabinet ne peut pas trancher sans les informations manquantes.\n- Si une source exacte manque, marquer la limite comme source-cadre ou source manquante au lieu de presenter une certitude.\n- Adapter la reponse au profil du contribuable, au resident/non-resident, aux dates, montants, pieces et contradictions du dossier.\n\n## Sources utilisees\n- NC 05 Immobilisations corporelles, page 2 - passage cible\n- IAS 16 Immobilisations corporelles, page 7 - IAS 16 - passage cible\n- NC 01 Norme comptable generale, page 7 - passage cible\n- NC 14 Eventualites et evenements posterieurs a la cloture, page 1\n- NC 39 Informations sur les parties liees, page 1\n- Niveau d\u0027appui: au moins un passage cible a ete retrouve dans le corpus."
+    },
+    {
+        "question":  "Une immobilisation corporelle a ete achetee en septembre mais mise en service en novembre. Comment raisonner l amortissement ?",
+        "workflow":  "fixed_asset_component_depreciation_case",
+        "commit_hash":  "83445e72d7f6",
+        "fallback_used":  false,
+        "generator_path":  "internal/case-analysis-playbook",
+        "selected_sources":  [
+                                 {
+                                     "doc_id":  "nc_05_immobilisations_corporelles",
+                                     "title":  "NC 05 Immobilisations corporelles",
+                                     "page":  2,
+                                     "heading":  "",
+                                     "support_level":  "direct_passage",
+                                     "matched_terms":  [
+                                                           "amortissement",
+                                                           "duree d\u0027utilisation",
+                                                           "valeur residuelle"
+                                                       ],
+                                     "excerpt_preview":  "DÃ©finitions \n06. Dans la prÃ©sente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les Ã©lÃ©ments d\u0027actif physiques et tangibles qui : a. ayant un potentiel de gÃ©nÃ©rer des avantages futurs, sont dÃ©tenus par une entreprise [...]",
+                                     "score":  31.516
+                                 },
+                                 {
+                                     "doc_id":  "ias_16_immobilisations_corporelles",
+                                     "title":  "IAS 16 Immobilisations corporelles",
+                                     "page":  7,
+                                     "heading":  "IAS 16",
+                                     "support_level":  "direct_passage",
+                                     "matched_terms":  [
+                                                           "amortissement",
+                                                           "parties",
+                                                           "duree d\u0027utilite"
+                                                       ],
+                                     "excerpt_preview":  "IAS 16\nÂ© IFRS Foundation \n7\n47 \nUne entitÃ© peut choisir dâamortir sÃ©parÃ©ment les parties dâun Ã©lÃ©ment dont le coÃ»t nâest pas significatif par \nrapport au coÃ»t total de lâÃ©lÃ©ment.\n48 [...]",
+                                     "score":  31.8
+                                 },
+                                 {
+                                     "doc_id":  "code_irpp_is_2025",
+                                     "title":  "Code de l\u0027impÃ´t sur le revenu des personnes physiques et de l\u0027impÃ´t sur les sociÃ©tÃ©s (IRPP et IS), Ã©dition 2025",
+                                     "page":  14,
+                                     "heading":  "III. Sont admis en dÃ©duction pour la dÃ©termination du bÃ©nÃ©fice imposable, les",
+                                     "support_level":  "direct_passage",
+                                     "matched_terms":  [
+                                                           "amortissements",
+                                                           "mise en service",
+                                                           "date d\u0027acquisition",
+                                                           "exploitation"
+                                                       ],
+                                     "excerpt_preview":  "38\nconstructions sur sol dâautrui. Lâamortissement est calculÃ© Ã  partir de la date \ndâacquisition, de construction, de fabrication ou de mise en service ou \ndâexploitation, si elle intervient ultÃ©rieurement, ou Ã  partir de la date dâentrÃ©e en [...]",
+                                     "score":  42.751
+                                 },
+                                 {
+                                     "doc_id":  "nc_01_norme_generale",
+                                     "title":  "NC 01 Norme comptable generale",
+                                     "page":  7,
+                                     "heading":  "",
+                                     "support_level":  "direct_passage",
+                                     "matched_terms":  [
+                                                           "immobilisations",
+                                                           "amortissements",
+                                                           "etats financiers"
+                                                       ],
+                                     "excerpt_preview":  "7 \nL\u0027existence d\u0027un tel accord avant l\u0027approbation des Ã©tats financiers fournit l\u0027Ã©vidence que la substance \ndu passif Ã  la date de clÃ´ture Ã©tait Ã  long terme.\n\nInformations Ã  prÃ©senter dans le corps du bilan \n38. [...]",
+                                     "score":  31.201
+                                 }
+                             ],
+        "answer":  "## Reponse\nCe dossier doit etre traite comme une immobilisation corporelle avec mise en service progressive et composant significatif. Faits transmis: Une immobilisation corporelle a ete achetee en septembre mais mise en service en novembre. Comment raisonner l amortissement ?. La date d\u0027achat ou de facture ne suffit pas a declencher l\u0027amortissement si la machine n\u0027est pas encore prete a etre utilisee. Il faut rapprocher acquisition, livraison, installation, tests et mise en production. Si la date de production ou de disponibilite correspond a l\u0027utilisation prevue, c\u0027est cette date qui doit etre retenue pour le depart d\u0027amortissement.\n\n## Application pratique\n- Cout d\u0027entree: rattacher au cout de la machine les frais directement necessaires a sa mise en etat de fonctionner, selon les sources comptables applicables.\n- Date de depart: distinguer acquisition, livraison, installation, tests et mise en service; l\u0027amortissement commence lorsque l\u0027actif est pret ou disponible pour son utilisation prevue.\n- Base amortissable et mode d\u0027amortissement: determiner le cout amortissable, la valeur residuelle eventuelle, la duree d\u0027utilite et le mode d\u0027amortissement coherent avec la consommation des avantages economiques.\n- Tests: documenter si les tests jusqu\u0027au 25 octobre conditionnent la disponibilite technique ou s\u0027ils sont seulement des essais de performance apres mise en etat.\n- Production: si la production commence seulement apres installation et tests, retenir prudemment cette date comme date probable de mise en service.\n- Composants: la piece majeure remplacee tous les 3 ans doit etre analysee separement si sa duree d\u0027utilisation differe de celle de la machine et si son montant est significatif.\n- Fiscalite: comparer le traitement comptable avec les regles fiscales d\u0027amortissement, notamment la date de mise en service/exploitation, les taux maximums et les limites de deductibilite.\n- Documentation: conserver facture, bon de livraison, PV d installation, PV de tests, PV de mise en service, fiche immobilisation, ventilation composant/principal, durees d\u0027utilite et tableau d\u0027amortissement. Sans PV de mise en service, rapport de tests ou preuve que l\u0027actif est pret a fonctionner, le cabinet ne peut pas fixer definitivement le debut d\u0027amortissement.\n\n## Points de vigilance\n- Ne pas router ce cas vers un recueil fiscal hors sujet: la question est d\u0027abord comptable et fiscale sur immobilisations corporelles.\n- Ne pas demarrer l\u0027amortissement a la date d\u0027achat par automatisme si la machine n\u0027etait pas prete a fonctionner.\n- Ne pas ignorer l\u0027approche par composants lorsque la piece majeure a une duree de remplacement distincte.\n- Ne pas confondre date comptable de mise en service et conditions fiscales de deductibilite.\n\n## Sources utilisees\n- NC 05 Immobilisations corporelles, page 2 - passage cible\n- IAS 16 Immobilisations corporelles, page 7 - IAS 16 - passage cible\n- Code de l\u0027impÃ´t sur le revenu des personnes physiques et de l\u0027impÃ´t sur les sociÃ©tÃ©s (IRPP et IS), Ã©dition 2025, page 14 - III. Sont admis en dÃ©duction pour la dÃ©termination du bÃ©nÃ©fice imposable, les - passage cible\n- NC 01 Norme comptable generale, page 7 - passage cible\n- Niveau d\u0027appui: au moins un passage cible a ete retrouve dans le corpus."
+    },
+    {
+        "question":  "Une immobilisation est achetee le 15 septembre. A partir de quelle date commence son amortissement ? Quels textes ou normes faut-il consulter ?",
+        "workflow":  "accounting_closing_estimate_case",
+        "commit_hash":  "83445e72d7f6",
+        "fallback_used":  false,
+        "generator_path":  "internal/case-analysis-playbook",
+        "selected_sources":  [
+                                 {
+                                     "doc_id":  "nc_05_immobilisations_corporelles",
+                                     "title":  "NC 05 Immobilisations corporelles",
+                                     "page":  2,
+                                     "heading":  "",
+                                     "support_level":  "direct_passage",
+                                     "matched_terms":  [
+                                                           "amortissement",
+                                                           "valeur residuelle"
+                                                       ],
+                                     "excerpt_preview":  "DÃ©finitions \n06. Dans la prÃ©sente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les Ã©lÃ©ments d\u0027actif physiques et tangibles qui : a. ayant un potentiel de gÃ©nÃ©rer des avantages futurs, sont dÃ©tenus par une entreprise [...]",
+                                     "score":  21.516
+                                 },
+                                 {
+                                     "doc_id":  "ias_16_immobilisations_corporelles",
+                                     "title":  "IAS 16 Immobilisations corporelles",
+                                     "page":  7,
+                                     "heading":  "IAS 16",
+                                     "support_level":  "direct_passage",
+                                     "matched_terms":  [
+                                                           "amortissement",
+                                                           "duree d\u0027utilite",
+                                                           "valeur residuelle"
+                                                       ],
+                                     "excerpt_preview":  "IAS 16\nÂ© IFRS Foundation \n7\n47 \nUne entitÃ© peut choisir dâamortir sÃ©parÃ©ment les parties dâun Ã©lÃ©ment dont le coÃ»t nâest pas significatif par \nrapport au coÃ»t total de lâÃ©lÃ©ment.\n48 [...]",
+                                     "score":  31.8
+                                 },
+                                 {
+                                     "doc_id":  "nc_01_norme_generale",
+                                     "title":  "NC 01 Norme comptable generale",
+                                     "page":  7,
+                                     "heading":  "",
+                                     "support_level":  "direct_passage",
+                                     "matched_terms":  [
+                                                           "immobilisations",
+                                                           "amortissement",
+                                                           "etats financiers"
+                                                       ],
+                                     "excerpt_preview":  "7 \nL\u0027existence d\u0027un tel accord avant l\u0027approbation des Ã©tats financiers fournit l\u0027Ã©vidence que la substance \ndu passif Ã  la date de clÃ´ture Ã©tait Ã  long terme.\n\nInformations Ã  prÃ©senter dans le corps du bilan \n38. [...]",
+                                     "score":  31.201
+                                 },
+                                 {
+                                     "doc_id":  "nc_14_eventualites_post_cloture",
+                                     "title":  "NC 14 Eventualites et evenements posterieurs a la cloture",
+                                     "page":  1,
+                                     "heading":  "NC 14",
+                                     "support_level":  "unclassified",
+                                     "matched_terms":  [
+
+                                                       ],
+                                     "excerpt_preview":  "1\n\nNC 14\n\nNorme comptable relative aux Ã©ventualitÃ©s et \nÃ©vÃ©nements postÃ©rieurs Ã  la date de clÃ´ture",
+                                     "score":  999.0
+                                 },
+                                 {
+                                     "doc_id":  "nc_39_parties_liees",
+                                     "title":  "NC 39 Informations sur les parties liees",
+                                     "page":  1,
+                                     "heading":  "Champ d\u0027application",
+                                     "support_level":  "unclassified",
+                                     "matched_terms":  [
+
+                                                       ],
+                                     "excerpt_preview":  "Champ d\u0027application \n1. La prÃ©sente norme doit Ãªtre appliquÃ©e pour le traitement des parties liÃ©es et des transactions entre \nune entreprise prÃ©sentant les Ã©tats financiers et les parties qui lui sont liÃ©es. Les dispositions de la [...]",
+                                     "score":  999.0
+                                 }
+                             ],
+        "answer":  "## Reponse\nCe dossier releve de la famille cabinet suivante: Comptabilite: cut-off, estimations, actifs et cloture. Faits transmis: Une immobilisation est achetee le 15 septembre. A partir de quelle date commence son amortissement ? Quels textes ou normes faut-il consulter ?. La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct.\n\n## Application pratique\nIssues a traiter:\n- identifier l\u0027exercice de rattachement et la nature comptable de l\u0027operation\n- distinguer comptabilisation, estimation, depreciation/provision, parties liees et information en notes\n- separer impacts comptables et retraitements fiscaux eventuels\n- documenter jugement, calcul, documentation et justificatifs, pieces de cloture et evenement posterieur\n\nFaits et pieces a completer avant conclusion client:\n- date de cloture\n- date de facture\n- date de service\n- montant\n- piece justificative\n- mode de calcul\n- referentiel applique\n\nMethode de reponse: appliquer les sources prioritaires de la famille, distinguer les impacts comptables, fiscaux, societaires, audit ou procedure selon le cas, puis indiquer ce qui est directement supporte par un passage direct et ce qui reste source-cadre. Les justificatifs doivent etre controles avant toute conclusion client.\n\n## Points de vigilance\n- Ne pas inventer de taux, delai, article, seuil ou conclusion juridique sans passage direct.\n- Si les faits sont incomplets, conclure prudemment: le cabinet ne peut pas trancher sans les informations manquantes.\n- Si une source exacte manque, marquer la limite comme source-cadre ou source manquante au lieu de presenter une certitude.\n- Adapter la reponse au profil du contribuable, au resident/non-resident, aux dates, montants, pieces et contradictions du dossier.\n\n## Sources utilisees\n- NC 05 Immobilisations corporelles, page 2 - passage cible\n- IAS 16 Immobilisations corporelles, page 7 - IAS 16 - passage cible\n- NC 01 Norme comptable generale, page 7 - passage cible\n- NC 14 Eventualites et evenements posterieurs a la cloture, page 1\n- NC 39 Informations sur les parties liees, page 1\n- Niveau d\u0027appui: au moins un passage cible a ete retrouve dans le corpus."
+    }
+]
