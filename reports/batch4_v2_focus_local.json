@@ -1,0 +1,2969 @@
+{
+  "base_url": "http://127.0.0.1:8128",
+  "dataset": "reports\\batch4_v2_focus_dataset.jsonl",
+  "generated_at_unix": 1784459970,
+  "summary": {
+    "total_cases": 13,
+    "ok_cases": 13,
+    "failed_cases": 0,
+    "intent_match_count": 13,
+    "preferred_source_match_count": 13,
+    "response_style_match_count": 13,
+    "all_sections_present_count": 13,
+    "source_precision_pass_count": 13,
+    "source_precision_failure_count": 0,
+    "safe_pass_count": 13,
+    "safe_failure_count": 0,
+    "expert_pass_count": 13,
+    "expert_failure_count": 0,
+    "content_quality_pass_count": 13,
+    "content_quality_failure_count": 0,
+    "avg_latency_ms": 9672.6
+  },
+  "summary_by_expected_intent": {
+    "accounting_treatment": {
+      "count": 13,
+      "ok_cases": 13,
+      "failed_cases": 0,
+      "intent_match_count": 13,
+      "preferred_source_match_count": 13,
+      "response_style_match_count": 13,
+      "all_sections_present_count": 13,
+      "safe_pass_count": 13,
+      "expert_pass_count": 13,
+      "avg_latency_ms": 9672.6
+    }
+  },
+  "summary_by_actual_intent": {
+    "accounting_treatment": {
+      "count": 13,
+      "ok_cases": 13,
+      "failed_cases": 0,
+      "intent_match_count": 13,
+      "preferred_source_match_count": 13,
+      "response_style_match_count": 13,
+      "all_sections_present_count": 13,
+      "safe_pass_count": 13,
+      "expert_pass_count": 13,
+      "avg_latency_ms": 9672.6
+    }
+  },
+  "results": [
+    {
+      "id": "acct_goodwill_amortissement",
+      "question": "Une societe peut elle amortir un goodwill et quels textes faut il verifier avant de conclure ?",
+      "ok": true,
+      "latency_ms": 14864.6,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "goodwill_accounting_case",
+      "actual_workflow": "goodwill_accounting_case",
+      "workflow_match": true,
+      "section_checks": {
+        "Reponse": true,
+        "Application pratique": true,
+        "Points de vigilance": true,
+        "Sources utilisees": true
+      },
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "goodwill": true,
+        "interne": true,
+        "acquis": true,
+        "regroupement": true,
+        "amortissement": true,
+        "depreciation": true,
+        "referentiel": true,
+        "NC 38": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "source implicite": false,
+        "article [X]": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true,
+        "goodwill_distinguishes_internal_acquired": true,
+        "goodwill_mentions_amortization_impairment": true,
+        "goodwill_mentions_framework": true,
+        "goodwill_uses_relevant_sources": true,
+        "goodwill_not_llm_only": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_38_regroupements_entreprises_direct_or_framework": true,
+        "amortization_has_direct_passage": true,
+        "amortization_has_heading_or_excerpt": true,
+        "goodwill_support_classified": true,
+        "goodwill_has_relevant_source": true,
+        "goodwill_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "framework_source"
+      ],
+      "source_headings": [
+        "IFRS 3",
+        "IAS 36",
+        "IAS 38"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 5,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "goodwill_accounting_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_38_regroupements_entreprises",
+            "title": "NC 38 Regroupements d'entreprises",
+            "page": 10,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "regroupement",
+              "acquisition",
+              "amortissement",
+              "depreciation"
+            ],
+            "excerpt_preview": "10 \n46. La durée d'utilité du goodwi1l est toujours finie. L'incertitude justifie de faire preuve de prudence \ndans l'estimation de la durée d'utilité du goodwill, mais elle ne justifie pas d'estimer une durée d'utilité \ndont la brièveté n'est pas réaliste. 47. [...]",
+            "score": 51.488
+          },
+          {
+            "doc_id": "ifrs_3_regroupements_entreprises",
+            "title": "IFRS 3 Regroupements d entreprises",
+            "page": 2,
+            "heading": "IFRS 3",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "regroupement d'entreprises",
+              "acquisition",
+              "contrepartie"
+            ],
+            "excerpt_preview": "IFRS 3\n2 \n© IFRS Foundation\n(d) \ncomptabiliser et évaluer le goodwill ou le profit résultant d’une acquisition à des conditions \navantageuses.\nIdentification de l’acquéreur\n6 \nDans tout regroupement d’entreprises, il est nécessaire d’identifier l’acquéreur.\n7 [...]",
+            "score": 41.8
+          },
+          {
+            "doc_id": "ias_36_depreciation_actifs",
+            "title": "IAS 36 Depreciation d actifs",
+            "page": 3,
+            "heading": "IAS 36",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "test de depreciation",
+              "unite generatrice",
+              "valeur recouvrable"
+            ],
+            "excerpt_preview": "IAS 36\n© IFRS Foundation \n3\nindividuellement qu’à une unité génératrice de trésorerie. Des dispositions supplémentaires sont \nénoncées aux paragraphes 117 à 121 pour un actif pris individuellement, aux paragraphes 122 et 123 [...]",
+            "score": 41.8
+          },
+          {
+            "doc_id": "ias_38_immobilisations_incorporelles",
+            "title": "IAS 38 Immobilisations incorporelles",
+            "page": 14,
+            "heading": "IAS 38",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "immobilisation incorporelle",
+              "duree d'utilite",
+              "amortissement"
+            ],
+            "excerpt_preview": "IAS 38\n14 \n© IFRS Foundation\n(b) \nil existe des éléments probants que toutes les conditions nécessaires à l’obtention du renouvellement \nseront satisfaites ; et\n(c) \nle coût du renouvellement pour l’entité n’est pas important lorsqu’on le compare aux avantages [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "nc_06_immobilisations_incorporelles",
+            "title": "NC 06 Immobilisations incorporelles",
+            "page": 5,
+            "heading": "",
+            "support_level": "framework_source",
+            "matched_terms": [
+              "immobilisations incorporelles",
+              "amortissement",
+              "duree d'utilisation"
+            ],
+            "excerpt_preview": "28. La valeur récupérable est le montant que l'entreprise compte tirer de l'usage futur de l'actif \nincorporel, y compris sa valeur résiduelle de cession. Elle peut correspondre à la valeur actualisée des \ncash-flows futurs attendus. [...]",
+            "score": 31.502
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "goodwill_accounting_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_38_regroupements_entreprises",
+          "title": "NC 38 Regroupements d'entreprises",
+          "page": 10,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "regroupement",
+            "acquisition",
+            "amortissement",
+            "depreciation"
+          ],
+          "excerpt_preview": "10 \n46. La durée d'utilité du goodwi1l est toujours finie. L'incertitude justifie de faire preuve de prudence \ndans l'estimation de la durée d'utilité du goodwill, mais elle ne justifie pas d'estimer une durée d'utilité \ndont la brièveté n'est pas réaliste. 47. [...]",
+          "score": 51.488
+        },
+        {
+          "doc_id": "ifrs_3_regroupements_entreprises",
+          "title": "IFRS 3 Regroupements d entreprises",
+          "page": 2,
+          "heading": "IFRS 3",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "regroupement d'entreprises",
+            "acquisition",
+            "contrepartie"
+          ],
+          "excerpt_preview": "IFRS 3\n2 \n© IFRS Foundation\n(d) \ncomptabiliser et évaluer le goodwill ou le profit résultant d’une acquisition à des conditions \navantageuses.\nIdentification de l’acquéreur\n6 \nDans tout regroupement d’entreprises, il est nécessaire d’identifier l’acquéreur.\n7 [...]",
+          "score": 41.8
+        },
+        {
+          "doc_id": "ias_36_depreciation_actifs",
+          "title": "IAS 36 Depreciation d actifs",
+          "page": 3,
+          "heading": "IAS 36",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "test de depreciation",
+            "unite generatrice",
+            "valeur recouvrable"
+          ],
+          "excerpt_preview": "IAS 36\n© IFRS Foundation \n3\nindividuellement qu’à une unité génératrice de trésorerie. Des dispositions supplémentaires sont \nénoncées aux paragraphes 117 à 121 pour un actif pris individuellement, aux paragraphes 122 et 123 [...]",
+          "score": 41.8
+        },
+        {
+          "doc_id": "ias_38_immobilisations_incorporelles",
+          "title": "IAS 38 Immobilisations incorporelles",
+          "page": 14,
+          "heading": "IAS 38",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "immobilisation incorporelle",
+            "duree d'utilite",
+            "amortissement"
+          ],
+          "excerpt_preview": "IAS 38\n14 \n© IFRS Foundation\n(b) \nil existe des éléments probants que toutes les conditions nécessaires à l’obtention du renouvellement \nseront satisfaites ; et\n(c) \nle coût du renouvellement pour l’entité n’est pas important lorsqu’on le compare aux avantages [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "nc_06_immobilisations_incorporelles",
+          "title": "NC 06 Immobilisations incorporelles",
+          "page": 5,
+          "heading": "",
+          "support_level": "framework_source",
+          "matched_terms": [
+            "immobilisations incorporelles",
+            "amortissement",
+            "duree d'utilisation"
+          ],
+          "excerpt_preview": "28. La valeur récupérable est le montant que l'entreprise compte tirer de l'usage futur de l'actif \nincorporel, y compris sa valeur résiduelle de cession. Elle peut correspondre à la valeur actualisée des \ncash-flows futurs attendus. [...]",
+          "score": 31.502
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nLe goodwill ne se traite pas comme une immobilisation ordinaire. Faits transmis: Une societe peut elle amortir un goodwill et quels textes faut il verifier avant de conclure ?. Avant de conclure, il faut d'abord savoir si le goodwill est interne ou acquis dans un regroupement d'entreprises. La conclusion depend du referentiel applicable: normes tunisiennes/NC 38 pour le traitement local, IFRS 3 et IAS 36 pour un referentiel IFRS, avec distinction entre amortissement et test de depreciation.\n\n## Application pratique\n- Identifier l'origine: goodwill genere en interne, fonds commercial isole, ou goodwill acquis dans un regroupement d'entreprises.\n- Goodwill interne: verifier s'il exi",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "level2_amortissement_immobilisation_cloture",
+      "question": "Comment analyser l amortissement d une immobilisation corporelle avant cloture ?",
+      "ok": true,
+      "latency_ms": 18169.7,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "fixed_asset_depreciation_case",
+      "actual_workflow": "fixed_asset_depreciation_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "base amortissable": true,
+        "duree d'utilite": true,
+        "date de mise en service": true,
+        "NC 05": true,
+        "valeur residuelle": true,
+        "traitement comptable": true,
+        "fiscalite": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "Resume des normes d audit": false,
+        "Cours d audit": false,
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true,
+        "amortization_mentions_service_date": true,
+        "amortization_mentions_accounting_basis": true,
+        "amortization_mentions_residual_or_components": true,
+        "amortization_mentions_accounting_tax_split": true,
+        "amortization_uses_accounting_sources": true,
+        "amortization_no_audit_sources": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_05_immobilisations_corporelles_direct_or_framework": true,
+        "amortization_has_direct_passage": true,
+        "amortization_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "unclassified"
+      ],
+      "source_headings": [
+        "IAS 16",
+        "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+        "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 4,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "fixed_asset_depreciation_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_05_immobilisations_corporelles",
+            "title": "NC 05 Immobilisations corporelles",
+            "page": 2,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilisation",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+            "score": 31.516
+          },
+          {
+            "doc_id": "ias_16_immobilisations_corporelles",
+            "title": "IAS 16 Immobilisations corporelles",
+            "page": 7,
+            "heading": "IAS 16",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilite",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "code_irpp_is_2025",
+            "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+            "page": 14,
+            "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissements",
+              "mise en service",
+              "date d'acquisition",
+              "exploitation",
+              "deduction"
+            ],
+            "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+            "score": 52.751
+          },
+          {
+            "doc_id": "nc_01_norme_generale",
+            "title": "NC 01 Norme comptable generale",
+            "page": 1,
+            "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+            "support_level": "unclassified",
+            "matched_terms": [],
+            "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+            "score": 999.0
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "fixed_asset_depreciation_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "title": "NC 05 Immobilisations corporelles",
+          "page": 2,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilisation",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+          "score": 31.516
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "title": "IAS 16 Immobilisations corporelles",
+          "page": 7,
+          "heading": "IAS 16",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilite",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+          "page": 14,
+          "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissements",
+            "mise en service",
+            "date d'acquisition",
+            "exploitation",
+            "deduction"
+          ],
+          "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+          "score": 52.751
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "title": "NC 01 Norme comptable generale",
+          "page": 1,
+          "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+          "score": 999.0
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nL'analyse porte sur une immobilisation corporelle. Faits transmis: Comment analyser l amortissement d une immobilisation corporelle avant cloture ?. Le point de depart doit etre rattache a la date a laquelle l'actif est pret ou disponible pour l'utilisation prevue par l'entreprise. Il faut determiner la base amortissable, la duree d'utilite, la valeur residuelle eventuelle, la methode d'amortissement et l'impact fiscal separement du traitement comptable.\n\n## Application pratique\n- Date de depart: separer acquisition, facture, livraison, installation, tests, mise en service et mise en production. L'acquisition n'est le point de depart que si l'actif est deja pret a fonctionner dans",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "level2_amortissement_mise_en_service_novembre",
+      "question": "Une immobilisation corporelle a ete achetee en septembre mais mise en service en novembre. Comment raisonner l amortissement ?",
+      "ok": true,
+      "latency_ms": 17062.1,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "fixed_asset_depreciation_case",
+      "actual_workflow": "fixed_asset_depreciation_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "date de mise en service": true,
+        "novembre": true,
+        "base amortissable": true,
+        "duree d'utilite": true,
+        "valeur residuelle": true,
+        "traitement comptable": true,
+        "fiscalite": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "Cours d audit financier Imed Ennouri": false,
+        "Resume des normes d audit": false,
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true,
+        "amortization_mentions_service_date": true,
+        "amortization_mentions_accounting_basis": true,
+        "amortization_mentions_residual_or_components": true,
+        "amortization_mentions_accounting_tax_split": true,
+        "amortization_uses_accounting_sources": true,
+        "amortization_no_audit_sources": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_05_immobilisations_corporelles_direct_or_framework": true,
+        "amortization_has_direct_passage": true,
+        "amortization_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "unclassified"
+      ],
+      "source_headings": [
+        "IAS 16",
+        "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+        "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 4,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "fixed_asset_depreciation_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_05_immobilisations_corporelles",
+            "title": "NC 05 Immobilisations corporelles",
+            "page": 2,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilisation",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+            "score": 31.516
+          },
+          {
+            "doc_id": "ias_16_immobilisations_corporelles",
+            "title": "IAS 16 Immobilisations corporelles",
+            "page": 7,
+            "heading": "IAS 16",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilite",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "code_irpp_is_2025",
+            "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+            "page": 14,
+            "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissements",
+              "mise en service",
+              "date d'acquisition",
+              "exploitation",
+              "deduction"
+            ],
+            "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+            "score": 52.751
+          },
+          {
+            "doc_id": "nc_01_norme_generale",
+            "title": "NC 01 Norme comptable generale",
+            "page": 1,
+            "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+            "support_level": "unclassified",
+            "matched_terms": [],
+            "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+            "score": 999.0
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "fixed_asset_depreciation_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "title": "NC 05 Immobilisations corporelles",
+          "page": 2,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilisation",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+          "score": 31.516
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "title": "IAS 16 Immobilisations corporelles",
+          "page": 7,
+          "heading": "IAS 16",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilite",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+          "page": 14,
+          "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissements",
+            "mise en service",
+            "date d'acquisition",
+            "exploitation",
+            "deduction"
+          ],
+          "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+          "score": 52.751
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "title": "NC 01 Norme comptable generale",
+          "page": 1,
+          "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+          "score": 999.0
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nL'analyse porte sur une immobilisation corporelle. Faits transmis: Une immobilisation corporelle a ete achetee en septembre mais mise en service en novembre. Comment raisonner l amortissement ?. La date d'acquisition ou de facture ne suffit pas a elle seule: l'amortissement commence quand l'actif est pret ou disponible pour son utilisation prevue. La mise en service, mise en production ou disponibilite technique documentee est donc le repere central. Il faut determiner la base amortissable, la duree d'utilite, la valeur residuelle eventuelle, la methode d'amortissement et l'impact fiscal separement du traitement comptable.\n\n## Application pratique\n- Date de depart: separer acquisi",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "level2_user_amortissement_date_depart_15_septembre",
+      "question": "Une immobilisation est achetee le 15 septembre. A partir de quelle date commence son amortissement ? Quels textes ou normes faut-il consulter ?",
+      "ok": true,
+      "latency_ms": 3523.2,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "fixed_asset_depreciation_case",
+      "actual_workflow": "fixed_asset_depreciation_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "15 septembre": true,
+        "date de mise en service": true,
+        "pret": true,
+        "base amortissable": true,
+        "duree d'utilite": true,
+        "NC 05": true,
+        "acquisition": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "degressivo": false,
+        "Cours d audit financier": false,
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true,
+        "amortization_mentions_service_date": true,
+        "amortization_mentions_accounting_basis": true,
+        "amortization_mentions_residual_or_components": true,
+        "amortization_mentions_accounting_tax_split": true,
+        "amortization_uses_accounting_sources": true,
+        "amortization_no_audit_sources": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_05_immobilisations_corporelles_direct_or_framework": true,
+        "amortization_has_direct_passage": true,
+        "amortization_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "unclassified"
+      ],
+      "source_headings": [
+        "IAS 16",
+        "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+        "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 4,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "fixed_asset_depreciation_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_05_immobilisations_corporelles",
+            "title": "NC 05 Immobilisations corporelles",
+            "page": 2,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilisation",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+            "score": 31.516
+          },
+          {
+            "doc_id": "ias_16_immobilisations_corporelles",
+            "title": "IAS 16 Immobilisations corporelles",
+            "page": 7,
+            "heading": "IAS 16",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilite",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "code_irpp_is_2025",
+            "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+            "page": 14,
+            "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissements",
+              "mise en service",
+              "date d'acquisition",
+              "exploitation",
+              "deduction"
+            ],
+            "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+            "score": 52.751
+          },
+          {
+            "doc_id": "nc_01_norme_generale",
+            "title": "NC 01 Norme comptable generale",
+            "page": 1,
+            "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+            "support_level": "unclassified",
+            "matched_terms": [],
+            "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+            "score": 999.0
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "fixed_asset_depreciation_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "title": "NC 05 Immobilisations corporelles",
+          "page": 2,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilisation",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+          "score": 31.516
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "title": "IAS 16 Immobilisations corporelles",
+          "page": 7,
+          "heading": "IAS 16",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilite",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+          "page": 14,
+          "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissements",
+            "mise en service",
+            "date d'acquisition",
+            "exploitation",
+            "deduction"
+          ],
+          "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+          "score": 52.751
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "title": "NC 01 Norme comptable generale",
+          "page": 1,
+          "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+          "score": 999.0
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nL'analyse porte sur une immobilisation corporelle. Faits transmis: Une immobilisation est achetee le 15 septembre. A partir de quelle date commence son amortissement ? Quels textes ou normes faut-il consulter ?. La date d'acquisition ou de facture ne suffit pas a elle seule: l'amortissement commence quand l'actif est pret ou disponible pour son utilisation prevue. Il faut determiner la base amortissable, la duree d'utilite, la valeur residuelle eventuelle, la methode d'amortissement et l'impact fiscal separement du traitement comptable.\n\n## Application pratique\n- Date de depart: separer acquisition, facture, livraison, installation, tests, mise en service et mise en production. L'",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "batch4_asset_bought_not_installed",
+      "question": "Une machine est achetee et facturee le 15 septembre, mais elle ne sera installee que le mois suivant. Peut-on commencer l amortissement a la date de facture ?",
+      "ok": true,
+      "latency_ms": 11702.1,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "fixed_asset_depreciation_case",
+      "actual_workflow": "fixed_asset_depreciation_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "date de mise en service": true,
+        "facture": true,
+        "pret": true,
+        "base amortissable": true,
+        "duree d'utilite": true,
+        "fiscalite": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false,
+        "Cours d audit": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true,
+        "amortization_mentions_service_date": true,
+        "amortization_mentions_accounting_basis": true,
+        "amortization_mentions_residual_or_components": true,
+        "amortization_mentions_accounting_tax_split": true,
+        "amortization_uses_accounting_sources": true,
+        "amortization_no_audit_sources": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_05_immobilisations_corporelles_direct_or_framework": true,
+        "amortization_has_direct_passage": true,
+        "amortization_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "unclassified"
+      ],
+      "source_headings": [
+        "IAS 16",
+        "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+        "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 4,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "fixed_asset_depreciation_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_05_immobilisations_corporelles",
+            "title": "NC 05 Immobilisations corporelles",
+            "page": 2,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilisation",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+            "score": 31.516
+          },
+          {
+            "doc_id": "ias_16_immobilisations_corporelles",
+            "title": "IAS 16 Immobilisations corporelles",
+            "page": 7,
+            "heading": "IAS 16",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilite",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "code_irpp_is_2025",
+            "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+            "page": 14,
+            "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissements",
+              "mise en service",
+              "date d'acquisition",
+              "exploitation",
+              "deduction"
+            ],
+            "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+            "score": 52.751
+          },
+          {
+            "doc_id": "nc_01_norme_generale",
+            "title": "NC 01 Norme comptable generale",
+            "page": 1,
+            "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+            "support_level": "unclassified",
+            "matched_terms": [],
+            "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+            "score": 999.0
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "fixed_asset_depreciation_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "title": "NC 05 Immobilisations corporelles",
+          "page": 2,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilisation",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+          "score": 31.516
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "title": "IAS 16 Immobilisations corporelles",
+          "page": 7,
+          "heading": "IAS 16",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilite",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+          "page": 14,
+          "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissements",
+            "mise en service",
+            "date d'acquisition",
+            "exploitation",
+            "deduction"
+          ],
+          "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+          "score": 52.751
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "title": "NC 01 Norme comptable generale",
+          "page": 1,
+          "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+          "score": 999.0
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nL'analyse porte sur une immobilisation corporelle. Faits transmis: Une machine est achetee et facturee le 15 septembre, mais elle ne sera installee que le mois suivant. Peut-on commencer l amortissement a la date de facture ?. La date d'acquisition ou de facture ne suffit pas a elle seule: l'amortissement commence quand l'actif est pret ou disponible pour son utilisation prevue. Si l'actif est livre mais pas encore installe ou teste, il faut reserver la date de depart jusqu'a la preuve qu'il est pret a fonctionner. Il faut determiner la base amortissable, la duree d'utilite, la valeur residuelle eventuelle, la methode d'amortissement et l'impact fiscal separement du traitement com",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "batch4_asset_delivered_not_ready",
+      "question": "Un equipement est livre avant cloture mais les tests techniques ne sont pas termines. Comment traiter le debut d amortissement ?",
+      "ok": true,
+      "latency_ms": 9829.1,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "fixed_asset_depreciation_case",
+      "actual_workflow": "fixed_asset_depreciation_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "livraison": true,
+        "tests": true,
+        "pret": true,
+        "date de mise en service": true,
+        "base amortissable": true,
+        "duree d'utilite": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false,
+        "IAS 7": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_05_immobilisations_corporelles_direct_or_framework": true,
+        "amortization_has_direct_passage": true,
+        "amortization_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "unclassified"
+      ],
+      "source_headings": [
+        "IAS 16",
+        "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+        "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 4,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "fixed_asset_depreciation_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_05_immobilisations_corporelles",
+            "title": "NC 05 Immobilisations corporelles",
+            "page": 2,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilisation",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+            "score": 31.516
+          },
+          {
+            "doc_id": "ias_16_immobilisations_corporelles",
+            "title": "IAS 16 Immobilisations corporelles",
+            "page": 7,
+            "heading": "IAS 16",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilite",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "code_irpp_is_2025",
+            "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+            "page": 14,
+            "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissements",
+              "mise en service",
+              "date d'acquisition",
+              "exploitation",
+              "deduction"
+            ],
+            "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+            "score": 52.751
+          },
+          {
+            "doc_id": "nc_01_norme_generale",
+            "title": "NC 01 Norme comptable generale",
+            "page": 1,
+            "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+            "support_level": "unclassified",
+            "matched_terms": [],
+            "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+            "score": 999.0
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "fixed_asset_depreciation_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "title": "NC 05 Immobilisations corporelles",
+          "page": 2,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilisation",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+          "score": 31.516
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "title": "IAS 16 Immobilisations corporelles",
+          "page": 7,
+          "heading": "IAS 16",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilite",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+          "page": 14,
+          "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissements",
+            "mise en service",
+            "date d'acquisition",
+            "exploitation",
+            "deduction"
+          ],
+          "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+          "score": 52.751
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "title": "NC 01 Norme comptable generale",
+          "page": 1,
+          "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+          "score": 999.0
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nL'analyse porte sur une immobilisation corporelle. Faits transmis: Un equipement est livre avant cloture mais les tests techniques ne sont pas termines. Comment traiter le debut d amortissement ?. Le point de depart doit etre rattache a la date a laquelle l'actif est pret ou disponible pour l'utilisation prevue par l'entreprise. Si l'actif est livre mais pas encore installe ou teste, il faut reserver la date de depart jusqu'a la preuve qu'il est pret a fonctionner. Il faut determiner la base amortissable, la duree d'utilite, la valeur residuelle eventuelle, la methode d'amortissement et l'impact fiscal separement du traitement comptable.\n\n## Application pratique\n- Date de depart: ",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "batch4_asset_ready_before_invoice",
+      "question": "Une immobilisation est prete a fonctionner le 28 octobre mais la facture arrive le 10 novembre. Quelle date retenir pour raisonner l amortissement comptable ?",
+      "ok": true,
+      "latency_ms": 9424.4,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "fixed_asset_depreciation_case",
+      "actual_workflow": "fixed_asset_depreciation_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "28 octobre": true,
+        "10 novembre": true,
+        "pret": true,
+        "facture": true,
+        "traitement comptable": true,
+        "base amortissable": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true,
+        "amortization_mentions_service_date": true,
+        "amortization_mentions_accounting_basis": true,
+        "amortization_mentions_residual_or_components": true,
+        "amortization_mentions_accounting_tax_split": true,
+        "amortization_uses_accounting_sources": true,
+        "amortization_no_audit_sources": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_05_immobilisations_corporelles_direct_or_framework": true,
+        "amortization_has_direct_passage": true,
+        "amortization_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "unclassified"
+      ],
+      "source_headings": [
+        "IAS 16",
+        "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+        "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 4,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "fixed_asset_depreciation_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_05_immobilisations_corporelles",
+            "title": "NC 05 Immobilisations corporelles",
+            "page": 2,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilisation",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+            "score": 31.516
+          },
+          {
+            "doc_id": "ias_16_immobilisations_corporelles",
+            "title": "IAS 16 Immobilisations corporelles",
+            "page": 7,
+            "heading": "IAS 16",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilite",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "code_irpp_is_2025",
+            "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+            "page": 14,
+            "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissements",
+              "mise en service",
+              "date d'acquisition",
+              "exploitation",
+              "deduction"
+            ],
+            "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+            "score": 52.751
+          },
+          {
+            "doc_id": "nc_01_norme_generale",
+            "title": "NC 01 Norme comptable generale",
+            "page": 1,
+            "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+            "support_level": "unclassified",
+            "matched_terms": [],
+            "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+            "score": 999.0
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "fixed_asset_depreciation_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "title": "NC 05 Immobilisations corporelles",
+          "page": 2,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilisation",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+          "score": 31.516
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "title": "IAS 16 Immobilisations corporelles",
+          "page": 7,
+          "heading": "IAS 16",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilite",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+          "page": 14,
+          "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissements",
+            "mise en service",
+            "date d'acquisition",
+            "exploitation",
+            "deduction"
+          ],
+          "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+          "score": 52.751
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "title": "NC 01 Norme comptable generale",
+          "page": 1,
+          "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+          "score": 999.0
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nL'analyse porte sur une immobilisation corporelle. Faits transmis: Une immobilisation est prete a fonctionner le 28 octobre mais la facture arrive le 10 novembre. Quelle date retenir pour raisonner l amortissement comptable ?. La date d'acquisition ou de facture ne suffit pas a elle seule: l'amortissement commence quand l'actif est pret ou disponible pour son utilisation prevue. Il faut determiner la base amortissable, la duree d'utilite, la valeur residuelle eventuelle, la methode d'amortissement et l'impact fiscal separement du traitement comptable.\n\n## Application pratique\n- Date de depart: separer acquisition, facture, livraison, installation, tests, mise en service et mise en",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "batch4_machine_component_3_years_variant",
+      "question": "Une ligne de production contient un moteur important a remplacer tous les 3 ans alors que le reste de la machine dure plus longtemps. Comment appliquer l approche par composants et l amortissement ?",
+      "ok": true,
+      "latency_ms": 3575.4,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "fixed_asset_component_depreciation_case",
+      "actual_workflow": "fixed_asset_component_depreciation_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "composant": true,
+        "3 ans": true,
+        "duree": true,
+        "base amortissable": true,
+        "traitement comptable": true,
+        "fiscalite": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "Droits et taxes non incorpores": false,
+        "IAS 7": false,
+        "## Definition": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true,
+        "amortization_mentions_service_date": true,
+        "amortization_mentions_accounting_basis": true,
+        "amortization_mentions_residual_or_components": true,
+        "amortization_mentions_accounting_tax_split": true,
+        "amortization_uses_accounting_sources": true,
+        "amortization_no_audit_sources": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_05_immobilisations_corporelles_direct_or_framework": true,
+        "amortization_has_direct_passage": true,
+        "amortization_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "direct_passage"
+      ],
+      "source_headings": [
+        "IAS 16",
+        "III. Sont admis en déduction pour la détermination du bénéfice imposable, les"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 4,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "fixed_asset_component_depreciation_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_05_immobilisations_corporelles",
+            "title": "NC 05 Immobilisations corporelles",
+            "page": 2,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilisation",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+            "score": 31.516
+          },
+          {
+            "doc_id": "ias_16_immobilisations_corporelles",
+            "title": "IAS 16 Immobilisations corporelles",
+            "page": 7,
+            "heading": "IAS 16",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "parties",
+              "duree d'utilite"
+            ],
+            "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "code_irpp_is_2025",
+            "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+            "page": 14,
+            "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissements",
+              "mise en service",
+              "date d'acquisition",
+              "exploitation"
+            ],
+            "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+            "score": 42.751
+          },
+          {
+            "doc_id": "nc_01_norme_generale",
+            "title": "NC 01 Norme comptable generale",
+            "page": 7,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "immobilisations",
+              "amortissements",
+              "etats financiers"
+            ],
+            "excerpt_preview": "7 \nL'existence d'un tel accord avant l'approbation des états financiers fournit l'évidence que la substance \ndu passif à la date de clôture était à long terme.\n\nInformations à présenter dans le corps du bilan \n38. [...]",
+            "score": 31.201
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "fixed_asset_component_depreciation_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "title": "NC 05 Immobilisations corporelles",
+          "page": 2,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilisation",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+          "score": 31.516
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "title": "IAS 16 Immobilisations corporelles",
+          "page": 7,
+          "heading": "IAS 16",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "parties",
+            "duree d'utilite"
+          ],
+          "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+          "page": 14,
+          "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissements",
+            "mise en service",
+            "date d'acquisition",
+            "exploitation"
+          ],
+          "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+          "score": 42.751
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "title": "NC 01 Norme comptable generale",
+          "page": 7,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "immobilisations",
+            "amortissements",
+            "etats financiers"
+          ],
+          "excerpt_preview": "7 \nL'existence d'un tel accord avant l'approbation des états financiers fournit l'évidence que la substance \ndu passif à la date de clôture était à long terme.\n\nInformations à présenter dans le corps du bilan \n38. [...]",
+          "score": 31.201
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nCe dossier doit etre traite comme une immobilisation corporelle avec mise en service progressive et composant significatif. Faits transmis: Une ligne de production contient un moteur important a remplacer tous les 3 ans alors que le reste de la machine dure plus longtemps. Comment appliquer l approche par composants et l amortissement ?. La date d'achat ou de facture ne suffit pas a declencher l'amortissement si la machine n'est pas encore prete a etre utilisee. Il faut rapprocher acquisition, livraison, installation, tests et mise en production. Si la date de production ou de disponibilite correspond a l'utilisation prevue, c'est cette date qui doit etre retenue pour le depart d'",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "batch4_vehicle_tax_depreciation_limits",
+      "question": "La societe achete un vehicule de tourisme. Comment distinguer amortissement comptable et limites fiscales de deductibilite ?",
+      "ok": true,
+      "latency_ms": 5599.0,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "fixed_asset_depreciation_case",
+      "actual_workflow": "fixed_asset_depreciation_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "vehicule": true,
+        "traitement comptable": true,
+        "fiscalite": true,
+        "limites": true,
+        "deductibilite": true,
+        "base amortissable": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false,
+        "source implicite": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_05_immobilisations_corporelles_direct_or_framework": true,
+        "irpp_is_family_direct_or_framework": true,
+        "amortization_has_direct_passage": true,
+        "amortization_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "unclassified"
+      ],
+      "source_headings": [
+        "IAS 16",
+        "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+        "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 4,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "fixed_asset_depreciation_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_05_immobilisations_corporelles",
+            "title": "NC 05 Immobilisations corporelles",
+            "page": 2,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilisation",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+            "score": 31.516
+          },
+          {
+            "doc_id": "ias_16_immobilisations_corporelles",
+            "title": "IAS 16 Immobilisations corporelles",
+            "page": 7,
+            "heading": "IAS 16",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilite",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "code_irpp_is_2025",
+            "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+            "page": 14,
+            "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissements",
+              "mise en service",
+              "date d'acquisition",
+              "exploitation",
+              "deduction"
+            ],
+            "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+            "score": 52.751
+          },
+          {
+            "doc_id": "nc_01_norme_generale",
+            "title": "NC 01 Norme comptable generale",
+            "page": 1,
+            "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+            "support_level": "unclassified",
+            "matched_terms": [],
+            "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+            "score": 999.0
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "fixed_asset_depreciation_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "title": "NC 05 Immobilisations corporelles",
+          "page": 2,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilisation",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+          "score": 31.516
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "title": "IAS 16 Immobilisations corporelles",
+          "page": 7,
+          "heading": "IAS 16",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilite",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+          "page": 14,
+          "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissements",
+            "mise en service",
+            "date d'acquisition",
+            "exploitation",
+            "deduction"
+          ],
+          "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+          "score": 52.751
+        },
+        {
+          "doc_id": "nc_01_norme_generale",
+          "title": "NC 01 Norme comptable generale",
+          "page": 1,
+          "heading": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité",
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "excerpt_preview": "Objectifs : 1. Les objectifs des états financiers ont été définis par le cadre conceptuel de la comptabilité \nfinancière. Ils consistent notamment à fournir des renseignements utiles à la prise de décisions [...]",
+          "score": 999.0
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nL'analyse porte sur une immobilisation corporelle. Faits transmis: La societe achete un vehicule de tourisme. Comment distinguer amortissement comptable et limites fiscales de deductibilite ?. La date d'acquisition ou de facture ne suffit pas a elle seule: l'amortissement commence quand l'actif est pret ou disponible pour son utilisation prevue. Il faut determiner la base amortissable, la duree d'utilite, la valeur residuelle eventuelle, la methode d'amortissement et l'impact fiscal separement du traitement comptable.\n\n## Application pratique\n- Date de depart: separer acquisition, facture, livraison, installation, tests, mise en service et mise en production. L'acquisition n'est l",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "batch4_intangible_software_license",
+      "question": "Une entreprise acquiert une licence logiciel pluriannuelle. Comment analyser son activation et son amortissement ?",
+      "ok": true,
+      "latency_ms": 2491.7,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "fixed_asset_depreciation_case",
+      "actual_workflow": "fixed_asset_depreciation_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "licence": true,
+        "logiciel": true,
+        "incorporelle": true,
+        "duree": true,
+        "amortissement": true,
+        "traitement comptable": true,
+        "fiscalite": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "NC 05 comme seule source": false,
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_06_immobilisations_incorporelles_direct_or_framework": true,
+        "amortization_has_direct_passage": true,
+        "amortization_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "direct_passage"
+      ],
+      "source_headings": [
+        "IAS 38",
+        "IAS 16",
+        "III. Sont admis en déduction pour la détermination du bénéfice imposable, les"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 5,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "fixed_asset_depreciation_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_06_immobilisations_incorporelles",
+            "title": "NC 06 Immobilisations incorporelles",
+            "page": 4,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "immobilisations incorporelles",
+              "logiciel",
+              "amortissement",
+              "duree d'utilisation"
+            ],
+            "excerpt_preview": "Logiciels \n19. Le logiciel créé par l'entreprise est enregistré au coût de production. Le coût de production inclut \ngénéralement les coûts engagés dans le cadre de la conception détaillée de l'application, de la \nprogrammation, des tests et de documentation. [...]",
+            "score": 41.497
+          },
+          {
+            "doc_id": "ias_38_immobilisations_incorporelles",
+            "title": "IAS 38 Immobilisations incorporelles",
+            "page": 3,
+            "heading": "IAS 38",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "immobilisation incorporelle",
+              "duree d'utilite",
+              "licence"
+            ],
+            "excerpt_preview": "IAS 38\n© IFRS Foundation \n3\nLa valeur résiduelle d’une immobilisation incorporelle est le montant estimé qu’une entité obtiendrait à ce \njour de la sortie de l’actif, après déduction des coûts de sortie estimés, si l’actif avait déjà l’âge et se [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "nc_05_immobilisations_corporelles",
+            "title": "NC 05 Immobilisations corporelles",
+            "page": 2,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilisation",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+            "score": 31.516
+          },
+          {
+            "doc_id": "ias_16_immobilisations_corporelles",
+            "title": "IAS 16 Immobilisations corporelles",
+            "page": 7,
+            "heading": "IAS 16",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissement",
+              "duree d'utilite",
+              "valeur residuelle"
+            ],
+            "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "code_irpp_is_2025",
+            "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+            "page": 14,
+            "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "amortissements",
+              "mise en service",
+              "date d'acquisition",
+              "exploitation",
+              "deduction"
+            ],
+            "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+            "score": 52.751
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "fixed_asset_depreciation_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_06_immobilisations_incorporelles",
+          "title": "NC 06 Immobilisations incorporelles",
+          "page": 4,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "immobilisations incorporelles",
+            "logiciel",
+            "amortissement",
+            "duree d'utilisation"
+          ],
+          "excerpt_preview": "Logiciels \n19. Le logiciel créé par l'entreprise est enregistré au coût de production. Le coût de production inclut \ngénéralement les coûts engagés dans le cadre de la conception détaillée de l'application, de la \nprogrammation, des tests et de documentation. [...]",
+          "score": 41.497
+        },
+        {
+          "doc_id": "ias_38_immobilisations_incorporelles",
+          "title": "IAS 38 Immobilisations incorporelles",
+          "page": 3,
+          "heading": "IAS 38",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "immobilisation incorporelle",
+            "duree d'utilite",
+            "licence"
+          ],
+          "excerpt_preview": "IAS 38\n© IFRS Foundation \n3\nLa valeur résiduelle d’une immobilisation incorporelle est le montant estimé qu’une entité obtiendrait à ce \njour de la sortie de l’actif, après déduction des coûts de sortie estimés, si l’actif avait déjà l’âge et se [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "nc_05_immobilisations_corporelles",
+          "title": "NC 05 Immobilisations corporelles",
+          "page": 2,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilisation",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "Définitions \n06. Dans la présente norme, les termes ci-dessous ont le sens suivant : Les immobilisations corporelles sont les éléments d'actif physiques et tangibles qui : a. ayant un potentiel de générer des avantages futurs, sont détenus par une entreprise [...]",
+          "score": 31.516
+        },
+        {
+          "doc_id": "ias_16_immobilisations_corporelles",
+          "title": "IAS 16 Immobilisations corporelles",
+          "page": 7,
+          "heading": "IAS 16",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissement",
+            "duree d'utilite",
+            "valeur residuelle"
+          ],
+          "excerpt_preview": "IAS 16\n© IFRS Foundation \n7\n47 \nUne entité peut choisir d’amortir séparément les parties d’un élément dont le coût n’est pas significatif par \nrapport au coût total de l’élément.\n48 [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "code_irpp_is_2025",
+          "title": "Code de l'impôt sur le revenu des personnes physiques et de l'impôt sur les sociétés (IRPP et IS), édition 2025",
+          "page": 14,
+          "heading": "III. Sont admis en déduction pour la détermination du bénéfice imposable, les",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "amortissements",
+            "mise en service",
+            "date d'acquisition",
+            "exploitation",
+            "deduction"
+          ],
+          "excerpt_preview": "38\nconstructions sur sol d’autrui. L’amortissement est calculé à partir de la date \nd’acquisition, de construction, de fabrication ou de mise en service ou \nd’exploitation, si elle intervient ultérieurement, ou à partir de la date d’entrée en [...]",
+          "score": 52.751
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nL'analyse porte sur une immobilisation incorporelle. Faits transmis: Une entreprise acquiert une licence logiciel pluriannuelle. Comment analyser son activation et son amortissement ?. Le point de depart doit etre rattache a la date a laquelle l'actif est pret ou disponible pour l'utilisation prevue par l'entreprise. Il faut determiner la base amortissable, la duree d'utilite, la valeur residuelle eventuelle, la methode d'amortissement et l'impact fiscal separement du traitement comptable.\n\n## Application pratique\n- Date de depart: separer acquisition, facture, livraison, installation, tests, mise en service et mise en production. L'acquisition n'est le point de depart que si l'ac",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "batch4_internally_generated_goodwill",
+      "question": "La direction estime que la reputation et la clientele creees en interne valent un goodwill. Peut-on comptabiliser et amortir ce goodwill interne ?",
+      "ok": true,
+      "latency_ms": 11147.8,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "goodwill_accounting_case",
+      "actual_workflow": "goodwill_accounting_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "goodwill interne": true,
+        "interne": true,
+        "actif incorporel identifiable": true,
+        "ne pas comptabiliser": true,
+        "amortissement": true,
+        "source-cadre": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "article [X]": false,
+        "source implicite": false,
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true,
+        "goodwill_distinguishes_internal_acquired": true,
+        "goodwill_mentions_amortization_impairment": true,
+        "goodwill_mentions_framework": true,
+        "goodwill_uses_relevant_sources": true,
+        "goodwill_not_llm_only": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "ias_38_immobilisations_incorporelles_direct_or_framework": true,
+        "goodwill_support_classified": true,
+        "goodwill_has_relevant_source": true,
+        "goodwill_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "framework_source"
+      ],
+      "source_headings": [
+        "IFRS 3",
+        "IAS 36",
+        "IAS 38"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 5,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "goodwill_accounting_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_38_regroupements_entreprises",
+            "title": "NC 38 Regroupements d'entreprises",
+            "page": 10,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "regroupement",
+              "acquisition",
+              "amortissement",
+              "depreciation"
+            ],
+            "excerpt_preview": "10 \n46. La durée d'utilité du goodwi1l est toujours finie. L'incertitude justifie de faire preuve de prudence \ndans l'estimation de la durée d'utilité du goodwill, mais elle ne justifie pas d'estimer une durée d'utilité \ndont la brièveté n'est pas réaliste. 47. [...]",
+            "score": 51.488
+          },
+          {
+            "doc_id": "ifrs_3_regroupements_entreprises",
+            "title": "IFRS 3 Regroupements d entreprises",
+            "page": 2,
+            "heading": "IFRS 3",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "regroupement d'entreprises",
+              "acquisition",
+              "contrepartie"
+            ],
+            "excerpt_preview": "IFRS 3\n2 \n© IFRS Foundation\n(d) \ncomptabiliser et évaluer le goodwill ou le profit résultant d’une acquisition à des conditions \navantageuses.\nIdentification de l’acquéreur\n6 \nDans tout regroupement d’entreprises, il est nécessaire d’identifier l’acquéreur.\n7 [...]",
+            "score": 41.8
+          },
+          {
+            "doc_id": "ias_36_depreciation_actifs",
+            "title": "IAS 36 Depreciation d actifs",
+            "page": 3,
+            "heading": "IAS 36",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "test de depreciation",
+              "unite generatrice",
+              "valeur recouvrable"
+            ],
+            "excerpt_preview": "IAS 36\n© IFRS Foundation \n3\nindividuellement qu’à une unité génératrice de trésorerie. Des dispositions supplémentaires sont \nénoncées aux paragraphes 117 à 121 pour un actif pris individuellement, aux paragraphes 122 et 123 [...]",
+            "score": 41.8
+          },
+          {
+            "doc_id": "ias_38_immobilisations_incorporelles",
+            "title": "IAS 38 Immobilisations incorporelles",
+            "page": 14,
+            "heading": "IAS 38",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "immobilisation incorporelle",
+              "duree d'utilite",
+              "amortissement"
+            ],
+            "excerpt_preview": "IAS 38\n14 \n© IFRS Foundation\n(b) \nil existe des éléments probants que toutes les conditions nécessaires à l’obtention du renouvellement \nseront satisfaites ; et\n(c) \nle coût du renouvellement pour l’entité n’est pas important lorsqu’on le compare aux avantages [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "nc_06_immobilisations_incorporelles",
+            "title": "NC 06 Immobilisations incorporelles",
+            "page": 5,
+            "heading": "",
+            "support_level": "framework_source",
+            "matched_terms": [
+              "immobilisations incorporelles",
+              "amortissement",
+              "duree d'utilisation"
+            ],
+            "excerpt_preview": "28. La valeur récupérable est le montant que l'entreprise compte tirer de l'usage futur de l'actif \nincorporel, y compris sa valeur résiduelle de cession. Elle peut correspondre à la valeur actualisée des \ncash-flows futurs attendus. [...]",
+            "score": 31.502
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "goodwill_accounting_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_38_regroupements_entreprises",
+          "title": "NC 38 Regroupements d'entreprises",
+          "page": 10,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "regroupement",
+            "acquisition",
+            "amortissement",
+            "depreciation"
+          ],
+          "excerpt_preview": "10 \n46. La durée d'utilité du goodwi1l est toujours finie. L'incertitude justifie de faire preuve de prudence \ndans l'estimation de la durée d'utilité du goodwill, mais elle ne justifie pas d'estimer une durée d'utilité \ndont la brièveté n'est pas réaliste. 47. [...]",
+          "score": 51.488
+        },
+        {
+          "doc_id": "ifrs_3_regroupements_entreprises",
+          "title": "IFRS 3 Regroupements d entreprises",
+          "page": 2,
+          "heading": "IFRS 3",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "regroupement d'entreprises",
+            "acquisition",
+            "contrepartie"
+          ],
+          "excerpt_preview": "IFRS 3\n2 \n© IFRS Foundation\n(d) \ncomptabiliser et évaluer le goodwill ou le profit résultant d’une acquisition à des conditions \navantageuses.\nIdentification de l’acquéreur\n6 \nDans tout regroupement d’entreprises, il est nécessaire d’identifier l’acquéreur.\n7 [...]",
+          "score": 41.8
+        },
+        {
+          "doc_id": "ias_36_depreciation_actifs",
+          "title": "IAS 36 Depreciation d actifs",
+          "page": 3,
+          "heading": "IAS 36",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "test de depreciation",
+            "unite generatrice",
+            "valeur recouvrable"
+          ],
+          "excerpt_preview": "IAS 36\n© IFRS Foundation \n3\nindividuellement qu’à une unité génératrice de trésorerie. Des dispositions supplémentaires sont \nénoncées aux paragraphes 117 à 121 pour un actif pris individuellement, aux paragraphes 122 et 123 [...]",
+          "score": 41.8
+        },
+        {
+          "doc_id": "ias_38_immobilisations_incorporelles",
+          "title": "IAS 38 Immobilisations incorporelles",
+          "page": 14,
+          "heading": "IAS 38",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "immobilisation incorporelle",
+            "duree d'utilite",
+            "amortissement"
+          ],
+          "excerpt_preview": "IAS 38\n14 \n© IFRS Foundation\n(b) \nil existe des éléments probants que toutes les conditions nécessaires à l’obtention du renouvellement \nseront satisfaites ; et\n(c) \nle coût du renouvellement pour l’entité n’est pas important lorsqu’on le compare aux avantages [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "nc_06_immobilisations_incorporelles",
+          "title": "NC 06 Immobilisations incorporelles",
+          "page": 5,
+          "heading": "",
+          "support_level": "framework_source",
+          "matched_terms": [
+            "immobilisations incorporelles",
+            "amortissement",
+            "duree d'utilisation"
+          ],
+          "excerpt_preview": "28. La valeur récupérable est le montant que l'entreprise compte tirer de l'usage futur de l'actif \nincorporel, y compris sa valeur résiduelle de cession. Elle peut correspondre à la valeur actualisée des \ncash-flows futurs attendus. [...]",
+          "score": 31.502
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nLe goodwill ne se traite pas comme une immobilisation ordinaire. Faits transmis: La direction estime que la reputation et la clientele creees en interne valent un goodwill. Peut-on comptabiliser et amortir ce goodwill interne ?. Un goodwill genere en interne ne doit pas etre traite comme un goodwill acquis: il faut verifier s'il peut etre reconnu comme actif identifiable ou s'il doit rester non comptabilise comme goodwill interne. La conclusion depend du referentiel applicable: normes tunisiennes/NC 38 pour le traitement local, IFRS 3 et IAS 36 pour un referentiel IFRS, avec distinction entre amortissement et test de depreciation.\n\n## Application pratique\n- Identifier l'origine: g",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "batch4_acquired_goodwill_business_combination",
+      "question": "Une societe acquiert une autre entreprise et constate un ecart d acquisition positif. Quel traitement comptable verifier pour le goodwill acquis ?",
+      "ok": true,
+      "latency_ms": 7248.6,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "goodwill_accounting_case",
+      "actual_workflow": "goodwill_accounting_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "goodwill acquis": true,
+        "regroupement": true,
+        "acquisition": true,
+        "ecart d acquisition": true,
+        "depreciation": true,
+        "amortissement": true,
+        "referentiel": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "article [X]": false,
+        "source implicite": false,
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true,
+        "goodwill_distinguishes_internal_acquired": true,
+        "goodwill_mentions_amortization_impairment": true,
+        "goodwill_mentions_framework": true,
+        "goodwill_uses_relevant_sources": true,
+        "goodwill_not_llm_only": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "nc_38_regroupements_entreprises_direct_or_framework": true,
+        "ifrs_3_regroupements_entreprises_direct_or_framework": true,
+        "goodwill_support_classified": true,
+        "goodwill_has_relevant_source": true,
+        "goodwill_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "framework_source"
+      ],
+      "source_headings": [
+        "IFRS 3",
+        "IAS 36",
+        "IAS 38"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 5,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "goodwill_accounting_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_38_regroupements_entreprises",
+            "title": "NC 38 Regroupements d'entreprises",
+            "page": 10,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "regroupement",
+              "acquisition",
+              "amortissement",
+              "depreciation"
+            ],
+            "excerpt_preview": "10 \n46. La durée d'utilité du goodwi1l est toujours finie. L'incertitude justifie de faire preuve de prudence \ndans l'estimation de la durée d'utilité du goodwill, mais elle ne justifie pas d'estimer une durée d'utilité \ndont la brièveté n'est pas réaliste. 47. [...]",
+            "score": 51.488
+          },
+          {
+            "doc_id": "ifrs_3_regroupements_entreprises",
+            "title": "IFRS 3 Regroupements d entreprises",
+            "page": 2,
+            "heading": "IFRS 3",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "regroupement d'entreprises",
+              "acquisition",
+              "contrepartie"
+            ],
+            "excerpt_preview": "IFRS 3\n2 \n© IFRS Foundation\n(d) \ncomptabiliser et évaluer le goodwill ou le profit résultant d’une acquisition à des conditions \navantageuses.\nIdentification de l’acquéreur\n6 \nDans tout regroupement d’entreprises, il est nécessaire d’identifier l’acquéreur.\n7 [...]",
+            "score": 41.8
+          },
+          {
+            "doc_id": "ias_36_depreciation_actifs",
+            "title": "IAS 36 Depreciation d actifs",
+            "page": 3,
+            "heading": "IAS 36",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "test de depreciation",
+              "unite generatrice",
+              "valeur recouvrable"
+            ],
+            "excerpt_preview": "IAS 36\n© IFRS Foundation \n3\nindividuellement qu’à une unité génératrice de trésorerie. Des dispositions supplémentaires sont \nénoncées aux paragraphes 117 à 121 pour un actif pris individuellement, aux paragraphes 122 et 123 [...]",
+            "score": 41.8
+          },
+          {
+            "doc_id": "ias_38_immobilisations_incorporelles",
+            "title": "IAS 38 Immobilisations incorporelles",
+            "page": 14,
+            "heading": "IAS 38",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "immobilisation incorporelle",
+              "duree d'utilite",
+              "amortissement"
+            ],
+            "excerpt_preview": "IAS 38\n14 \n© IFRS Foundation\n(b) \nil existe des éléments probants que toutes les conditions nécessaires à l’obtention du renouvellement \nseront satisfaites ; et\n(c) \nle coût du renouvellement pour l’entité n’est pas important lorsqu’on le compare aux avantages [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "nc_06_immobilisations_incorporelles",
+            "title": "NC 06 Immobilisations incorporelles",
+            "page": 5,
+            "heading": "",
+            "support_level": "framework_source",
+            "matched_terms": [
+              "immobilisations incorporelles",
+              "amortissement",
+              "duree d'utilisation"
+            ],
+            "excerpt_preview": "28. La valeur récupérable est le montant que l'entreprise compte tirer de l'usage futur de l'actif \nincorporel, y compris sa valeur résiduelle de cession. Elle peut correspondre à la valeur actualisée des \ncash-flows futurs attendus. [...]",
+            "score": 31.502
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "goodwill_accounting_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_38_regroupements_entreprises",
+          "title": "NC 38 Regroupements d'entreprises",
+          "page": 10,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "regroupement",
+            "acquisition",
+            "amortissement",
+            "depreciation"
+          ],
+          "excerpt_preview": "10 \n46. La durée d'utilité du goodwi1l est toujours finie. L'incertitude justifie de faire preuve de prudence \ndans l'estimation de la durée d'utilité du goodwill, mais elle ne justifie pas d'estimer une durée d'utilité \ndont la brièveté n'est pas réaliste. 47. [...]",
+          "score": 51.488
+        },
+        {
+          "doc_id": "ifrs_3_regroupements_entreprises",
+          "title": "IFRS 3 Regroupements d entreprises",
+          "page": 2,
+          "heading": "IFRS 3",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "regroupement d'entreprises",
+            "acquisition",
+            "contrepartie"
+          ],
+          "excerpt_preview": "IFRS 3\n2 \n© IFRS Foundation\n(d) \ncomptabiliser et évaluer le goodwill ou le profit résultant d’une acquisition à des conditions \navantageuses.\nIdentification de l’acquéreur\n6 \nDans tout regroupement d’entreprises, il est nécessaire d’identifier l’acquéreur.\n7 [...]",
+          "score": 41.8
+        },
+        {
+          "doc_id": "ias_36_depreciation_actifs",
+          "title": "IAS 36 Depreciation d actifs",
+          "page": 3,
+          "heading": "IAS 36",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "test de depreciation",
+            "unite generatrice",
+            "valeur recouvrable"
+          ],
+          "excerpt_preview": "IAS 36\n© IFRS Foundation \n3\nindividuellement qu’à une unité génératrice de trésorerie. Des dispositions supplémentaires sont \nénoncées aux paragraphes 117 à 121 pour un actif pris individuellement, aux paragraphes 122 et 123 [...]",
+          "score": 41.8
+        },
+        {
+          "doc_id": "ias_38_immobilisations_incorporelles",
+          "title": "IAS 38 Immobilisations incorporelles",
+          "page": 14,
+          "heading": "IAS 38",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "immobilisation incorporelle",
+            "duree d'utilite",
+            "amortissement"
+          ],
+          "excerpt_preview": "IAS 38\n14 \n© IFRS Foundation\n(b) \nil existe des éléments probants que toutes les conditions nécessaires à l’obtention du renouvellement \nseront satisfaites ; et\n(c) \nle coût du renouvellement pour l’entité n’est pas important lorsqu’on le compare aux avantages [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "nc_06_immobilisations_incorporelles",
+          "title": "NC 06 Immobilisations incorporelles",
+          "page": 5,
+          "heading": "",
+          "support_level": "framework_source",
+          "matched_terms": [
+            "immobilisations incorporelles",
+            "amortissement",
+            "duree d'utilisation"
+          ],
+          "excerpt_preview": "28. La valeur récupérable est le montant que l'entreprise compte tirer de l'usage futur de l'actif \nincorporel, y compris sa valeur résiduelle de cession. Elle peut correspondre à la valeur actualisée des \ncash-flows futurs attendus. [...]",
+          "score": 31.502
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nLe goodwill ne se traite pas comme une immobilisation ordinaire. Faits transmis: Une societe acquiert une autre entreprise et constate un ecart d acquisition positif. Quel traitement comptable verifier pour le goodwill acquis ?. Un goodwill acquis apparait normalement dans un contexte de regroupement d'entreprises ou d'acquisition; il faut verifier le prix d'acquisition, les actifs et passifs identifiables et l'ecart d'acquisition calcule. La conclusion depend du referentiel applicable: normes tunisiennes/NC 38 pour le traitement local, IFRS 3 et IAS 36 pour un referentiel IFRS, avec distinction entre amortissement et test de depreciation.\n\n## Application pratique\n- Identifier l'o",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    },
+    {
+      "id": "batch4_goodwill_impairment_indicator",
+      "question": "Apres une acquisition, des indices montrent que le goodwill pourrait avoir perdu de la valeur. Que doit examiner le cabinet ?",
+      "ok": true,
+      "latency_ms": 11106.5,
+      "expected_intent": "accounting_treatment",
+      "actual_intent": "accounting_treatment",
+      "intent_match": true,
+      "expected_preferred_source": "legal_corpus",
+      "actual_preferred_source": "legal_corpus",
+      "preferred_source_match": true,
+      "expected_response_style": "practical_analysis",
+      "actual_response_style": "practical_analysis",
+      "response_style_match": true,
+      "expected_workflow": "goodwill_accounting_case",
+      "actual_workflow": "goodwill_accounting_case",
+      "workflow_match": true,
+      "section_checks": {},
+      "all_sections_present": true,
+      "required_phrase_checks": {
+        "goodwill": true,
+        "indice": true,
+        "perte de valeur": true,
+        "test de depreciation": true,
+        "acquisition": true,
+        "documentation": true
+      },
+      "all_required_phrases_present": true,
+      "forbidden_phrase_checks": {
+        "article [X]": false,
+        "source implicite": false,
+        "## Definition": false,
+        "we need to rewrite": false,
+        "En premiere analyse, le point doit etre rattache principalement au cadre suivant": false
+      },
+      "no_forbidden_phrases": true,
+      "substance_checks": {
+        "not_generic_fallback": true,
+        "no_guardrail_block": true,
+        "goodwill_distinguishes_internal_acquired": true,
+        "goodwill_mentions_amortization_impairment": true,
+        "goodwill_mentions_framework": true,
+        "goodwill_uses_relevant_sources": true,
+        "goodwill_not_llm_only": true
+      },
+      "substance_quality_pass": true,
+      "source_precision_checks": {
+        "source_support_classified": true,
+        "source_precision_visible": true,
+        "ias_36_depreciation_actifs_direct_or_framework": true,
+        "ifrs_3_regroupements_entreprises_direct_or_framework": true,
+        "goodwill_support_classified": true,
+        "goodwill_has_relevant_source": true,
+        "goodwill_has_heading_or_excerpt": true
+      },
+      "source_precision_pass": true,
+      "source_support_levels": [
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "direct_passage",
+        "framework_source"
+      ],
+      "source_headings": [
+        "IFRS 3",
+        "IAS 36",
+        "IAS 38"
+      ],
+      "safe_pass": true,
+      "expert_pass": true,
+      "content_quality_pass": true,
+      "sources_count": 5,
+      "golden_kb_hits_count": 0,
+      "model": "internal/case-analysis-playbook",
+      "debug_trace": {
+        "app_version": "1.0.0",
+        "commit_hash": "batch4-local",
+        "environment": "local-batch4",
+        "endpoint_name": "POST /v1/accounting-chat",
+        "intent": "accounting_treatment",
+        "workflow": "goodwill_accounting_case",
+        "case_analysis_enabled": true,
+        "retrieval_domains": [
+          "comptabilite"
+        ],
+        "selected_sources": [
+          {
+            "doc_id": "nc_38_regroupements_entreprises",
+            "title": "NC 38 Regroupements d'entreprises",
+            "page": 10,
+            "heading": "",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "regroupement",
+              "acquisition",
+              "amortissement",
+              "depreciation"
+            ],
+            "excerpt_preview": "10 \n46. La durée d'utilité du goodwi1l est toujours finie. L'incertitude justifie de faire preuve de prudence \ndans l'estimation de la durée d'utilité du goodwill, mais elle ne justifie pas d'estimer une durée d'utilité \ndont la brièveté n'est pas réaliste. 47. [...]",
+            "score": 51.488
+          },
+          {
+            "doc_id": "ifrs_3_regroupements_entreprises",
+            "title": "IFRS 3 Regroupements d entreprises",
+            "page": 2,
+            "heading": "IFRS 3",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "regroupement d'entreprises",
+              "acquisition",
+              "contrepartie"
+            ],
+            "excerpt_preview": "IFRS 3\n2 \n© IFRS Foundation\n(d) \ncomptabiliser et évaluer le goodwill ou le profit résultant d’une acquisition à des conditions \navantageuses.\nIdentification de l’acquéreur\n6 \nDans tout regroupement d’entreprises, il est nécessaire d’identifier l’acquéreur.\n7 [...]",
+            "score": 41.8
+          },
+          {
+            "doc_id": "ias_36_depreciation_actifs",
+            "title": "IAS 36 Depreciation d actifs",
+            "page": 3,
+            "heading": "IAS 36",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "goodwill",
+              "test de depreciation",
+              "unite generatrice",
+              "valeur recouvrable"
+            ],
+            "excerpt_preview": "IAS 36\n© IFRS Foundation \n3\nindividuellement qu’à une unité génératrice de trésorerie. Des dispositions supplémentaires sont \nénoncées aux paragraphes 117 à 121 pour un actif pris individuellement, aux paragraphes 122 et 123 [...]",
+            "score": 41.8
+          },
+          {
+            "doc_id": "ias_38_immobilisations_incorporelles",
+            "title": "IAS 38 Immobilisations incorporelles",
+            "page": 14,
+            "heading": "IAS 38",
+            "support_level": "direct_passage",
+            "matched_terms": [
+              "immobilisation incorporelle",
+              "duree d'utilite",
+              "amortissement"
+            ],
+            "excerpt_preview": "IAS 38\n14 \n© IFRS Foundation\n(b) \nil existe des éléments probants que toutes les conditions nécessaires à l’obtention du renouvellement \nseront satisfaites ; et\n(c) \nle coût du renouvellement pour l’entité n’est pas important lorsqu’on le compare aux avantages [...]",
+            "score": 31.8
+          },
+          {
+            "doc_id": "nc_06_immobilisations_incorporelles",
+            "title": "NC 06 Immobilisations incorporelles",
+            "page": 5,
+            "heading": "",
+            "support_level": "framework_source",
+            "matched_terms": [
+              "immobilisations incorporelles",
+              "amortissement",
+              "duree d'utilisation"
+            ],
+            "excerpt_preview": "28. La valeur récupérable est le montant que l'entreprise compte tirer de l'usage futur de l'actif \nincorporel, y compris sa valeur résiduelle de cession. Elle peut correspondre à la valeur actualisée des \ncash-flows futurs attendus. [...]",
+            "score": 31.502
+          }
+        ],
+        "fallback_used": false,
+        "answer_template_used": "practical_analysis",
+        "generator_path": "internal/case-analysis-playbook",
+        "guardrail_blocked": false
+      },
+      "workflow": "goodwill_accounting_case",
+      "generator_path": "internal/case-analysis-playbook",
+      "selected_sources": [
+        {
+          "doc_id": "nc_38_regroupements_entreprises",
+          "title": "NC 38 Regroupements d'entreprises",
+          "page": 10,
+          "heading": "",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "regroupement",
+            "acquisition",
+            "amortissement",
+            "depreciation"
+          ],
+          "excerpt_preview": "10 \n46. La durée d'utilité du goodwi1l est toujours finie. L'incertitude justifie de faire preuve de prudence \ndans l'estimation de la durée d'utilité du goodwill, mais elle ne justifie pas d'estimer une durée d'utilité \ndont la brièveté n'est pas réaliste. 47. [...]",
+          "score": 51.488
+        },
+        {
+          "doc_id": "ifrs_3_regroupements_entreprises",
+          "title": "IFRS 3 Regroupements d entreprises",
+          "page": 2,
+          "heading": "IFRS 3",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "regroupement d'entreprises",
+            "acquisition",
+            "contrepartie"
+          ],
+          "excerpt_preview": "IFRS 3\n2 \n© IFRS Foundation\n(d) \ncomptabiliser et évaluer le goodwill ou le profit résultant d’une acquisition à des conditions \navantageuses.\nIdentification de l’acquéreur\n6 \nDans tout regroupement d’entreprises, il est nécessaire d’identifier l’acquéreur.\n7 [...]",
+          "score": 41.8
+        },
+        {
+          "doc_id": "ias_36_depreciation_actifs",
+          "title": "IAS 36 Depreciation d actifs",
+          "page": 3,
+          "heading": "IAS 36",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "goodwill",
+            "test de depreciation",
+            "unite generatrice",
+            "valeur recouvrable"
+          ],
+          "excerpt_preview": "IAS 36\n© IFRS Foundation \n3\nindividuellement qu’à une unité génératrice de trésorerie. Des dispositions supplémentaires sont \nénoncées aux paragraphes 117 à 121 pour un actif pris individuellement, aux paragraphes 122 et 123 [...]",
+          "score": 41.8
+        },
+        {
+          "doc_id": "ias_38_immobilisations_incorporelles",
+          "title": "IAS 38 Immobilisations incorporelles",
+          "page": 14,
+          "heading": "IAS 38",
+          "support_level": "direct_passage",
+          "matched_terms": [
+            "immobilisation incorporelle",
+            "duree d'utilite",
+            "amortissement"
+          ],
+          "excerpt_preview": "IAS 38\n14 \n© IFRS Foundation\n(b) \nil existe des éléments probants que toutes les conditions nécessaires à l’obtention du renouvellement \nseront satisfaites ; et\n(c) \nle coût du renouvellement pour l’entité n’est pas important lorsqu’on le compare aux avantages [...]",
+          "score": 31.8
+        },
+        {
+          "doc_id": "nc_06_immobilisations_incorporelles",
+          "title": "NC 06 Immobilisations incorporelles",
+          "page": 5,
+          "heading": "",
+          "support_level": "framework_source",
+          "matched_terms": [
+            "immobilisations incorporelles",
+            "amortissement",
+            "duree d'utilisation"
+          ],
+          "excerpt_preview": "28. La valeur récupérable est le montant que l'entreprise compte tirer de l'usage futur de l'actif \nincorporel, y compris sa valeur résiduelle de cession. Elle peut correspondre à la valeur actualisée des \ncash-flows futurs attendus. [...]",
+          "score": 31.502
+        }
+      ],
+      "fallback_used": false,
+      "guardrail_blocked": false,
+      "answer_preview": "## Reponse\nLe goodwill ne se traite pas comme une immobilisation ordinaire. Faits transmis: Apres une acquisition, des indices montrent que le goodwill pourrait avoir perdu de la valeur. Que doit examiner le cabinet ?. Un goodwill acquis apparait normalement dans un contexte de regroupement d'entreprises ou d'acquisition; il faut verifier le prix d'acquisition, les actifs et passifs identifiables et l'ecart d'acquisition calcule. La conclusion depend du referentiel applicable: normes tunisiennes/NC 38 pour le traitement local, IFRS 3 et IAS 36 pour un referentiel IFRS, avec distinction entre amortissement et test de depreciation.\n\n## Application pratique\n- Identifier l'origine: goodwill gene",
+      "warnings": [],
+      "assumptions": [],
+      "next_steps": []
+    }
+  ]
+}

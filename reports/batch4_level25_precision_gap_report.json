@@ -1,0 +1,68 @@
+{
+  "summary": {
+    "total_cases": 87,
+    "ok_cases": 87,
+    "failed_cases": 0,
+    "intent_match_count": 79,
+    "preferred_source_match_count": 81,
+    "response_style_match_count": 81,
+    "all_sections_present_count": 81,
+    "source_precision_pass_count": 87,
+    "source_precision_failure_count": 0,
+    "safe_pass_count": 87,
+    "safe_failure_count": 0,
+    "expert_pass_count": 86,
+    "expert_failure_count": 1,
+    "content_quality_pass_count": 86,
+    "content_quality_failure_count": 1,
+    "avg_latency_ms": 4472.0
+  },
+  "gap_count": 1,
+  "gaps": [
+    {
+      "id": "tax_facturation_electronique",
+      "question": "Quelles obligations de facturation electronique doivent etre verifiees en Tunisie avant de changer le processus de facturation d un client ?",
+      "workflow": "fallback_after_provider_failure",
+      "selected_sources": [
+        {
+          "doc_id": "note_generale_facturation_electronique_2026",
+          "page": 1,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": ""
+        },
+        {
+          "doc_id": "note_generale_facturation_electronique_2026",
+          "page": 2,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": "I."
+        },
+        {
+          "doc_id": "droits_taxes_hors_codes_2025",
+          "page": 505,
+          "support_level": "unclassified",
+          "matched_terms": [],
+          "heading": "SECTION 10"
+        }
+      ],
+      "support_levels": [
+        "unclassified"
+      ],
+      "missing": "no_guardrail_block",
+      "issue_type": "weak answer generation / provider fallback",
+      "root_cause": "weak answer generation",
+      "answer_status": "safe_pass only",
+      "priority": "B",
+      "source_precision_pass": true,
+      "expert_pass": false,
+      "safe_pass": true,
+      "substance_failures": [
+        "no_guardrail_block"
+      ],
+      "source_precision_failures": [],
+      "recommended_fix": "Investigate weak answer generation / provider fallback; compare final answer against selected source excerpts."
+    }
+  ],
+  "improvements": []
+}

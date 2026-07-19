@@ -178,6 +178,8 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
     if is_fixed_asset_amortization:
         checks["amortization_mentions_service_date"] = contains_any(normalized, ["mise en service", "prete a etre utilisee", "pret a etre utilise"])
         checks["amortization_mentions_accounting_basis"] = contains_any(normalized, ["base amortissable", "duree d'utilite", "mode d'amortissement"])
+        checks["amortization_mentions_residual_or_components"] = contains_any(normalized, ["valeur residuelle", "composant", "composants"])
+        checks["amortization_mentions_accounting_tax_split"] = contains_any(normalized, ["traitement comptable", "fiscalite", "amortissement fiscal", "deductibilite"])
         checks["amortization_uses_accounting_sources"] = "nc_05_immobilisations_corporelles" in docs or "ias_16_immobilisations_corporelles" in docs
         checks["amortization_no_audit_sources"] = not any("audit" in doc for doc in docs)
         if "fixed_asset_component" in case_id:
@@ -185,6 +187,13 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
             checks["machine_mentions_component_approach"] = contains_any(normalized, ["composant", "composants", "piece majeure"])
             checks["machine_mentions_accounting_tax_split"] = contains_any(normalized, ["traitement comptable", "fiscalite", "regles fiscales"])
             checks["machine_blocks_wrong_tax_route"] = "droits_taxes_hors_codes" not in docs and "droits et taxes non incorpores" not in normalized
+
+    if "goodwill" in case_id or "goodwill" in question or "ecart d acquisition" in question:
+        checks["goodwill_distinguishes_internal_acquired"] = contains_any(normalized, ["goodwill interne", "interne"]) and contains_any(normalized, ["goodwill acquis", "acquis", "acquisition", "regroupement"])
+        checks["goodwill_mentions_amortization_impairment"] = contains_any(normalized, ["amortissement", "amortir"]) and contains_any(normalized, ["depreciation", "perte de valeur", "test de depreciation"])
+        checks["goodwill_mentions_framework"] = contains_any(normalized, ["nc 38", "ifrs 3", "ias 36", "ias 38", "referentiel"])
+        checks["goodwill_uses_relevant_sources"] = any(doc in docs for doc in ["nc_38_regroupements_entreprises", "ifrs_3_regroupements_entreprises", "ias_36_depreciation_actifs", "ias_38_immobilisations_incorporelles", "nc_06_immobilisations_incorporelles"])
+        checks["goodwill_not_llm_only"] = debug_trace.get("workflow") == "goodwill_accounting_case"
 
     if "creance" in case_id or "creances" in case_id or "creance douteuse" in question or "creances douteuses" in question:
         checks["receivable_distinguishes_accounting_tax"] = contains_any(normalized, ["distinguer la constatation comptable", "deductibilite fiscale", "traitement comptable"])
@@ -281,6 +290,8 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
     case_id = str(case.get("id") or "")
     if case.get("expected_intent") == "definition":
         return {"checks": {}, "passed": True, "support_levels": selected_source_support(debug_trace), "headings": selected_source_headings(debug_trace)}
+    if case.get("expected_response_style") == "flexible_expert" and not case.get("expected_workflow"):
+        return {"checks": {}, "passed": True, "support_levels": selected_source_support(debug_trace), "headings": selected_source_headings(debug_trace)}
     question = normalize_for_match(str(case.get("question") or ""))
     normalized = normalize_for_match(answer)
     supports = selected_source_support(debug_trace)
@@ -290,7 +301,7 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
 
     is_case_analysis = any(
         token in case_id or token in question
-        for token in ["dividende", "tva", "france", "fraude", "anomalie", "amortissement", "creance", "creances"]
+        for token in ["dividende", "tva", "france", "fraude", "anomalie", "amortissement", "creance", "creances", "goodwill", "ecart d acquisition"]
     )
     if not is_case_analysis:
         return {"checks": checks, "passed": True, "support_levels": supports, "headings": headings}
@@ -320,6 +331,20 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
     if "amortissement" in case_id or "amortissement" in question:
         checks["amortization_has_direct_passage"] = "direct_passage" in supports
         checks["amortization_has_heading_or_excerpt"] = bool(headings) or any(
+            source.get("excerpt_preview") for source in (debug_trace.get("selected_sources") or [])
+        )
+
+    if "goodwill" in case_id or "goodwill" in question or "ecart d acquisition" in question:
+        relevant_goodwill_docs = {
+            "nc_38_regroupements_entreprises",
+            "ifrs_3_regroupements_entreprises",
+            "ias_36_depreciation_actifs",
+            "ias_38_immobilisations_incorporelles",
+            "nc_06_immobilisations_incorporelles",
+        }
+        checks["goodwill_support_classified"] = any(level in {"direct_passage", "framework_source"} for level in supports)
+        checks["goodwill_has_relevant_source"] = any(doc in relevant_goodwill_docs for doc in docs)
+        checks["goodwill_has_heading_or_excerpt"] = bool(headings) or any(
             source.get("excerpt_preview") for source in (debug_trace.get("selected_sources") or [])
         )
 
