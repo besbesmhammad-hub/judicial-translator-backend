@@ -73,6 +73,15 @@ def load_corpus() -> list[dict]:
     return records
 
 
+@lru_cache(maxsize=1)
+def corpus_doc_frequency() -> dict[str, int]:
+    doc_freq: dict[str, int] = {}
+    for record in load_corpus():
+        for token in set(record.get("_tokens") or []):
+            doc_freq[token] = doc_freq.get(token, 0) + 1
+    return doc_freq
+
+
 def corpus_status() -> dict:
     records = load_corpus()
     documents = sorted({record.get("doc_id") for record in records if record.get("doc_id")})
@@ -311,7 +320,8 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
     query_tokens = tokenize(query)
     if not query_tokens:
         return []
-    corpus = load_corpus()
+    full_corpus = load_corpus()
+    corpus = full_corpus
     if not corpus:
         return []
     route = infer_query_domain(query)
@@ -323,9 +333,14 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
     for token in query_tokens:
         query_counts[token] = query_counts.get(token, 0) + 1
     total_docs = len(corpus)
-    doc_freq: dict[str, int] = {}
-    for token in query_counts:
-        doc_freq[token] = sum(1 for record in corpus if token in set(record["_tokens"]))
+    if corpus is full_corpus:
+        corpus_doc_freq = corpus_doc_frequency()
+        doc_freq = {token: corpus_doc_freq.get(token, 0) for token in query_counts}
+    else:
+        doc_freq = {
+            token: sum(1 for record in corpus if token in record["_tokens"])
+            for token in query_counts
+        }
 
     query_text = query.lower()
     domain_boosts = {
@@ -684,12 +699,9 @@ def retrieve_legal_context(query: str, limit: int = 5) -> list[dict]:
         tokens = record["_tokens"]
         if not tokens:
             continue
-        token_counts: dict[str, int] = {}
-        for token in tokens:
-            token_counts[token] = token_counts.get(token, 0) + 1
         score = 0.0
         for token, query_count in query_counts.items():
-            frequency = token_counts.get(token, 0)
+            frequency = tokens.count(token)
             if not frequency:
                 continue
             inverse_df = math.log((1 + total_docs) / (1 + doc_freq.get(token, 0))) + 1
