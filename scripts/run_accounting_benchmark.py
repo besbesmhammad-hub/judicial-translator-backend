@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 import unicodedata
@@ -426,6 +427,175 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
     }
 
 
+PRACTICAL_WORKFLOWS = {
+    "revenue_cutoff_tva_case",
+    "receivable_impairment_subsequent_event",
+    "fixed_asset_component_depreciation_case",
+    "fixed_asset_depreciation_case",
+    "shareholder_split_tax_analysis",
+    "expense_deductibility_evidence_case",
+    "audit_cac_response_case",
+    "accounting_tax_bridge_case",
+    "tva_operational_case",
+    "tax_electronic_invoice_compliance_case",
+    "going_concern_case_analysis",
+    "related_party_transaction_case",
+    "goodwill_accounting_case",
+    "lease_accounting_case",
+    "grant_accounting_case",
+    "business_combination_company_law_case",
+}
+
+
+def numbers_in_text(value: str) -> list[str]:
+    return [re.sub(r"[ \u00a0]", "", item) for item in re.findall(r"\b\d{1,3}(?:[ \u00a0]\d{3})+|\b\d+\b", value or "")]
+
+
+def cabinet_answer_quality_scores(case: dict, answer: str, debug_trace: dict, source_precision: dict) -> dict:
+    case_id = str(case.get("id") or "")
+    question = normalize_for_match(str(case.get("question") or ""))
+    normalized = normalize_for_match(answer)
+    workflow = str(debug_trace.get("workflow") or case.get("expected_workflow") or "")
+    response_style = str(case.get("expected_response_style") or "")
+    docs = selected_doc_ids(debug_trace)
+    supports = selected_source_support(debug_trace)
+    is_practical = (
+        workflow in PRACTICAL_WORKFLOWS
+        or response_style == "practical_analysis"
+        or bool(case.get("expected_workflow"))
+    )
+    if not is_practical or case.get("expected_intent") == "definition":
+        return {
+            "scores": {
+                "fact_application_score": 1,
+                "quantification_score": 1,
+                "domain_split_score": 1,
+                "practical_conclusion_score": 1,
+                "source_support_score": 1,
+            },
+            "checks": {},
+            "passed": True,
+        }
+
+    q_numbers = numbers_in_text(question)
+    answer_numbers = set(numbers_in_text(normalized))
+    q_fact_tokens = [
+        token for token in [
+            "2025", "2026", "janvier", "decembre", "septembre", "octobre", "novembre",
+            "france", "francais", "non resident", "assujetti", "especes", "facture",
+            "contrat", "relances", "capitaux propres", "financement bancaire", "actionnaire",
+            "goodwill", "licence", "logiciel", "mise en service", "apres l emission", "avant la signature",
+        ]
+        if token in question
+    ]
+    fact_hits = sum(1 for token in q_fact_tokens if token in normalized)
+    number_hits = sum(1 for number in q_numbers if number in answer_numbers)
+    fact_application_score = 1 if (not q_fact_tokens and not q_numbers) or fact_hits >= max(1, min(3, len(q_fact_tokens))) or number_hits >= min(2, len(q_numbers)) else 0
+
+    quantifiable_numbers = [number for number in q_numbers if not re.fullmatch(r"20\d{2}|19\d{2}", number)]
+    quantification_required = (
+        bool(quantifiable_numbers)
+        or any(token in case_id or token in question for token in [
+            "annual_maintenance", "recouvrement_post_cloture",
+        ])
+        or ("maintenance" in question and any(month in question for month in ["janvier", "decembre", "12 mois"]))
+        or ("mise en service" in question and any(month in question for month in ["septembre", "octobre", "novembre", "decembre"]))
+    )
+    quantification_markers = [
+        "1/12", "11/12", "12/12", "0/12", "180 000", "30 000", "150 000",
+        "300 000", "200 000", "100 000", "15 septembre", "1er novembre",
+        "base amortissable", "exposition residuelle", "formule", "x mois", "prorata",
+    ]
+    quantification_score = 1 if (
+        not quantification_required
+        or contains_any(normalized, quantification_markers)
+        or bool(set(quantifiable_numbers) & answer_numbers)
+    ) else 0
+
+    domain_requirements: list[str] = []
+    if workflow == "revenue_cutoff_tva_case":
+        domain_requirements = ["comptabilite", "fiscalite", "tva"]
+    elif workflow == "receivable_impairment_subsequent_event":
+        domain_requirements = ["comptable", "fiscale"]
+    elif workflow in {"fixed_asset_component_depreciation_case", "fixed_asset_depreciation_case", "goodwill_accounting_case", "accounting_tax_bridge_case"}:
+        domain_requirements = ["comptable", "fiscal"]
+    elif workflow == "shareholder_split_tax_analysis":
+        domain_requirements = ["retenue", "declaration", "certificat"]
+    elif workflow == "expense_deductibility_evidence_case":
+        domain_requirements = ["realite du service", "interet de l'entreprise", "paiement"]
+    elif workflow == "audit_cac_response_case":
+        domain_requirements = ["gouvernance", "opinion", "document"]
+    elif workflow == "tva_operational_case":
+        domain_requirements = ["tva", "facturation", "justificatifs"]
+    elif workflow == "tax_electronic_invoice_compliance_case":
+        domain_requirements = ["champ d'application", "conservation", "transmission"]
+    elif workflow == "going_concern_case_analysis":
+        domain_requirements = ["continuite", "opinion", "document"]
+    elif workflow == "related_party_transaction_case":
+        domain_requirements = ["partie liee", "valeur de marche", "fiscal"]
+    domain_split_score = 1 if not domain_requirements or all(contains_any(normalized, [item]) for item in domain_requirements) else 0
+
+    anti_generic_phrases = [
+        "identifier le texte exact applicable",
+        "verifier les seuils",
+        "reconstituer les faits",
+        "methode de reponse: appliquer les sources prioritaires",
+    ]
+    conclusion_score = 1 if (
+        contains_any(normalized, [
+            "## conclusion cabinet",
+            "conclusion prudente",
+            "le traitement preliminaire",
+            "sur les faits fournis",
+            "sur les faits transmis",
+            "avant paiement",
+            "la conclusion doit",
+            "la conclusion depend",
+            "ne peut pas etre confirmee",
+            "ne peut pas conclure",
+            "based on the facts",
+            "demarche pratique",
+            "validation client",
+            "position preliminaire",
+            "avant migration",
+            "avant validation",
+            "ne doit pas etre validee",
+            "traitement comptable",
+            "traitement preliminaire",
+            "conclusion:",
+        ])
+        and not contains_any(normalized, anti_generic_phrases)
+    ) else 0
+
+    document_context_support = (
+        workflow in {"document_analysis_context", "document_analysis_missing_input"}
+        and bool(docs)
+        and contains_any(normalized, ["document", "piece", "contenu fourni", "extrait", "source"])
+    )
+    source_support_score = 1 if (
+        document_context_support
+        or (
+            bool(docs)
+            and source_precision.get("passed")
+            and any(level in {"direct_passage", "framework_source", "missing_source"} for level in supports)
+            and contains_any(normalized, ["passage cible", "source-cadre", "source manquante", "sources utilisees"])
+        )
+    ) else 0
+
+    scores = {
+        "fact_application_score": fact_application_score,
+        "quantification_score": quantification_score,
+        "domain_split_score": domain_split_score,
+        "practical_conclusion_score": conclusion_score,
+        "source_support_score": source_support_score,
+    }
+    return {
+        "scores": scores,
+        "checks": {key: bool(value) for key, value in scores.items()},
+        "passed": all(scores.values()),
+    }
+
+
 def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
     payload = {
         "message": case["question"],
@@ -445,6 +615,7 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
         forbidden_phrase_checks = contains_phrases(answer, case.get("forbidden_answer_contains", []))
         substance = level2_substance_checks(case, answer, debug_trace)
         source_precision = level25_source_precision_checks(case, answer, debug_trace)
+        cabinet_quality = cabinet_answer_quality_scores(case, answer, debug_trace, source_precision)
         expected_workflow = case.get("expected_workflow")
         allowed_workflows = set(case.get("allowed_workflows") or [])
         if expected_workflow:
@@ -459,6 +630,7 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             and no_forbidden_phrases
             and substance["passed"]
             and source_precision["passed"]
+            and cabinet_quality["passed"]
             and workflow_match
         )
         # safe_pass means the response did not leak internals or invent an
@@ -495,6 +667,9 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             "source_precision_pass": source_precision["passed"],
             "source_support_levels": source_precision["support_levels"],
             "source_headings": source_precision["headings"],
+            "cabinet_answer_quality_scores": cabinet_quality["scores"],
+            "cabinet_answer_quality_checks": cabinet_quality["checks"],
+            "cabinet_answer_quality_pass": cabinet_quality["passed"],
             "safe_pass": safe_pass,
             "expert_pass": expert_pass,
             "content_quality_pass": content_quality_pass,
@@ -541,6 +716,7 @@ def summarize(results: list[dict]) -> dict:
     safe_match = sum(1 for row in results if row.get("safe_pass"))
     expert_match = sum(1 for row in results if row.get("expert_pass"))
     source_precision_match = sum(1 for row in results if row.get("source_precision_pass"))
+    cabinet_quality_match = sum(1 for row in results if row.get("cabinet_answer_quality_pass"))
     latencies = [row["latency_ms"] for row in results if row.get("ok") and isinstance(row.get("latency_ms"), (int, float))]
     return {
         "total_cases": total,
@@ -552,6 +728,8 @@ def summarize(results: list[dict]) -> dict:
         "all_sections_present_count": section_match,
         "source_precision_pass_count": source_precision_match,
         "source_precision_failure_count": total - source_precision_match,
+        "cabinet_answer_quality_pass_count": cabinet_quality_match,
+        "cabinet_answer_quality_failure_count": total - cabinet_quality_match,
         "safe_pass_count": safe_match,
         "safe_failure_count": total - safe_match,
         "expert_pass_count": expert_match,
