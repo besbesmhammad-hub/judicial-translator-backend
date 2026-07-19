@@ -4456,12 +4456,12 @@ def public_space_revision() -> str | None:
 
 
 def effective_app_revision() -> str:
-    if config.APP_REVISION and config.APP_REVISION != "unknown":
-        return config.APP_REVISION
     if os.getenv("SPACE_ID") or os.getenv("HF_SPACE_ID") or os.getenv("SPACE_REPOSITORY"):
         live_revision = public_space_revision()
         if live_revision:
             return live_revision
+    if config.APP_REVISION and config.APP_REVISION != "unknown":
+        return config.APP_REVISION
     return config.APP_REVISION or "unknown"
 
 
