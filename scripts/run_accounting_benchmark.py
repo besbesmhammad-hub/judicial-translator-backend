@@ -140,12 +140,35 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         if "non assujetti" in question:
             checks["non_taxable_client_changes_analysis"] = contains_any(normalized, ["non assujetti", "ne pas reprendre mecaniquement", "schema b2b"])
 
-    if "fraude" in case_id or "anomalie_apres_rapport" in case_id or "fraude" in question:
+    audit_event_markers = [
+        "fraude", "anomalie significative", "refus de corriger", "refus de correction",
+        "direction refuse", "limitation de travaux", "elements probants", "procedure alternative",
+        "evenement posterieur", "apres l emission", "avant la signature", "opinion du cac",
+    ]
+    audit_actor_markers = ["commissaire aux comptes", "cac", "auditeur", "audit", "rapport", "opinion"]
+    is_audit_cac_case = (
+        "going_concern" not in case_id
+        and "continuite d exploitation" not in question
+        and (
+            "fraude" in case_id
+            or "anomalie_apres_rapport" in case_id
+            or "scope_limitation" in case_id
+            or "management_refuses" in case_id
+            or (any(marker in question for marker in audit_event_markers) and any(marker in question for marker in audit_actor_markers))
+        )
+    )
+    if is_audit_cac_case:
         checks["fraud_not_definition"] = "le cac, ou commissaire aux comptes, est" not in normalized
-        checks["fraud_addresses_timing"] = contains_any(normalized, ["apres l'emission", "avant la signature", "date de decouverte"])
-        checks["fraud_mentions_impact"] = contains_any(normalized, ["evaluer l'incidence", "reevaluer", "remet en cause"])
+        checks["fraud_addresses_timing"] = contains_any(normalized, ["apres l'emission", "avant la signature", "date de decouverte", "date de signature"])
+        checks["fraud_mentions_impact"] = contains_any(normalized, ["evaluer l'incidence", "reevaluer", "remet en cause", "opinion"])
         checks["fraud_mentions_governance_or_documentation"] = contains_any(normalized, ["gouvernance", "direction", "documentation", "documenter"])
         checks["fraud_uses_audit_sources"] = any(doc.startswith("audit_") for doc in docs)
+        if "refus" in question or "refuse" in question:
+            checks["audit_refusal_mentions_opinion"] = contains_any(normalized, ["refus de correction", "opinion avec reserve", "opinion defavorable", "impossibilite de conclure"])
+        if "limitation" in question or "elements probants" in question:
+            checks["audit_limitation_mentions_evidence"] = contains_any(normalized, ["limitation de travaux", "elements probants", "procedures alternatives", "impossibilite de conclure"])
+        if "pervasive" in question or "generalise" in question:
+            checks["audit_pervasive_mentions_adverse_or_disclaimer"] = contains_any(normalized, ["opinion defavorable", "impossibilite de conclure", "significatif et generalise"])
 
     is_fixed_asset_amortization = (
         "fixed_asset" in case_id
@@ -316,7 +339,24 @@ def level25_source_precision_checks(case: dict, answer: str, debug_trace: dict) 
             ["article [x]", "source implicite", "reference implicite"],
         )
 
-    if "fraude" in case_id or "anomalie_apres_rapport" in case_id or "fraude" in question:
+    audit_event_markers = [
+        "fraude", "anomalie significative", "refus de corriger", "refus de correction",
+        "direction refuse", "limitation de travaux", "elements probants", "procedure alternative",
+        "evenement posterieur", "apres l emission", "avant la signature", "opinion du cac",
+    ]
+    audit_actor_markers = ["commissaire aux comptes", "cac", "auditeur", "audit", "rapport", "opinion"]
+    is_audit_cac_case = (
+        "going_concern" not in case_id
+        and "continuite d exploitation" not in question
+        and (
+            "fraude" in case_id
+            or "anomalie_apres_rapport" in case_id
+            or "scope_limitation" in case_id
+            or "management_refuses" in case_id
+            or (any(marker in question for marker in audit_event_markers) and any(marker in question for marker in audit_actor_markers))
+        )
+    )
+    if is_audit_cac_case:
         checks["fraud_has_audit_support"] = any(doc.startswith("audit_") for doc in docs)
         checks["fraud_support_classified"] = any(level in {"direct_passage", "framework_source"} for level in supports)
         checks["fraud_no_irrelevant_csc_article_416_direct"] = not any(

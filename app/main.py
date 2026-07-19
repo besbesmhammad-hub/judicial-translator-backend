@@ -961,21 +961,26 @@ def source_precision_rules(message: str) -> list[dict]:
                 "min_matches": 2,
             },
         ]
-    if "fraude" in query and ("commissaire aux comptes" in query or "rapport" in query):
+    if is_audit_cac_event_case(query):
         return [
             {
                 "doc_id": "audit_resume_gaida_normes_missions",
-                "terms": ["fraude", "anomalie", "rapport", "documentation", "evenements posterieurs"],
+                "terms": ["fraude", "anomalie", "rapport", "documentation", "evenements posterieurs", "opinion", "elements probants"],
                 "min_matches": 2,
             },
             {
                 "doc_id": "audit_resume_acceptation_controle_qualite",
-                "terms": ["fraude", "anomalie", "planification", "rapport", "documentation"],
+                "terms": ["fraude", "anomalie", "planification", "rapport", "documentation", "risque"],
                 "min_matches": 2,
             },
             {
                 "doc_id": "code_societes_commerciales_2022",
-                "terms": ["commissaire aux comptes", "rapport", "fraude", "information"],
+                "terms": ["commissaire aux comptes", "rapport", "irregularite", "delit", "information"],
+                "min_matches": 2,
+            },
+            {
+                "doc_id": "textes_profession_comptable_2018",
+                "terms": ["commissaires aux comptes", "experts comptables", "rapport", "responsabilite"],
                 "min_matches": 2,
             },
         ]
@@ -1731,6 +1736,24 @@ def is_dividend_tax_case(query: str) -> bool:
     return any(marker in query for marker in distribution_markers) and any(marker in query for marker in tax_markers)
 
 
+def is_audit_cac_event_case(query: str) -> bool:
+    audit_markers = [
+        "commissaire aux comptes", "cac", "auditeur", "audit", "rapport",
+        "opinion", "gouvernance", "direction",
+    ]
+    event_markers = [
+        "fraude", "anomalie significative", "anomalies significatives",
+        "refus de corriger", "refuse de corriger", "refus de correction",
+        "direction refuse", "limitation de travaux", "limitation des travaux",
+        "procedure alternative", "elements probants", "evenement posterieur",
+        "evenements posterieurs", "apres emission", "apres l emission",
+        "apres signature", "avant signature", "avant la signature",
+        "opinion modifiee", "reservation", "impossibilite de conclure",
+        "continuité d exploitation", "continuite d exploitation", "going concern",
+    ]
+    return any(marker in query for marker in audit_markers) and any(marker in query for marker in event_markers)
+
+
 def is_multi_beneficiary_dividend_case(query: str) -> bool:
     if any(marker in query for marker in ["trois", "deux", "plusieurs", "300 000", "200 000", "100 000", "300000", "200000", "100000"]):
         return True
@@ -1937,6 +1960,11 @@ def semantically_adjust_support_level(message: str, source: dict) -> dict:
         return source
     query = match_key(message)
     doc_id = source.get("doc_id")
+    if is_audit_cac_event_case(query) and source.get("source_tier") in {"audit_course", "professional_text_collection"}:
+        adjusted = dict(source)
+        adjusted["support_level"] = "framework_source"
+        adjusted["semantic_relevance_warning"] = "audit summary or OCR-heavy professional text: use as framework support, not final direct authority"
+        return adjusted
     haystack = match_key(" ".join([
         str(source.get("title") or ""),
         str(source.get("heading") or ""),
@@ -1944,7 +1972,7 @@ def semantically_adjust_support_level(message: str, source: dict) -> dict:
     ]))
 
     required_any: list[str] = []
-    if "fraude" in query and doc_id == "code_societes_commerciales_2022":
+    if is_audit_cac_event_case(query) and doc_id == "code_societes_commerciales_2022":
         required_any = [
             "commissaire aux comptes",
             "fraude",
@@ -1953,6 +1981,8 @@ def semantically_adjust_support_level(message: str, source: dict) -> dict:
             "revelation",
             "alerte",
             "rapport special",
+            "opinion",
+            "gouvernance",
         ]
     elif is_fixed_asset_component_depreciation_case(query) and doc_id in {"nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "code_irpp_is_2011", "code_irpp_is_2025", "code_irpp_is_2023", "code_irpp_is_2022", "code_irpp_is_2021", "code_irpp_is_2020", "code_irpp_is_2019"}:
         required_any = ["amortissement", "mise en service", "pret a etre utilise", "composant", "duree d'utilisation", "duree d'utilite"]
@@ -2982,6 +3012,15 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "ias_7_tableau_flux_tresorerie",
             "audit_resume_gaida_normes_missions",
         }
+    elif is_audit_cac_event_case(query):
+        priority_doc_ids = [
+            "audit_resume_gaida_normes_missions",
+            "audit_resume_acceptation_controle_qualite",
+            "code_societes_commerciales_2022",
+            "textes_profession_comptable_2018",
+        ]
+        blocked_doc_ids = {"fiscalite_locale", "tva_droit_consommation", "ias_7_tableau_flux_tresorerie"}
+
     elif coverage_workflow := detect_cabinet_workflow(query):
         priority_doc_ids = list(coverage_workflow.source_doc_ids)
         for treaty_doc_id in reversed(treaty_doc_ids):
@@ -3287,11 +3326,12 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "loi_finances_2026",
         ]
         blocked_doc_ids = {*IRPP_IS_DOC_IDS, "code_societes_commerciales_2022", "droits_taxes_hors_codes", "fiscalite_locale"}
-    elif "fraude" in query and ("commissaire aux comptes" in query or "rapport" in query):
+    elif is_audit_cac_event_case(query):
         priority_doc_ids = [
             "audit_resume_gaida_normes_missions",
             "audit_resume_acceptation_controle_qualite",
             "code_societes_commerciales_2022",
+            "textes_profession_comptable_2018",
         ]
     elif "amortissement" in query and ("immobilisation" in query or "corporelle" in query):
         priority_doc_ids = ["nc_05_immobilisations_corporelles", "ias_16_immobilisations_corporelles", "nc_01_norme_generale"]
@@ -3322,6 +3362,75 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     priority = legal_sources_by_doc_ids(priority_doc_ids) if priority_doc_ids else []
     merged = merge_priority_sources(priority, filtered, limit=len(priority_doc_ids) if priority_doc_ids else 5)
     return precision_sources_for_case(message, merged)
+
+
+def compose_audit_cac_case_answer(query: str, facts_summary: str, source_lines: str) -> str:
+    before_report = "avant la signature" in query or "avant signature" in query or "avant le rapport" in query
+    after_report = any(marker in query for marker in ["apres l emission", "apres emission", "apres la signature", "apres signature", "rapport deja emis", "apres rapport"])
+    management_refuses = "refus" in query or "refuse" in query or "ne corrige pas" in query
+    management_corrects = "corrige" in query and not management_refuses
+    material = any(marker in query for marker in ["significative", "significatif", "materiel", "material"])
+    pervasive = "pervasive" in query or "generalise" in query or "generalisee" in query
+    scope_limitation = "limitation" in query or "procedure alternative" in query or "elements probants" in query
+    subsequent_event = "evenement posterieur" in query or "evenements posterieurs" in query or "post cloture" in query or "apres cloture" in query
+    board_approval = "conseil" in query or "board" in query or "approbation" in query
+
+    timing_note = (
+        "La fraude est decouverte avant la signature du rapport: le CAC ne doit pas finaliser le rapport tant que l'incidence sur les comptes, les diligences et l'opinion n'est pas analysee."
+        if before_report else
+        "La fraude ou l'anomalie est decouverte apres l'emission du rapport: le CAC doit d'abord determiner si le fait existait a la date du rapport et s'il remet en cause les comptes ou l'opinion deja emise."
+        if after_report else
+        "La date de decouverte par rapport a la signature du rapport doit etre etablie avant toute conclusion, car les diligences et communications changent selon le timing."
+    )
+    correction_note = (
+        "Si la direction refuse de corriger une anomalie significative, le CAC doit evaluer l'incidence sur l'opinion: opinion avec reserve si l'effet est significatif mais circonscrit, opinion defavorable si l'effet est significatif et generalise, ou impossibilite de conclure si les elements probants sont insuffisants."
+        if management_refuses else
+        "Si la direction corrige les etats financiers et les informations en notes, le CAC doit verifier la correction, mettre a jour les diligences et documenter l'effet sur l'opinion."
+        if management_corrects else
+        "La position de la direction doit etre obtenue: correction, refus de correction, information en notes, ou absence de reponse."
+    )
+    opinion_note = (
+        "La fraude est presentee comme significative et generalisee: l'hypothese d'une opinion defavorable doit etre examinee si les comptes restent inexacts; si le probleme porte sur l'impossibilite d'obtenir des preuves, l'impossibilite de conclure doit etre envisagee."
+        if pervasive else
+        "La fraude ou anomalie est significative mais pas necessairement generalisee: une opinion avec reserve peut etre a examiner si la direction ne corrige pas, sous reserve des passages professionnels applicables."
+        if material else
+        "L'effet sur l'opinion depend de la significativite, de la diffusion de l'anomalie et du caractere suffisant des elements probants."
+    )
+    limitation_note = (
+        "En cas de limitation de travaux ou d'absence de procedures alternatives fiables, il faut analyser l'insuffisance d'elements probants et son effet possible sur une opinion avec reserve pour limitation ou une impossibilite de conclure."
+        if scope_limitation else
+        "Si les preuves sont incompletes, le CAC doit etendre les diligences ou documenter pourquoi les elements probants restent insuffisants."
+    )
+    subsequent_note = (
+        "Pour un evenement posterieur, notamment apres approbation par le conseil ou apres emission du rapport, il faut determiner s'il confirme une situation existant a la cloture ou s'il s'agit d'un evenement nouveau, puis evaluer correction, information et effet sur le rapport."
+        if subsequent_event or board_approval else
+        "Les evenements posterieurs doivent etre pris en compte si la fraude revele une situation existant a la cloture ou avant le rapport."
+    )
+    return compose_structured_answer(
+        "practical_analysis",
+        {
+            "Reponse": (
+                f"Ce dossier doit etre traite comme une reponse professionnelle du commissaire aux comptes, pas comme une definition du CAC. Faits transmis: {facts_summary}. "
+                f"{timing_note} {correction_note}"
+            ),
+            "Application pratique": (
+                "- Faits a qualifier: date de decouverte, date de cloture, date de signature ou d'emission du rapport, nature de la fraude ou anomalie, montant, personnes impliquees, periodes concernees et pieces disponibles.\n"
+                f"- Diligences: reevaluer le risque d'anomalies significatives, adapter le programme de travail, obtenir des elements probants suffisants et appropries, et documenter le jugement professionnel. {limitation_note}\n"
+                "- Direction et gouvernance: communiquer au niveau approprie, demander la position de la direction, exiger les corrections ou informations necessaires, et documenter les echanges avec les organes de gouvernance.\n"
+                f"- Opinion: {opinion_note}\n"
+                f"- Evenements posterieurs: {subsequent_note}\n"
+                "- Consultation: avant toute communication externe, retraitement de rapport deja emis ou position sensible, consulter juridiquement ou professionnellement lorsque les textes exacts ou les obligations de revelation ne sont pas directement disponibles.\n"
+                "- Documentation: conserver note de faits, seuil de signification, diligences complementaires, preuves obtenues, conclusions sur correction/refus, communication gouvernance, consultation et justification de l'opinion retenue."
+            ),
+            "Points de vigilance": (
+                "- Ne pas affirmer une obligation externe, une sanction ou un article precis si le passage primaire n'est pas retrouve.\n"
+                "- Ne pas marquer un passage du Code des societes comme passage cible s'il traite d'un sujet etranger a la fraude, a l'opinion ou aux obligations du CAC.\n"
+                "- Si les sources disponibles sont des supports/resumes d'audit, les conclusions doivent rester source-cadre pour les obligations professionnelles exactes.\n"
+                "- Distinguer correction des comptes, information en notes, limitation de travaux, refus de correction et effet sur l'opinion."
+            ),
+            "Sources utilisees": source_lines,
+        },
+    )
 
 
 def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, legal_sources: list[dict]) -> dict | None:
@@ -3798,6 +3907,12 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                 "Sources utilisees": source_lines,
             },
         )
+
+    elif is_audit_cac_event_case(query):
+        workflow_name = "audit_cac_response_case"
+        returned_intent = "legal_basis"
+        returned_domain = "audit"
+        answer = compose_audit_cac_case_answer(query, facts_summary, source_lines)
 
     elif coverage_workflow := detect_cabinet_workflow(query):
         workflow_name = coverage_workflow.id
