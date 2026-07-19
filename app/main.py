@@ -829,6 +829,28 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": tva_doc_id_for_query(query), "terms": ["facture", "facturation", "tva", "article 18", "deduction"], "min_matches": 2},
             {"doc_id": "procedures_fiscales_2026", "terms": ["facture", "declaration", "controle", "justificatifs", "sanctions"], "min_matches": 2},
         ]
+    if ("credit bail" in query or "credit-bail" in query or "location financement" in query) and any(
+        marker in query for marker in ["machine", "actif", "immobilisation", "traitement comptable", "ecritures"]
+    ):
+        return [
+            {"doc_id": "nc_41_contrats_location", "terms": ["contrat de location", "location-financement", "preneur", "actif", "paiements"], "min_matches": 2},
+            {"doc_id": "ias_17_contrats_location", "terms": ["location-financement", "preneur", "actif", "dette", "paiements minimaux"], "min_matches": 2},
+            {"doc_id": "nc_05_immobilisations_corporelles", "terms": ["immobilisations corporelles", "amortissement", "duree d'utilisation", "valeur residuelle"], "min_matches": 2},
+        ]
+    if "subvention" in query and ("investissement" in query or "equipement" in query or "immobilisation" in query):
+        return [
+            {"doc_id": "nc_12_subventions_publiques", "terms": ["subvention d'investissement", "assurance raisonnable", "produits", "immobilisations"], "min_matches": 2},
+            {"doc_id": "ias_20_subventions_publiques", "terms": ["subventions publiques", "assurance raisonnable", "resultat", "actif"], "min_matches": 2},
+            {"doc_id": "nc_01_norme_generale", "terms": ["produits", "charges", "rattachement", "etats financiers"], "min_matches": 2},
+        ]
+    if ("fusion" in query or "parite d echange" in query or "parite d'echange" in query) and any(
+        marker in query for marker in ["actifs", "passifs", "evaluation", "societe", "regroupement"]
+    ):
+        return [
+            {"doc_id": "nc_38_regroupements_entreprises", "terms": ["regroupement d'entreprises", "date d'acquisition", "actifs", "passifs", "juste valeur"], "min_matches": 2},
+            {"doc_id": "code_societes_commerciales_2022", "terms": ["fusion", "rapport", "commissaire", "assemblee", "apport"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["fusion", "scission", "plus-value d'apport", "benefice imposable"], "min_matches": 2},
+        ]
     procedure_rules = tax_procedure_precision_rules(query)
     if procedure_rules:
         return procedure_rules
@@ -2933,6 +2955,19 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "code_commerce_2014",
             "code_obligations_contrats_2015",
         }
+    elif ("credit bail" in query or "credit-bail" in query or "location financement" in query) and any(
+        marker in query for marker in ["machine", "actif", "immobilisation", "traitement comptable", "ecritures"]
+    ):
+        priority_doc_ids = ["nc_41_contrats_location", "ias_17_contrats_location", "nc_05_immobilisations_corporelles"]
+        blocked_doc_ids = {"code_commerce_2014", "code_obligations_contrats_2015", "fiscalite_locale"}
+    elif "subvention" in query and ("investissement" in query or "equipement" in query or "immobilisation" in query):
+        priority_doc_ids = ["nc_12_subventions_publiques", "ias_20_subventions_publiques", "nc_01_norme_generale"]
+        blocked_doc_ids = {"code_commerce_2014", "code_obligations_contrats_2015", "fiscalite_locale"}
+    elif ("fusion" in query or "parite d echange" in query or "parite d'echange" in query) and any(
+        marker in query for marker in ["actifs", "passifs", "evaluation", "societe", "regroupement"]
+    ):
+        priority_doc_ids = ["nc_38_regroupements_entreprises", "code_societes_commerciales_2022", irpp_is_doc_id]
+        blocked_doc_ids = {"fiscalite_locale", "code_commerce_2014", "code_obligations_contrats_2015"}
     elif False and is_tva_cross_border_service_case(query):
         workflow_name = "tva_operational_case"
         returned_intent = "legal_basis"
@@ -3686,6 +3721,169 @@ def compose_goodwill_accounting_answer(query: str, facts_summary: str, source_li
     )
 
 
+def _money_values_from_query(query: str) -> list[int]:
+    values: list[int] = []
+    for match in re.finditer(r"\b(\d{1,3}(?:[ \u00a0]\d{3})+|\d+)\s*(?:tnd|dt|eur|€)?\b", query, re.I):
+        raw = re.sub(r"[ \u00a0]", "", match.group(1))
+        try:
+            values.append(int(raw))
+        except ValueError:
+            continue
+    return values
+
+
+def cabinet_answer_standard_block(workflow_name: str, query: str, answer: str) -> str:
+    normalized_answer = match_key(answer)
+    if "## conclusion cabinet" in normalized_answer:
+        return ""
+
+    if workflow_name == "revenue_cutoff_tva_case":
+        if "janvier" in query and "decembre 2026" in query and "decembre 2025" in query:
+            quantification = "Dans le cas donne, le contrat facture/encaisse en decembre 2025 couvre janvier a decembre 2026: au 31/12/2025, le revenu n'est pas encore gagne; le traitement preliminaire est donc 0/12 en produit 2025 et 12/12 en produit constate d'avance, sous reserve de la facture et du contrat."
+        elif "contrat annuel" in query and ("un mois" in query or "1 mois" in query or "decembre" in query):
+            quantification = "Si le contrat annuel a commence un mois avant la cloture, le calcul attendu est 1/12 en produit de l'exercice courant et 11/12 en produit constate d'avance, a ajuster selon les dates exactes du contrat."
+        else:
+            quantification = "Calculer la part gagnee selon la formule: montant facture x mois de service rendus avant cloture / duree totale couverte; le solde non gagne est traite comme produit constate d'avance."
+        return (
+            "\n\n## Conclusion cabinet\n"
+            f"{quantification} La TVA doit rester analysee separement: son exigibilite peut dependre de la facture, de l'encaissement ou du texte TVA applicable, sans modifier a elle seule le cut-off comptable."
+        )
+
+    if workflow_name == "receivable_impairment_subsequent_event":
+        values = _money_values_from_query(query)
+        remaining = ""
+        if len(values) >= 2:
+            gross = max(values)
+            recovered_candidates = [value for value in values if value != gross]
+            recovered = recovered_candidates[0] if recovered_candidates else values[1]
+            if gross > recovered:
+                remaining = f" Sur les montants fournis, l'exposition residuelle preliminaire est {gross:,} - {recovered:,} = {gross - recovered:,} TND.".replace(",", " ")
+        return (
+            "\n\n## Conclusion cabinet\n"
+            f"Appliquer d'abord les faits connus: anciennete de la creance, relances, encaissement posterieur et solde restant a risque.{remaining} "
+            "L'encaissement posterieur doit etre analyse comme indice ajustant ou non ajustant selon ce qu'il prouve sur la situation a la cloture; fiscalement, la deduction reste conditionnee par l'individualisation, les justificatifs et les actions de recouvrement."
+        )
+
+    if workflow_name == "shareholder_split_tax_analysis":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "La conclusion doit etre faite beneficiaire par beneficiaire: personne physique residente, societe tunisienne et non-resident ne se traitent pas comme un seul bloc. Pour chaque paiement, preparer montant brut, retenue eventuelle, declaration/reversement, certificat de retenue et, pour le non-resident, verification de la convention fiscale et du certificat de residence. Ne pas inventer de taux si le passage direct manque."
+        )
+
+    if workflow_name == "llm_provider" and ("credit bail" in query or "credit-bail" in query or "location financement" in query):
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "Le traitement preliminaire doit qualifier le contrat avant toute ecriture: si le credit-bail transfere substantiellement les risques et avantages, l'analyse comptable porte sur la reconnaissance d'un actif et d'une dette, puis sur l'amortissement de l'actif et la ventilation des loyers entre charge financiere et remboursement. Fiscalement, il faut verifier la deduction admise, les retraitements extra-comptables eventuels et les justificatifs du contrat, echeancier, PV de reception et mise en service."
+        )
+
+    if workflow_name == "llm_provider" and "subvention" in query:
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "Sur les faits fournis, la subvention d'investissement doit etre rattachee a l'actif ou au programme finance: verifier l'assurance raisonnable d'obtenir la subvention et de respecter les conditions, puis constater le produit au rythme approprie par rapport aux charges ou amortissements de l'actif finance. Le dossier doit isoler le traitement comptable, le traitement fiscal, les conditions de remboursement et les pieces: decision d'octroi, convention, preuve d'encaissement et tableau de rattachement."
+        )
+
+    if workflow_name == "llm_provider" and ("fusion" in query or "parite d echange" in query or "parite d'echange" in query):
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "Pour la parite d'echange, le cabinet ne doit pas se limiter au texte de fusion: il faut rapprocher evaluation des actifs et passifs, methodes retenues, situation nette corrigee, rapports requis, approbations sociales et consequences fiscales. La conclusion client doit indiquer les documents a obtenir: traite ou projet de fusion, rapports d'evaluation, etats financiers de reference, methodologie de valorisation, rapport du commissaire ou expert requis et verification du regime fiscal de fusion."
+        )
+
+    if workflow_name in {"fixed_asset_component_depreciation_case", "fixed_asset_depreciation_case"}:
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "La date d'achat ou de facture ne suffit pas: l'amortissement commence quand l'actif est pret ou disponible pour l'utilisation prevue. La conclusion doit separer date d'acquisition, livraison, installation, tests, mise en service, base amortissable, duree d'utilite, valeur residuelle, composant significatif le cas echeant, puis comparer traitement comptable et amortissement fiscal deductible."
+        )
+
+    if workflow_name == "expense_deductibility_evidence_case":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "Sur les faits fournis, une facture seule, surtout avec paiement en especes, ne suffit pas pour conclure a la deductibilite. Le cabinet doit demander la preuve de la realite du service, l'interet de l'entreprise, les livrables, le contrat ou bon de commande, et la tracabilite du paiement; sans ces pieces, la conclusion client doit rester reservee."
+        )
+
+    if workflow_name == "audit_cac_response_case":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "La reponse doit partir du moment de decouverte: avant rapport, le CAC adapte les travaux et l'opinion avant signature; apres rapport, il analyse si les faits remettent en cause les comptes ou le rapport emis. Dans les deux cas, documenter les diligences, communiquer avec la direction/gouvernance, evaluer correction/refus, effet sur l'opinion et besoin de consultation juridique ou professionnelle."
+        )
+
+    if workflow_name == "accounting_tax_bridge_case":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "La conclusion doit separer l'ecriture comptable de la deduction fiscale: une charge ou provision peut etre comptabilisee mais reintegree extra-comptablement si les conditions fiscales ne sont pas remplies. Mentionner la piece justificative, la base de calcul, le fait generateur, et l'effet fiscal ou impot differe seulement si le referentiel et les sources le supportent."
+        )
+
+    if workflow_name == "accounting_closing_estimate_case":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "Le traitement preliminaire doit partir du fait generateur et de la periode concernee: rattachement des produits et charges, estimation documentee, ecriture de cloture si l'obligation ou le revenu est ne avant cloture, puis controle fiscal separe. Lorsque le montant, la duree ou la date sont donnes, presenter le calcul ou le prorata; sinon, indiquer la formule et les pieces a demander avant validation."
+        )
+
+    if workflow_name == "tva_operational_case":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "La conclusion TVA doit appliquer les faits connus: statut B2B/B2C du client, lieu d'utilisation ou d'exploitation, partie executee en Tunisie ou a l'etranger, facture et justificatifs. Si ces preuves manquent, donner une position preliminaire mais reserver le regime final."
+        )
+
+    if workflow_name == "tax_procedure_compliance_case":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "Sur les faits transmis, la reponse doit distinguer l'obligation declarative, le delai ou la regularisation, les penalites/risques de controle, les justificatifs disponibles et la demarche pratique a engager. Si le montant ou la periode manque, donner la methode de regularisation sans inventer de taux, echeance ou sanction."
+        )
+
+    if workflow_name == "level3_multi_domain_case_analysis":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "Le dossier doit etre tranche par blocs: TVA, retenue a la source, convention fiscale, risque d'etablissement stable, facturation et justificatifs. Appliquer les faits connus, notamment pays, parties, montant, lieu d'execution et duree de presence; si un fait manque, le signaler apres avoir donne la position preliminaire soutenable."
+        )
+
+    if workflow_name == "tax_electronic_invoice_compliance_case":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "Avant migration, le cabinet doit conclure sur trois points concrets: le client entre-t-il dans le champ d'application, a quelle date, et son systeme assure-t-il emission, conservation, transmission et rapprochement fiscal. Si l'activite, le statut TVA ou le secteur manquent, la conclusion reste preliminaire."
+        )
+
+    if workflow_name == "going_concern_case_analysis":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "La conclusion doit appliquer les signaux transmis: capitaux propres, tresorerie, fournisseurs impayes, financement confirme ou non, budget previsionnel et notes aux etats financiers. En audit, documenter les elements probants, communiquer avec la gouvernance et evaluer l'effet sur l'opinion si l'information fournie est insuffisante. Si les preuves de financement ou de cash-flow manquent, l'hypothese de continuite ne doit pas etre validee sans reserve."
+        )
+
+    if workflow_name == "related_party_transaction_case":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "Sur les faits fournis, la transaction avec partie liee doit etre rapprochee de la valeur de marche avant validation. La conclusion doit separer information comptable sur parties liees, procedure societaire de convention reglementee ou conflit d'interets, risque fiscal d'avantage ou acte anormal, documentation d'evaluation et effet eventuel sur l'audit."
+        )
+
+    if workflow_name in {"document_analysis_context", "document_analysis_missing_input"}:
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "Le document ou le contexte fourni doit etre traite comme piece de travail: appliquer d'abord les faits visibles, puis isoler les zones non justifiees, les controles comptables, fiscaux ou sociaux a effectuer, et les pieces manquantes. Si le document source n'est pas joint ou si l'extrait est insuffisant, la conclusion reste une reserve professionnelle et non une validation client."
+        )
+
+    if workflow_name == "company_law_governance_case":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "La position cabinet doit partir de la forme sociale, des statuts, des PV et de l'organe competent. Avant validation client, separer regularite societaire, approbation des comptes, pertes ou capital, conventions reglementees, conflit d'interets, effet comptable et consequence fiscale. Si les statuts, PV, comptes approuves ou autorisations manquent, la decision ne doit pas etre consideree comme validee."
+        )
+
+    if workflow_name == "payroll_social_case":
+        return (
+            "\n\n## Conclusion cabinet\n"
+            "La conclusion paie/social doit separer bulletin de paie, retenue IRPP salariale, cotisations CNSS, declarations employeur, avantages en nature et justificatifs. Si le taux CNSS, le regime, le statut resident/non-resident, la periode de paie ou les bulletins manquent, donner seulement une position preliminaire et refuser tout taux exact non directement soutenu par une source cible."
+        )
+
+    return ""
+
+
+def apply_cabinet_answer_standard(answer: str, workflow_name: str, query: str) -> str:
+    if not answer or workflow_name in {"case_analysis_fastpath"}:
+        return answer
+    block = cabinet_answer_standard_block(workflow_name, query, answer)
+    if not block:
+        return answer
+    return f"{answer.rstrip()}{block}"
+
+
 def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, legal_sources: list[dict]) -> dict | None:
     query = match_key(message)
     sources = case_analysis_sources(message, legal_sources)
@@ -3705,7 +3903,96 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
     treaty_label = "convention fiscale France-Tunisie" if france_case else "convention fiscale applicable au pays du client"
     foreign_client_label = "francais" if france_case else "etranger"
 
-    if is_tva_cross_border_service_case(query):
+    if ("credit bail" in query or "credit-bail" in query or "location financement" in query) and any(
+        marker in query for marker in ["machine", "actif", "immobilisation", "traitement comptable", "ecritures"]
+    ):
+        workflow_name = "lease_accounting_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Le credit-bail doit etre qualifie avant passation des ecritures. Faits transmis: {facts_summary}. "
+                    "La question centrale est de savoir si le contrat transfere substantiellement les risques et avantages de l'actif au preneur. "
+                    "Si oui, l'analyse comptable se rapproche d'une reconnaissance d'un actif et d'une dette; sinon, les loyers restent analyses comme charges de location selon le referentiel applicable."
+                ),
+                "Application pratique": (
+                    "- Qualification du contrat: examiner duree, option d'achat, valeur residuelle, transfert des risques, valeur actuelle des loyers, obligation de maintenance et controle economique de la machine.\n"
+                    "- Traitement comptable: si location-financement, reconnaitre l'actif controle et la dette correspondante, puis amortir l'actif selon sa duree d'utilite et ventiler les paiements entre charge financiere et remboursement; si location simple, rattacher les loyers aux exercices concernes.\n"
+                    "- Fiscalite: verifier separement la deductibilite des loyers, l'amortissement fiscal admis, les retraitements extra-comptables eventuels et les limites prevues par les textes fiscaux applicables.\n"
+                    "- Pieces: contrat de credit-bail, echeancier, facture, PV de reception, mise en service, tableau de ventilation, valeur residuelle et justification de la duree d'utilite.\n"
+                    "- Conclusion: sans contrat et echeancier, le cabinet ne peut pas valider l'ecriture definitive; il peut seulement qualifier les tests a effectuer."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas comptabiliser mecaniquement les loyers sans qualifier la nature du contrat.\n"
+                    "- Ne pas confondre traitement comptable et deduction fiscale.\n"
+                    "- La date de mise en service reste pertinente pour l'amortissement de l'actif reconnu."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif "subvention" in query and ("investissement" in query or "equipement" in query or "immobilisation" in query):
+        workflow_name = "grant_accounting_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Une subvention d'investissement doit etre analysee selon l'actif ou le programme finance. Faits transmis: {facts_summary}. "
+                    "Le cabinet doit d'abord verifier l'assurance raisonnable d'obtenir la subvention et de respecter les conditions attachees, puis rattacher le produit au rythme approprie des charges ou amortissements couverts."
+                ),
+                "Application pratique": (
+                    "- Conditions: identifier la decision d'octroi, les obligations a respecter, les conditions resolutoires et le risque de remboursement.\n"
+                    "- Comptabilite: distinguer subvention d'exploitation et subvention d'investissement; pour une subvention d'investissement, rattacher le produit aux exercices beneficiaires en coherence avec l'amortissement de l'actif finance ou la consommation de l'avantage.\n"
+                    "- Ecritures: isoler l'encaissement ou la creance sur l'organisme financeur, puis le produit differe ou le rattachement au resultat selon le referentiel et le plan de comptes retenus.\n"
+                    "- Fiscalite: verifier si le traitement comptable est suivi fiscalement ou si un retraitement extra-comptable est requis.\n"
+                    "- Pieces: convention ou decision d'octroi, preuve d'encaissement, facture de l'investissement, PV de mise en service, tableau d'amortissement et tableau de reprise de la subvention.\n"
+                    "- Conclusion: sans decision formelle ou preuve que les conditions seront respectees, la constatation definitive doit rester reservee."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas enregistrer toute la subvention en produit immediat si elle finance un actif sur plusieurs exercices.\n"
+                    "- Verifier le risque de remboursement en cas de non-respect des conditions.\n"
+                    "- Documenter le lien entre subvention, actif finance et duree d'utilite."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif ("fusion" in query or "parite d echange" in query or "parite d'echange" in query) and any(
+        marker in query for marker in ["actifs", "passifs", "evaluation", "societe", "regroupement"]
+    ):
+        workflow_name = "business_combination_company_law_case"
+        returned_intent = "company_law"
+        returned_domain = "droit_societes"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Avant une fusion, la parite d'echange doit etre analysee a la fois en droit des societes, comptabilite et fiscalite. Faits transmis: {facts_summary}. "
+                    "Il ne suffit pas de chercher un seul article: il faut verifier la methodologie de valorisation, l'evaluation des actifs et passifs, les rapports requis, les approbations sociales et le regime fiscal de fusion."
+                ),
+                "Application pratique": (
+                    "- Evaluation: rapprocher valeurs comptables, valeurs reelles ou justes valeurs, actifs et passifs identifies, elements hors bilan, endettement, provisions et risques.\n"
+                    "- Parite: documenter les methodes retenues, les comparables, la situation nette corrigee, les resultats normalises et la sensibilite des hypotheses.\n"
+                    "- Droit des societes: verifier projet ou traite de fusion, rapports, information des associes/actionnaires, commissaires ou experts requis et approbations par les organes competents.\n"
+                    "- Comptabilite: analyser le regroupement, la date d'operation, l'identification des actifs/passifs repris et l'eventuel ecart d'acquisition.\n"
+                    "- Fiscalite: verifier le regime fiscal de fusion/scission, le traitement des plus-values d'apport, reports, obligations declaratives et conditions de neutralite eventuelle.\n"
+                    "- Pieces: projet de fusion, rapports d'evaluation, comptes de reference, etats intermediaires, PV, details des actifs/passifs et note fiscale.\n"
+                    "- Conclusion: sans rapport de valorisation et dossier juridique complet, le cabinet ne peut pas valider une parite d'echange pour usage client."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas fonder la parite uniquement sur les capitaux propres comptables non corriges.\n"
+                    "- Ne pas ignorer les actifs/passifs latents, risques fiscaux ou provisions.\n"
+                    "- Distinguer validation economique de la parite, regularite societaire et regime fiscal."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_tva_cross_border_service_case(query):
         workflow_name = "tva_operational_case"
         returned_intent = "legal_basis"
         returned_domain = "fiscalite"
@@ -4223,15 +4510,14 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                 "Reponse": (
                     f"Ce dossier releve de la famille cabinet suivante: {coverage_workflow.title}. "
                     f"Faits transmis: {facts_summary}. "
-                    "La reponse doit etre construite comme une analyse de cabinet: qualifier les faits, separer les issues, "
-                    "rattacher chaque conclusion aux sources disponibles et reserver explicitement les points sans passage direct."
+                    "Sur ces faits, l'analyse preliminaire doit qualifier l'operation, separer les consequences par domaine et donner une position pratique tout en reservant les points sans passage direct."
                 ),
                 "Application pratique": (
                     "Issues a traiter:\n"
                     f"{issues}\n\n"
                     "Faits et pieces a completer avant conclusion client:\n"
                     f"{missing}\n\n"
-                    "Methode de reponse: appliquer les sources prioritaires de la famille, distinguer les impacts comptables, fiscaux, "
+                    "Application au dossier: partir des faits deja fournis, distinguer les impacts comptables, fiscaux, "
                     "societaires, audit ou procedure selon le cas, puis indiquer ce qui est directement supporte par un passage direct et ce qui reste source-cadre. "
                     "Les justificatifs doivent etre controles avant toute conclusion client."
                 ),
@@ -4412,6 +4698,9 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
     if not answer:
         return None
 
+    answer_before_standard = answer
+    answer = apply_cabinet_answer_standard(answer, workflow_name, query)
+
     return {
         "success": True,
         "answer": answer,
@@ -4428,6 +4717,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
         "legal_domain": returned_domain,
         "question": message,
         "workflow": workflow_name,
+        "cabinet_answer_standard": answer != answer_before_standard,
     }
 
 
@@ -4854,6 +5144,16 @@ def finalize_accounting_response(
 ) -> dict:
     output = dict(response)
     effective_sources = selected_sources if selected_sources is not None else (output.get("sources") or [])
+    effective_workflow = workflow or output.get("workflow") or ""
+    answer_before_standard = str(output.get("answer") or "")
+    standardized_answer = apply_cabinet_answer_standard(
+        answer_before_standard,
+        effective_workflow,
+        request.message,
+    )
+    cabinet_standard_applied = standardized_answer != answer_before_standard
+    if cabinet_standard_applied:
+        output["answer"] = standardized_answer
     blocked = answer_needs_professional_repair(str(output.get("answer") or ""))
     if blocked:
         output = controlled_source_insufficient_response(output, effective_sources)
@@ -4864,7 +5164,7 @@ def finalize_accounting_response(
         "environment": accounting_runtime_environment(),
         "endpoint_name": endpoint_name,
         "intent": intent or output.get("intent"),
-        "workflow": workflow or output.get("workflow"),
+        "workflow": effective_workflow,
         "case_analysis_enabled": case_analysis_enabled,
         "retrieval_domains": retrieval_domains or ([output.get("legal_domain")] if output.get("legal_domain") else []),
         "selected_sources": accounting_log_doc_refs(effective_sources),
@@ -4872,6 +5172,7 @@ def finalize_accounting_response(
         "answer_template_used": answer_template_used or output.get("response_style"),
         "generator_path": generator_path or output.get("model"),
         "guardrail_blocked": blocked,
+        "cabinet_answer_standard": cabinet_standard_applied,
     }
     if accounting_debug_enabled(request):
         output["debug_trace"] = trace
