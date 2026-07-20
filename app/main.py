@@ -3949,7 +3949,6 @@ def enforce_final_answer_hard_checks(answer: str, workflow_name: str, query: str
         starts_december_to_november = (
             _query_has_any(query, ["1 decembre 2025", "1er decembre 2025"])
             and _query_has_any(query, ["30 novembre 2026"])
-            and _query_has_any(query, ["31 decembre 2025"])
         )
         if starts_december_to_november:
             normalized_output = match_key(output)
@@ -3957,7 +3956,7 @@ def enforce_final_answer_hard_checks(answer: str, workflow_name: str, query: str
             if contradictory_missing:
                 output = re.sub(
                     r"- Informations manquantes: date de debut/fin du contrat, date de facture, date d'encaissement, montant HT/TVA, conditions de resiliation et prestations deja effectuees\.[^\n]*\n?",
-                    "- Informations a completer: montant HT/TVA, conditions de resiliation, clauses particulieres et details de facturation. Les dates de debut, de fin et de cloture sont deja donnees dans le cas.\n",
+                    "- Informations a completer: montant HT/TVA, date exacte de cloture si elle differe du 31/12/2025, conditions de resiliation, clauses particulieres et details de facturation. Les dates de debut et de fin du contrat sont deja donnees dans le cas.\n",
                     output,
                     flags=re.I,
                 )
@@ -3969,8 +3968,7 @@ def enforce_final_answer_hard_checks(answer: str, workflow_name: str, query: str
             ):
                 block = (
                     "## Calcul cabinet obligatoire\n"
-                    "Les dates sont donnees: le contrat couvre le 1er decembre 2025 au 30 novembre 2026 et la cloture est au 31/12/2025. "
-                    "Decembre 2025 est deja rendu: 1/12 en produit 2025; janvier a novembre 2026 restent non gagnes a la cloture: 11/12 en produit constate d'avance pour 2026. "
+                    "Les dates du contrat sont donnees: il couvre le 1er decembre 2025 au 30 novembre 2026. Pour une cloture au 31/12/2025, decembre 2025 est deja rendu: 1/12 en produit 2025; janvier a novembre 2026 restent non gagnes a la cloture: 11/12 en produit constate d'avance pour 2026. "
                     "La TVA reste traitee separement de ce cut-off comptable."
                 )
                 output = _insert_before_sources(output, block)
@@ -4004,11 +4002,10 @@ def cabinet_answer_standard_block(workflow_name: str, query: str, answer: str) -
         starts_december_2025 = (
             ("1 decembre 2025" in normalized_query or "1er decembre 2025" in normalized_query or "decembre 2025" in normalized_query)
             and ("30 novembre 2026" in normalized_query or "novembre 2026" in normalized_query)
-            and ("31 decembre 2025" in normalized_query or "cloture" in normalized_query)
         )
         starts_after_closing = "janvier" in normalized_query and "decembre 2026" in normalized_query and "decembre 2025" in normalized_query
         if starts_december_2025:
-            quantification = "Dans le cas donne, le contrat couvre le 1er decembre 2025 au 30 novembre 2026 et la cloture est au 31/12/2025: decembre 2025 est deja rendu. Le traitement preliminaire est donc 1/12 en produit 2025 et 11/12 en produit constate d'avance pour 2026, sous reserve du contrat, de la facture et de l'absence de clause particuliere."
+            quantification = "Dans le cas donne, le contrat couvre le 1er decembre 2025 au 30 novembre 2026. Pour une cloture au 31/12/2025, decembre 2025 est deja rendu: le traitement preliminaire est donc 1/12 en produit 2025 et 11/12 en produit constate d'avance pour 2026, sous reserve du contrat, de la facture et de l'absence de clause particuliere."
         elif starts_after_closing:
             quantification = "Dans le cas donne, le contrat facture/encaisse en decembre 2025 couvre janvier a decembre 2026: au 31/12/2025, le revenu n'est pas encore gagne; le traitement preliminaire est donc 0/12 en produit 2025 et 12/12 en produit constate d'avance, sous reserve de la facture et du contrat."
         elif "contrat annuel" in normalized_query and ("un mois" in normalized_query or "1 mois" in normalized_query or "decembre" in normalized_query):

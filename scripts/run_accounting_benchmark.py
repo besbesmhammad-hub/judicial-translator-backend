@@ -241,7 +241,7 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["maintenance_mentions_tva"] = contains_any(normalized, ["tva", "code tva", "exigibilite"])
         checks["maintenance_distinguishes_payment_service"] = contains_any(normalized, ["date de paiement", "date d'encaissement", "periode de couverture"])
     if "maintenance_december_to_november" in case_id or (
-        "1 decembre 2025" in question and "30 novembre 2026" in question and "31 decembre 2025" in question
+        "1 decembre 2025" in question and "30 novembre 2026" in question
     ):
         checks["maintenance_december_to_november_has_1_12"] = "1/12" in normalized
         checks["maintenance_december_to_november_has_11_12"] = "11/12" in normalized
