@@ -103,6 +103,7 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
     case_id = str(case.get("id") or "")
     question = normalize_for_match(str(case.get("question") or ""))
     normalized = normalize_for_match(answer)
+    workflow = str(debug_trace.get("workflow") or case.get("expected_workflow") or "")
     docs = selected_doc_ids(debug_trace)
     checks: dict[str, bool] = {}
 
@@ -245,6 +246,10 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["maintenance_december_to_november_has_1_12"] = "1/12" in normalized
         checks["maintenance_december_to_november_has_11_12"] = "11/12" in normalized
         checks["maintenance_december_to_november_not_0_12"] = "0/12" not in normalized
+        checks["maintenance_december_to_november_not_missing_given_dates"] = (
+            "date de debut/fin du contrat" not in normalized
+            and "si la periode couverte" not in normalized
+        )
     if "maintenance_starts_after_closing" in case_id or (
         "janvier" in question and "decembre 2026" in question and "decembre 2025" in question
     ):
@@ -263,6 +268,32 @@ def level2_substance_checks(case: dict, answer: str, debug_trace: dict) -> dict:
         checks["receivable_recovery_mentions_subsequent_event"] = contains_any(normalized, ["evenement posterieur", "apres cloture"])
         checks["receivable_recovery_mentions_adjusting"] = contains_any(normalized, ["ajustant", "non ajustant"])
         checks["receivable_recovery_mentions_remaining_exposure"] = contains_any(normalized, ["exposition restante", "150 000", "provision"])
+    if (
+        workflow == "receivable_impairment_subsequent_event"
+        and ("180 000" in question or "180000" in question)
+        and ("30 000" in question or "30000" in question)
+    ):
+        checks["receivable_final_answer_contains_correct_150000"] = contains_any(
+            normalized,
+            ["150 000", "150000", "180 000 - 30 000", "180000 - 30000"],
+        )
+        checks["receivable_final_answer_not_month_as_money"] = not contains_any(
+            normalized,
+            ["180 000 - 14", "180000 - 14", "179 986", "179986"],
+        )
+
+    if (
+        workflow in {"fixed_asset_component_depreciation_case", "fixed_asset_depreciation_case"}
+        and "15 octobre 2025" in question
+        and contains_any(question, ["prete a fonctionner", "pret a fonctionner", "disponible"])
+    ):
+        checks["fixed_asset_final_answer_concludes_15_october"] = contains_any(
+            normalized,
+            [
+                "amortissement comptable commence donc le 15 octobre 2025",
+                "amortissement comptable commence le 15 octobre 2025",
+            ],
+        )
 
     if "going_concern" in case_id:
         checks["going_concern_not_cac_definition"] = "commissaire aux comptes, est" not in normalized
