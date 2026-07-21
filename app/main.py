@@ -1812,7 +1812,10 @@ def is_tva_cross_border_service_case(query: str) -> bool:
 
 
 def is_mixed_dividends_case(query: str) -> bool:
-    distribution_markers = ["dividende", "dividendes", "benefices distribues", "revenus distribues", "distribution"]
+    distribution_markers = [
+        "dividende", "dividendes", "benefices distribues", "distribue des benefices",
+        "distribution de benefices", "revenus distribues", "distribution",
+    ]
     profile_markers = [
         "personne physique", "societe tunisienne", "personne morale", "associe",
         "actionnaire", "non resident", "resident", "beneficiaire", "certificat",
@@ -1827,7 +1830,10 @@ def is_mixed_dividends_case(query: str) -> bool:
 def is_dividend_tax_case(query: str) -> bool:
     if is_mixed_dividends_case(query):
         return True
-    distribution_markers = ["dividende", "dividendes", "benefices distribues", "revenus distribues"]
+    distribution_markers = [
+        "dividende", "dividendes", "benefices distribues", "distribue des benefices",
+        "distribution de benefices", "revenus distribues",
+    ]
     tax_markers = [
         "retenue", "source", "fiscal", "consequence", "declaration", "reversement",
         "certificat", "associe", "actionnaire", "resident", "non resident",
@@ -2077,7 +2083,7 @@ def is_cash_consulting_evidence_case(query: str) -> bool:
     service_markers = ["consulting", "consultant", "conseil", "honoraires", "prestation externe", "mission", "service"]
     evidence_markers = ["facture", "contrat", "livrable", "rapport", "justificatif", "preuve", "bon de commande"]
     payment_markers = ["especes", "cash", "liquide", "virement", "paiement", "banque"]
-    issue_markers = ["deduire", "deductible", "deductibilite", "risque", "controle", "repondre"]
+    issue_markers = ["deduire", "deductible", "deductibilite", "deduction", "valider", "risque", "controle", "repondre"]
     return (
         any(marker in query for marker in service_markers)
         and any(marker in query for marker in evidence_markers)
@@ -4191,7 +4197,7 @@ def apply_cabinet_answer_standard(answer: str, workflow_name: str, query: str) -
     block = cabinet_answer_standard_block(workflow_name, query, answer)
     if not block:
         return answer
-    return f"{answer.rstrip()}{block}"
+    return _insert_before_sources(answer, block.strip())
 
 
 def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, legal_sources: list[dict]) -> dict | None:
@@ -5521,10 +5527,25 @@ def finalize_accounting_response(
     if doctrine_trace.get("doctrine_engine_applied"):
         output["answer"] = doctrine_checked_answer
     blocked = answer_needs_professional_repair(str(output.get("answer") or ""))
-    if doctrine_trace.get("doctrine_unsafe_patterns"):
+    fatal_doctrine_markers = {
+        "180 000 - 14",
+        "179 986",
+        "source implicite",
+        "article [x]",
+        "we need to",
+        "rewrite answer",
+        "correcting error",
+        "controle doctrine",
+    }
+    doctrine_unsafe = set(doctrine_trace.get("doctrine_unsafe_patterns") or [])
+    if doctrine_unsafe & fatal_doctrine_markers:
         blocked = True
     if blocked:
         output = controlled_source_insufficient_response(output, effective_sources)
+    doctrine_quality_status = doctrine_trace.get("doctrine_quality_status") or "expert_pass"
+    if blocked:
+        doctrine_quality_status = "safe_pass"
+    output["quality_status"] = doctrine_quality_status
 
     trace = {
         "app_version": app.version,
@@ -5545,6 +5566,14 @@ def finalize_accounting_response(
         "doctrine_engine_applied": bool(doctrine_trace.get("doctrine_engine_applied")),
         "doctrine_cards": doctrine_trace.get("doctrine_cards") or [],
         "doctrine_unsafe_patterns": doctrine_trace.get("doctrine_unsafe_patterns") or [],
+        "doctrine_validation_pass": bool(doctrine_trace.get("doctrine_validation_pass")),
+        "doctrine_missing_elements_before": doctrine_trace.get("doctrine_missing_elements_before") or [],
+        "doctrine_missing_elements": doctrine_trace.get("doctrine_missing_elements") or [],
+        "doctrine_source_support_gaps": doctrine_trace.get("doctrine_source_support_gaps") or [],
+        "doctrine_regenerate_instruction": doctrine_trace.get("doctrine_regenerate_instruction") or "",
+        "doctrine_regenerated": bool(doctrine_trace.get("doctrine_regenerated")),
+        "doctrine_quality_status": doctrine_quality_status,
+        "doctrine_visible_control_hidden": bool(doctrine_trace.get("doctrine_visible_control_hidden", True)),
     }
     if accounting_debug_enabled(request):
         output["debug_trace"] = trace
