@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from . import config
 from .cabinet_coverage import cabinet_coverage_status, detect_cabinet_workflow
+from .doctrine_engine import apply_doctrine_engine
 from .financial_glossary import search_financial_glossary
 from .golden_kb import classify_query_intent, golden_kb_status, retrieve_golden_kb
 from .legal_corpus import corpus_status, infer_query_domain, load_corpus, retrieve_legal_context
@@ -721,7 +722,7 @@ def source_precision_rules(message: str) -> list[dict]:
     france_case = "france" in query or "francais" in query or "francaise" in query
     irpp_is_doc_id = irpp_is_doc_id_for_query(query)
     treaty_doc_ids = detected_treaty_doc_ids(query)
-    if re.search(r"regularisation des dettes fiscales|regulariser ses dettes fiscales|dettes fiscales anciennes|dettes fiscales|penalites fiscales|remise de penalites|echeancier fiscal", query, re.I):
+    if re.search(r"regularisation des dettes? fiscales?|regulariser ses dettes? fiscales?|dette fiscale ancienne|dettes fiscales anciennes|dettes? fiscales?|penalites fiscales|remise de penalites|echeancier fiscal", query, re.I):
         return [
             {
                 "doc_id": "note_generale_regularisation_dettes_fiscales_2026",
@@ -870,7 +871,7 @@ def source_precision_rules(message: str) -> list[dict]:
         return rules
     if is_treaty_overview_query(query) and treaty_doc_ids:
         return treaty_precision_rules(treaty_doc_ids)
-    if is_electronic_invoice_case(query):
+    if is_electronic_invoice_case(query) and not is_revenue_cutoff_tva_case(query):
         return [
             {"doc_id": "note_generale_facturation_electronique_2026", "terms": ["facturation electronique", "2026", "loi de finances", "article 53", "services"], "min_matches": 2},
             {"doc_id": tva_doc_id_for_query(query), "terms": ["facture", "facturation", "tva", "article 18", "deduction"], "min_matches": 2},
@@ -1764,17 +1765,18 @@ def is_cross_border_service_case(query: str) -> bool:
         "non resident", "hors de tunisie", "eur", "euro",
     ]
     service_markers = [
-        "prestation", "services", "informatique", "logiciel", "installation",
+        "prestation", "service", "services", "b2b", "informatique", "logiciel", "installation",
         "formation", "licence", "redevance", "assistance", "support",
-        "parametrage", "maintenance", "consultants",
+        "parametrage", "maintenance", "consultants", "encaissement",
     ]
-    tunisian_markers = ["societe tunisienne", "tunisie", "prestataire tunisien"]
+    tunisian_markers = ["societe tunisienne", "tunisie", "prestataire tunisien", "execute en tunisie", "partiellement execute en tunisie"]
     return (
         any(marker in query for marker in foreign_markers)
         and any(marker in query for marker in service_markers)
         and (
             any(marker in query for marker in tunisian_markers)
             or ("regime fiscal" in query and ("facture" in query or "facturee" in query))
+            or ("export" in query and ("tva" in query or "services" in query or "service" in query))
         )
     )
 
@@ -1792,6 +1794,7 @@ def is_tva_cross_border_service_case(query: str) -> bool:
     tva_markers = [
         "regime tva", "regime fiscal tva", "traitement tva", "tva applicable",
         "tva tunisienne", "tva tunisien", "sans tva", "export tva",
+        "export de services", "traiter comme export", "export service",
         "taxe sur la valeur ajoutee", "droit a deduction tva", "analyse tva",
         "exportation de services",
     ]
@@ -1866,9 +1869,12 @@ def is_multi_beneficiary_dividend_case(query: str) -> bool:
 
 
 def is_revenue_cutoff_tva_case(query: str) -> bool:
-    service_markers = ["maintenance", "contrat annuel", "abonnement", "support", "service annuel", "assistance", "prestation annuelle"]
-    timing_markers = ["avance", "upfront", "paye", "payee", "facture", "encaisse", "12 mois", "annuel"]
-    cutoff_markers = ["2025", "2026", "cloture", "cut off", "cut-off", "produit constate d'avance", "rattachement", "periode"]
+    service_markers = [
+        "maintenance", "contrat annuel", "contrat de service", "abonnement", "support",
+        "service annuel", "assistance", "prestation annuelle", "contrat du", "contrat de"
+    ]
+    timing_markers = ["avance", "upfront", "paye", "payee", "facture", "facture d avance", "facture d'avance", "encaisse", "12 mois", "annuel"]
+    cutoff_markers = ["2025", "2026", "cloture", "cut off", "cut-off", "produit constate d'avance", "rattachement", "periode", "produit 2025", "prorata"]
     return (
         any(marker in query for marker in service_markers)
         and any(marker in query for marker in timing_markers)
@@ -1878,7 +1884,7 @@ def is_revenue_cutoff_tva_case(query: str) -> bool:
 
 def is_receivable_subsequent_recovery_case(query: str) -> bool:
     has_receivable = (
-        ("creance" in query and ("client" in query or "douteuse" in query or "douteuses" in query))
+        ("creance" in query and ("client" in query or "douteuse" in query or "douteuses" in query or "impayee" in query or "paiement" in query or "recuperation" in query or "recouvrement" in query))
         or "facture client" in query
         or "client doit" in query
         or "client conteste" in query
@@ -1896,6 +1902,10 @@ def is_receivable_subsequent_recovery_case(query: str) -> bool:
         or "conteste" in query
         or "relance" in query
         or "relances" in query
+        or "action judiciaire" in query
+        or "recuperation" in query
+        or "recouvrement" in query
+        or "paiement" in query
         or "provision" in query
         or "provisionner" in query
         or "depreciation" in query
@@ -1916,6 +1926,9 @@ def is_receivable_subsequent_recovery_case(query: str) -> bool:
             or "deductib" in query
             or "deduire" in query
             or "fiscal" in query
+            or "recuperation" in query
+            or "recouvrement" in query
+            or "action judiciaire" in query
         )
     )
 
@@ -1929,6 +1942,12 @@ def is_electronic_invoice_case(query: str) -> bool:
         "efacturation",
         "fawtara",
         "foutara",
+        "mentions obligatoires",
+        "numerotation des factures",
+        "numero de facture",
+        "facture rectificative",
+        "obligations de facturation",
+        "aucune facture",
     ]
     process_markers = [
         "obligation",
@@ -1943,8 +1962,29 @@ def is_electronic_invoice_case(query: str) -> bool:
         "2026",
         "service",
         "services",
+        "controle",
+        "controler",
+        "client",
+        "tva",
+        "conservation",
+        "comptable",
+        "fiscal",
     ]
-    return any(marker in query for marker in invoice_markers) and any(marker in query for marker in process_markers)
+    return any(marker in query for marker in invoice_markers) and (
+        any(marker in query for marker in process_markers) or "facture" in query
+    )
+
+
+def is_standards_hierarchy_case(query: str) -> bool:
+    hierarchy_markers = [
+        "ias", "ifrs", "nc 05", "nc05", "normes tunisiennes", "referentiel tunisien",
+        "sct", "source primaire", "pme tunisienne", "societe tunisienne ordinaire",
+    ]
+    decision_markers = [
+        "peut", "suffit", "remplacer", "prioriser", "utiliser", "comparaison",
+        "source", "justifier", "repondre", "eviter",
+    ]
+    return any(marker in query for marker in hierarchy_markers) and any(marker in query for marker in decision_markers)
 
 
 def is_fixed_asset_component_depreciation_case(query: str) -> bool:
@@ -1976,6 +2016,7 @@ def is_fixed_asset_depreciation_case(query: str) -> bool:
         return False
     asset_markers = [
         "immobilisation", "immobilisations", "machine", "equipement", "vehicule",
+        "actif",
         "actif corporel", "corporelle", "corporelles", "logiciel", "licence",
         "immobilisation incorporelle", "incorporelle", "incorporelles",
     ]
@@ -1984,6 +2025,7 @@ def is_fixed_asset_depreciation_case(query: str) -> bool:
         "mise en production", "pret a fonctionner", "pret a etre utilise", "date commence",
         "date de depart", "duree d'utilite", "base amortissable", "valeur residuelle",
         "composant", "composants", "taux fiscal", "deductibilite", "fiscal",
+        "date comptable", "date retenir", "fonctionner", "disponible",
     ]
     return any(marker in query for marker in asset_markers) and any(marker in query for marker in depreciation_markers)
 
@@ -2392,7 +2434,7 @@ def fastpath_tax_debt_regularization_answer(message: str, legal_domain: str) -> 
     if legal_domain not in {"fiscalite", "general"}:
         return None
     if not re.search(
-        r"regularisation des dettes fiscales|regulariser ses dettes fiscales|dettes fiscales anciennes|dettes fiscales|remise de penalites|echeancier fiscal",
+        r"regularisation des dettes? fiscales?|regulariser ses dettes? fiscales?|dette fiscale ancienne|dettes fiscales anciennes|dettes? fiscales?|remise de penalites|echeancier fiscal",
         query,
         re.I,
     ):
@@ -3938,7 +3980,7 @@ def enforce_final_answer_hard_checks(answer: str, workflow_name: str, query: str
                 if remaining_s not in output:
                     block = (
                         "## Calcul cabinet obligatoire\n"
-                        f"Sur les montants fournis, le retard de 14 mois est une anciennete et non un encaissement. "
+                        f"Sur les montants fournis, les durees, dates, annees et numeros d'article ne sont pas des montants a soustraire. "
                         f"L'exposition residuelle preliminaire est donc {gross_s} - {recovered_s} = {remaining_s} TND. "
                         "La provision/depreciation doit porter sur le risque de non-recouvrement restant, apres analyse des preuves disponibles."
                     )
@@ -4089,7 +4131,7 @@ def cabinet_answer_standard_block(workflow_name: str, query: str, answer: str) -
     if workflow_name == "tva_operational_case":
         return (
             "\n\n## Conclusion cabinet\n"
-            "La conclusion TVA doit appliquer les faits connus: statut B2B/B2C du client, lieu d'utilisation ou d'exploitation, partie executee en Tunisie ou a l'etranger, facture et justificatifs. Si ces preuves manquent, donner une position preliminaire mais reserver le regime final."
+            "La conclusion TVA doit appliquer les faits connus: statut B2B/B2C du client, lieu d'utilisation ou d'exploitation, partie executee en Tunisie ou a l'etranger, facture, declaration TVA et justificatifs. Si ces preuves manquent, donner une position preliminaire mais reserver le regime final."
         )
 
     if workflow_name == "tax_procedure_compliance_case":
@@ -4592,6 +4634,48 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                 "Sources utilisees": source_lines,
             },
         )
+
+    elif is_standards_hierarchy_case(query):
+        workflow_name = "accounting_closing_estimate_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        standard_sources = merge_priority_sources(
+            legal_sources_by_doc_ids([
+                "loi_comptable",
+                "nc_01_norme_generale",
+                "nc_05_immobilisations_corporelles",
+                "ias_16_immobilisations_corporelles",
+                "ias_37_provisions_passifs_actifs_eventuels",
+            ]),
+            sources,
+            limit=5,
+        )
+        source_lines = summarize_source_titles(standard_sources, limit=5)
+        precision_note = source_precision_note(standard_sources)
+        if precision_note:
+            source_lines = f"{source_lines}\n{precision_note}" if source_lines else precision_note
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Pour une societe tunisienne ordinaire, la source comptable prioritaire est le referentiel tunisien: loi comptable, systeme comptable des entreprises et normes comptables tunisiennes (NC/SCT). Faits transmis: {facts_summary}. "
+                    "IAS/IFRS ne doivent pas remplacer automatiquement une norme tunisienne disponible. Ils peuvent etre utilises comme comparaison, ou comme referentiel applicable seulement si l'entite y est legalement tenue, si le groupe l'exige, ou si la question le demande explicitement."
+                ),
+                "Application pratique": (
+                    "- Hierarchie pratique: chercher d'abord la norme tunisienne directement applicable au sujet; citer IAS/IFRS seulement comme source comparative ou complementaire clairement etiquetee.\n"
+                    "- Provision fiscale: IAS 37 peut aider a comprendre la notion comptable de provision, mais ne suffit pas a justifier une deduction fiscale tunisienne; il faut un passage fiscal tunisien direct ou une reserve explicite.\n"
+                    "- Immobilisations: pour une PME tunisienne, NC 05 prime sur IAS 16 lorsque la question porte sur les comptes tunisiens ordinaires; IAS 16 ne doit pas etre la source primaire sauf contexte IFRS.\n"
+                    "- Conclusion client: indiquer le referentiel retenu, la source tunisienne, l'usage eventuel d'IFRS comme comparaison et la reserve lorsque la source tunisienne directe manque."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas marquer expert_pass si IAS/IFRS est la seule source pour une question de deduction fiscale tunisienne.\n"
+                    "- Ne pas utiliser IFRS comme source primaire pour une societe tunisienne ordinaire sans justification.\n"
+                    "- Si le client est cote, consolide ou soumis a un reporting groupe IFRS, le signaler comme contexte distinct."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+        sources = standard_sources
 
     elif is_goodwill_accounting_case(query):
         workflow_name = "goodwill_accounting_case"
@@ -5429,7 +5513,16 @@ def finalize_accounting_response(
     )
     if final_hard_check_applied:
         output["answer"] = hard_checked_answer
+    doctrine_checked_answer, doctrine_trace = apply_doctrine_engine(
+        str(output.get("answer") or ""),
+        request.message,
+        effective_workflow,
+    )
+    if doctrine_trace.get("doctrine_engine_applied"):
+        output["answer"] = doctrine_checked_answer
     blocked = answer_needs_professional_repair(str(output.get("answer") or ""))
+    if doctrine_trace.get("doctrine_unsafe_patterns"):
+        blocked = True
     if blocked:
         output = controlled_source_insufficient_response(output, effective_sources)
 
@@ -5449,6 +5542,9 @@ def finalize_accounting_response(
         "guardrail_blocked": blocked,
         "cabinet_answer_standard": cabinet_standard_applied,
         "final_answer_hard_check_applied": final_hard_check_applied,
+        "doctrine_engine_applied": bool(doctrine_trace.get("doctrine_engine_applied")),
+        "doctrine_cards": doctrine_trace.get("doctrine_cards") or [],
+        "doctrine_unsafe_patterns": doctrine_trace.get("doctrine_unsafe_patterns") or [],
     }
     if accounting_debug_enabled(request):
         output["debug_trace"] = trace
