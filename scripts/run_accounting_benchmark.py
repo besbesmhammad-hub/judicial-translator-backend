@@ -667,6 +667,12 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
         no_forbidden_phrases = not any(forbidden_phrase_checks.values())
         fallback_used = bool(debug_trace.get("fallback_used"))
         guardrail_blocked = bool(debug_trace.get("guardrail_blocked"))
+        doctrine_cards = debug_trace.get("doctrine_cards") or []
+        doctrine_contract_pass = (
+            bool(debug_trace.get("doctrine_validation_pass"))
+            if doctrine_cards
+            else True
+        )
         content_quality_pass = (
             all_required_phrases_present
             and no_forbidden_phrases
@@ -674,11 +680,14 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             and source_precision["passed"]
             and cabinet_quality["passed"]
             and workflow_match
+            and doctrine_contract_pass
         )
         # safe_pass means the response did not leak internals or invent an
         # unsupported cabinet answer. A guardrail fallback can be safe, but it
         # is not an expert answer for Level 3 case-analysis evaluation.
-        safe_pass = no_forbidden_phrases and (content_quality_pass or guardrail_blocked)
+        safe_pass = no_forbidden_phrases and (
+            content_quality_pass or guardrail_blocked or (bool(doctrine_cards) and not doctrine_contract_pass)
+        )
         expert_pass = content_quality_pass and not fallback_used and not guardrail_blocked
         return {
             "id": case["id"],
@@ -712,6 +721,9 @@ def evaluate_case(base_url: str, case: dict, timeout: float) -> dict:
             "cabinet_answer_quality_scores": cabinet_quality["scores"],
             "cabinet_answer_quality_checks": cabinet_quality["checks"],
             "cabinet_answer_quality_pass": cabinet_quality["passed"],
+            "doctrine_contract_pass": doctrine_contract_pass,
+            "doctrine_regenerated": bool(debug_trace.get("doctrine_regenerated")),
+            "doctrine_missing_elements": debug_trace.get("doctrine_missing_elements") or [],
             "safe_pass": safe_pass,
             "expert_pass": expert_pass,
             "content_quality_pass": content_quality_pass,

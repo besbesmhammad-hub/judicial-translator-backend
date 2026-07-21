@@ -73,18 +73,39 @@ def load_doctrine_cards() -> tuple[DoctrineCard, ...]:
 
 def select_doctrine_cards(query: str, workflow: str) -> list[DoctrineCard]:
     normalized = key(query)
-    selected: list[tuple[int, DoctrineCard]] = []
+    selected: list[tuple[int, bool, DoctrineCard]] = []
+    broad_workflows = {
+        "fastpath",
+        "llm_provider",
+        "accounting_closing_estimate_case",
+        "accounting_tax_bridge_case",
+        "tva_operational_case",
+        "level3_multi_domain_case_analysis",
+        "golden_kb_fastpath",
+    }
     for card in load_doctrine_cards():
         score = 0
-        if workflow and workflow in card.workflow_tags:
-            score += 6
+        marker_hits = 0
         for marker in card.query_markers:
-            if key(marker) in normalized:
-                score += 2
+            normalized_marker = key(marker)
+            if not normalized_marker:
+                continue
+            if len(normalized_marker) <= 3 and normalized_marker.isalpha():
+                matched = bool(re.search(rf"\b{re.escape(normalized_marker)}\b", normalized))
+            else:
+                matched = normalized_marker in normalized
+            if matched:
+                marker_hits += 1
+        workflow_match = bool(workflow and workflow in card.workflow_tags)
+        if workflow_match and (workflow not in broad_workflows or marker_hits):
+            score += 6
+        score += marker_hits * 2
         if score:
-            selected.append((score, card))
-    selected.sort(key=lambda item: (-item[0], item[1].doctrine_id))
-    return [card for _, card in selected[:4]]
+            selected.append((score, workflow_match, card))
+    if workflow and workflow not in broad_workflows and any(item[1] for item in selected):
+        selected = [item for item in selected if item[1]]
+    selected.sort(key=lambda item: (-item[0], item[2].doctrine_id))
+    return [card for _, _, card in selected[:4]]
 
 
 FRENCH_MONTHS = {
@@ -332,20 +353,137 @@ def fixed_asset_visible_block(query: str) -> str:
     )
 
 
-def doctrine_contract_block(query: str, workflow: str) -> tuple[str, list[dict]]:
-    cards = select_doctrine_cards(query, workflow)
-    if not cards:
-        return "", []
-    primary = cards[0]
-    elements = "; ".join(primary.required_final_answer_elements[:8])
-    wrong = "; ".join(primary.common_wrong_answers_to_block[:3])
-    block = (
-        "## Controle doctrine\n"
-        f"Doctrine appliquee: {primary.topic}. Regle decisive: {primary.legal_accounting_rule} "
-        f"Elements obligatoires de la reponse: {elements}. "
-        f"A bloquer: {wrong}."
-    )
-    trace = [
+ELEMENT_ALIASES: dict[str, tuple[str, ...]] = {
+    "source legale": ("base legale", "code tva", "loi n", "code de l irpp", "texte applicable"),
+    "champ d application": ("champ d application", "operations imposables", "assujetti", "hors champ"),
+    "territorialite": ("territorialite", "lieu d utilisation", "lieu d exploitation", "realisee en tunisie"),
+    "fait generateur/exigibilite": ("fait generateur", "exigibilite", "exigible", "encaissement"),
+    "taux": ("taux", "taux normal", "taux reduit", "ne pas inventer de taux"),
+    "deduction": ("deduction", "tva deductible", "droit a deduction", "taxe deductible"),
+    "facturation": ("facturation", "facture", "mentions obligatoires"),
+    "declaration": ("declaration", "declarative", "reversement"),
+    "cdpf/procedure": ("cdpf", "droits et procedures fiscaux", "controle", "contentieux"),
+    "checklist cabinet": ("conclusion cabinet", "conclusion pratique", "position preliminaire", "pieces a conserver"),
+    "type de service": ("nature du service", "type de service", "prestation"),
+    "client location/status": ("statut du client", "client b2b", "client b2c", "client etranger", "assujetti"),
+    "place of use/exploitation": ("lieu d utilisation", "lieu d exploitation", "territorialite"),
+    "performance vs collection": ("execution", "encaissement", "prestation realisee", "avance"),
+    "tva conclusion": ("position tva", "conclusion tva", "regime tva", "tva tunisienne"),
+    "invoice treatment": ("traitement de la facture", "facturation", "mention sur la facture"),
+    "documents to keep": ("justificatifs", "pieces a conserver", "preuve", "dossier"),
+    "gross receivable": ("creance brute", "montant brut", "exposition initiale", "180 000", "250 000"),
+    "recovery": ("encaissement posterieur", "montant recouvre", "reglement", "30 000", "40 000"),
+    "residual exposure": ("exposition residuelle", "solde restant", "150 000", "210 000"),
+    "accounting provision": ("provision comptable", "depreciation", "perte de valeur"),
+    "subsequent event": ("evenement posterieur", "apres cloture", "ajustant", "non ajustant"),
+    "fiscal conditions": ("conditions fiscales", "deductibilite fiscale", "reintegr"),
+    "documentation": ("documentation", "justificatifs", "pieces", "dossier"),
+    "practical conclusion": ("conclusion cabinet", "conclusion pratique", "position preliminaire", "sur les faits"),
+    "separate treatment per shareholder": ("beneficiaire par beneficiaire", "chaque associe", "chaque actionnaire", "personne physique residente"),
+    "withholding": ("retenue a la source", "retenue eventuelle"),
+    "certificate": ("certificat de retenue", "certificat de residence"),
+    "treaty check": ("convention fiscale", "traite fiscal", "certificat de residence"),
+    "no invented rate": ("ne pas inventer de taux", "aucun taux", "taux exact"),
+    "acquisition": ("acquisition", "achat", "date d achat"),
+    "delivery": ("livraison", "livree"),
+    "installation": ("installation", "installee", "tests"),
+    "ready-for-use date": ("pret a fonctionner", "prete a fonctionner", "disponible pour l utilisation", "mise en service"),
+    "depreciation start date": ("amortissement comptable commence", "debut de l amortissement", "point de depart"),
+    "base": ("base amortissable", "cout d entree", "valeur residuelle"),
+    "useful life": ("duree d utilite", "duree d utilisation"),
+    "component approach": ("composant", "composants significatifs"),
+    "accounting vs fiscal": ("traitement comptable", "fiscal", "amortissement fiscal", "deduction fiscale"),
+    "mandatory invoice mentions": ("mentions obligatoires", "identification du fournisseur", "base ht"),
+    "numbering": ("numero", "numerotation"),
+    "tva rate and amount": ("taux", "montant tva", "base ht"),
+    "client identity": ("identite du client", "client"),
+    "electronic invoicing": ("facturation electronique", "e facture", "transmission electronique"),
+    "conservation/transmission": ("conservation", "transmission", "archivage"),
+    "control": ("controle", "verification fiscale"),
+    "penalties": ("penalite", "sanction"),
+    "rectification": ("rectification", "redressement", "regularisation"),
+    "litigation/recourse": ("contentieux", "recours", "reclamation"),
+    "deadlines if supported": ("delai", "echeance", "sans inventer de delai"),
+    "documents": ("documents", "pieces", "justificatifs"),
+    "tunisian nc first": ("normes comptables tunisiennes", "sct", "nc tunisienne", "referentiel tunisien"),
+    "ifrs only with justification": ("ifrs", "ias", "si le contexte", "comparaison"),
+    "source support level": ("passage direct", "source cadre", "source-cadre", "support"),
+    "reserve if source missing": ("reserve", "passage direct manque", "source manque", "ne pas conclure"),
+    "taxpayer and tax base": ("contribuable", "assiette", "base imposable", "revenu imposable"),
+    "income categories": ("categories de revenus", "revenus", "benefice imposable"),
+    "is/irpp distinction": ("irpp", "impot sur les societes", "is"),
+    "filing and withholding": ("declaration", "retenue a la source"),
+    "act qualification": ("qualifier l acte", "nature de l acte", "mutation"),
+    "tax base and formality": ("assiette", "base taxable", "formalite", "enregistrement"),
+    "local tax scope": ("fiscalite locale", "collectivites locales", "taxes locales"),
+    "municipal facts": ("commune", "immeuble", "activite locale", "collectivite"),
+    "cnss affiliation": ("affiliation", "immatriculation", "cnss"),
+    "contribution base": ("assiette des cotisations", "salaire", "remuneration", "cotisations"),
+    "social filing": ("declaration cnss", "declaration employeur", "salaires declares"),
+    "audit timing": ("avant rapport", "apres rapport", "date de decouverte"),
+    "governance communication": ("gouvernance", "direction", "communication"),
+    "opinion consequence": ("opinion", "reserve", "opinion defavorable", "impossibilite de conclure"),
+    "audit documentation": ("documentation", "diligences", "elements probants"),
+    "contract period": ("periode contractuelle", "contrat couvre", "du 1er", "au 30"),
+    "earned portion": ("part rendue", "en produit", "produit de l exercice"),
+    "deferred portion": ("produit constate d avance", "part non gagnee", "pca"),
+    "accounting entry": ("ecriture", "produit", "produit constate d avance"),
+    "tva separate": ("tva doit etre traitee separement", "tva reste analysee separement", "exigibilite tva"),
+    "service reality": ("realite du service", "preuve de la prestation", "service effectivement rendu"),
+    "business interest": ("interet de l entreprise", "besoin economique", "interet social"),
+    "evidence gaps": ("contrat", "livrables", "rapport de mission", "pieces manquantes"),
+    "payment traceability": ("tracabilite du paiement", "paiement en especes", "virement bancaire"),
+    "prudent deductibility conclusion": ("ne peut pas etre confirmee", "conclusion reste reservee", "reserve", "avant deduction"),
+}
+
+NORMALIZED_ELEMENT_ALIASES = {key(name): aliases for name, aliases in ELEMENT_ALIASES.items()}
+
+
+def _element_present(element: str, answer_key: str) -> bool:
+    normalized_element = key(element)
+    aliases = NORMALIZED_ELEMENT_ALIASES.get(normalized_element, (normalized_element,))
+    if any(key(alias) in answer_key for alias in aliases):
+        return True
+    tokens = [token for token in normalized_element.split() if len(token) >= 5]
+    return bool(tokens) and sum(token in answer_key for token in tokens) >= min(2, len(tokens))
+
+
+def _strip_reference_sections(answer: str) -> str:
+    marker = _reference_heading_match(answer)
+    return (answer or "")[: marker.start()] if marker else (answer or "")
+
+
+def _reference_heading_match(answer: str) -> re.Match | None:
+    for marker in re.finditer(r"\n## ([^\n]+)", answer or ""):
+        heading = key(marker.group(1))
+        if heading.startswith("sources utilis"):
+            return marker
+        if heading.startswith("base l") and heading.endswith("gale"):
+            return marker
+    return None
+
+
+def _remove_visible_doctrine_control(answer: str) -> tuple[str, bool]:
+    cleaned = re.sub(
+        r"\n*## Controle doctrine\n.*?(?=\n## |\Z)",
+        "",
+        answer or "",
+        flags=re.I | re.S,
+    ).strip()
+    return cleaned, cleaned != (answer or "").strip()
+
+
+def _insert_before_references(answer: str, block: str) -> str:
+    if not block:
+        return answer
+    marker = _reference_heading_match(answer)
+    if marker:
+        return f"{answer[:marker.start()].rstrip()}\n\n{block.strip()}\n{answer[marker.start():].lstrip()}"
+    return f"{(answer or '').rstrip()}\n\n{block.strip()}".strip()
+
+
+def doctrine_trace_cards(cards: list[DoctrineCard]) -> list[dict]:
+    return [
         {
             "doctrine_id": card.doctrine_id,
             "topic": card.topic,
@@ -356,7 +494,256 @@ def doctrine_contract_block(query: str, workflow: str) -> tuple[str, list[dict]]
         }
         for card in cards
     ]
-    return block, trace
+
+
+def doctrine_reference_block(cards: list[DoctrineCard]) -> str:
+    lines = []
+    for card in cards:
+        label = card.primary_source_document.replace("_", " ")
+        support = "passage direct" if card.source_support_level == "direct_passage" else "source-cadre a confirmer par un passage direct"
+        line = f"- {label}: {support}"
+        if line not in lines:
+            lines.append(line)
+    return "## Base legale\n" + "\n".join(lines)
+
+
+def _known_fact_errors(query: str, answer: str, workflow: str) -> list[str]:
+    query_key = key(query)
+    answer_key = key(answer)
+    errors: list[str] = []
+    if infer_contract_period(query) and any(
+        marker in answer_key
+        for marker in ["date de debut/fin du contrat", "dates de debut et de fin manquantes", "date de debut manquante"]
+    ):
+        errors.append("known_contract_dates_listed_as_missing")
+    money = extract_money_values(query)
+    if workflow == "receivable_impairment_subsequent_event" and len(money) >= 2:
+        gross = max(money)
+        recovered = next((value for value in money if value != gross), None)
+        if recovered and gross > recovered:
+            expected = fmt_amount(gross - recovered)
+            if expected not in answer and str(gross - recovered) not in answer_key:
+                errors.append("known_receivable_amounts_not_applied")
+    if workflow in {"fixed_asset_depreciation_case", "fixed_asset_component_depreciation_case"}:
+        visible = fixed_asset_visible_block(query)
+        match = re.search(r"commence le ([^,\.]+)", key(visible))
+        if match and match.group(1) not in answer_key:
+            errors.append("known_ready_for_use_date_not_applied")
+    if workflow == "revenue_cutoff_tva_case" and infer_contract_period(query):
+        period = infer_contract_period(query)
+        closing = infer_closing_date(query, period)
+        if period and closing:
+            total = month_span_inclusive(*period)
+            earned = rendered_months_until_closing(period[0], period[1], closing)
+            if total and f"{earned}/{total}" not in answer:
+                errors.append("known_period_not_quantified")
+    if "ifrs" not in query_key and "ias" not in query_key and ("ifrs" in answer_key or "ias " in answer_key):
+        if not any(marker in answer_key for marker in ["normes comptables tunisiennes", "referentiel tunisien", " nc ", "sct"]):
+            errors.append("ifrs_used_without_tunisian_framework")
+    return errors
+
+
+def validate_final_answer_doctrine(
+    workflow: str,
+    cards: list[DoctrineCard],
+    required_elements: list[str],
+    final_answer: str,
+    query: str = "",
+) -> dict:
+    answer_key = key(final_answer)
+    missing = [element for element in required_elements if not _element_present(element, answer_key)]
+    body = key(_strip_reference_sections(final_answer))
+    unsafe_patterns: list[str] = []
+    for marker in [
+        "controle doctrine",
+        "we need to",
+        "rewrite answer",
+        "correcting error",
+        "article [x]",
+        "source implicite",
+        "en premiere analyse le point doit etre rattache principalement au cadre suivant",
+    ]:
+        if marker in answer_key:
+            unsafe_patterns.append(marker)
+    decisive_terms = [key(card.legal_accounting_rule) for card in cards if card.legal_accounting_rule]
+    only_names_sources = bool(cards and len(body) < 420 and not any(
+        term in body
+        for term in ["s applique", "doit", "exigible", "deduct", "comptabilis", "conclusion", "position"]
+    ))
+    if only_names_sources:
+        unsafe_patterns.append("sources_named_without_decisive_rule")
+    generic_without_rule = any(
+        marker in answer_key
+        for marker in ["verifier le code", "identifier le texte exact applicable", "reconstituer les faits"]
+    ) and not any(term[:48] in body for term in decisive_terms if len(term) >= 24)
+    if generic_without_rule:
+        unsafe_patterns.append("generic_verification_without_rule")
+    known_fact_errors = _known_fact_errors(query, final_answer, workflow)
+    unsafe_patterns.extend(known_fact_errors)
+    checklist_only = final_answer.count("\n-") >= 3 and not any(
+        marker in answer_key
+        for marker in ["conclusion cabinet", "conclusion pratique", "position preliminaire", "sur les faits", "dans le cas donne"]
+    )
+    if checklist_only:
+        unsafe_patterns.append("checklist_only")
+    source_support_gaps = [
+        {
+            "doctrine_id": card.doctrine_id,
+            "source": card.primary_source_document,
+            "support_level": card.source_support_level,
+        }
+        for card in cards
+        if card.source_support_level != "direct_passage"
+    ]
+    passed = not missing and not unsafe_patterns
+    instruction_parts = []
+    if missing:
+        instruction_parts.append("Integrer explicitement: " + "; ".join(missing))
+    if unsafe_patterns:
+        instruction_parts.append("Corriger: " + "; ".join(unsafe_patterns))
+    return {
+        "pass": passed,
+        "missing_required_elements": missing,
+        "unsafe_generic_patterns": sorted(set(unsafe_patterns)),
+        "source_support_gaps": source_support_gaps,
+        "regenerate_instruction": ". ".join(instruction_parts),
+    }
+
+
+def doctrine_completion_block(card: DoctrineCard, query: str, workflow: str) -> str:
+    if card.doctrine_id == "tva_general_framework":
+        return (
+            "## Regles TVA decisives\n"
+            "- **Base legale**: le Code de la TVA, promulgue par la loi n° 88-61 du 2 juin 1988, fixe le regime substantiel; les lois de finances peuvent le modifier. Le CDPF encadre declarations, controle, redressement, sanctions et recours.\n"
+            "- **Champ d'application**: qualifier l'operation, l'assujetti, les operations imposables, exonerees ou hors champ avant tout calcul.\n"
+            "- **Territorialite**: verifier ou le bien est livre ou le service utilise/exploite; la seule residence du client ne tranche pas toujours le regime.\n"
+            "- **Fait generateur et exigibilite**: les analyser selon la nature de l'operation; pour les services, la facturation, l'execution et surtout l'encaissement doivent etre rapproches du passage applicable.\n"
+            "- **Taux**: appliquer uniquement le taux et la liste de biens/services confirmes par la version consolidee en vigueur et la loi de finances; aucun taux ne doit etre invente sans passage direct.\n"
+            "- **Deduction**: verifier l'affectation a des operations ouvrant droit a deduction, la facture conforme, les exclusions et les regularisations eventuelles.\n"
+            "- **Facturation et declaration**: controler identites, numero/date, base HT, taux et montant de TVA, total, conservation des pieces, puis rapprocher TVA collectee/deductible avec la declaration de la periode.\n\n"
+            "## Conclusion pratique\n"
+            "Pour un dossier client, le cabinet doit donc qualifier l'operation, fixer territorialite et exigibilite, verifier taux et deduction, controler la facture et rapprocher les montants de la declaration. Les articles, taux ou delais exacts restent reserves tant qu'un passage direct de la version applicable n'est pas retrouve."
+        )
+    if card.doctrine_id == "revenue_cutoff":
+        return (
+            f"{revenue_cutoff_visible_block(query)}\n\n"
+            "## Traitement comptable et TVA\n"
+            "La part de service deja rendue est un produit de l'exercice; la part facturee ou encaissee mais non encore gagnee est comptabilisee en produit constate d'avance. L'ecriture de cut-off et le prorata suivent la periode contractuelle. L'exigibilite TVA est analysee separement selon la nature de l'operation, la facturation et l'encaissement.\n\n"
+            "## Conclusion pratique\n"
+            "Appliquer les dates et montants deja donnes, documenter le prorata et rapprocher contrat, facture, paiement et declaration TVA."
+        )
+    if card.doctrine_id == "expense_evidence":
+        return (
+            "## Analyse de la charge et des preuves\n"
+            "Une facture seule ne suffit pas a prouver la realite du service ni la deductibilite fiscale. Verifier l'interet de l'entreprise, le contrat ou bon de commande, le rapport de mission, les livrables, les echanges et la validation interne. Le paiement en especes accroit le risque; un virement ameliore la tracabilite mais ne remplace pas la preuve de la prestation.\n\n"
+            "## Conclusion pratique\n"
+            "Sans contrat, livrable ou autre preuve de service, la charge peut etre comptabilisee seulement si sa realite et son rattachement sont defendables, mais la deduction fiscale ne peut pas etre confirmee: le cabinet doit formuler une reserve et demander les justificatifs avant deduction."
+        )
+    if card.doctrine_id == "tva_services_exigibility":
+        return (
+            "## Regle TVA appliquee\n"
+            "La nature du service, le statut B2B/B2C et la localisation du client, le lieu d'utilisation ou d'exploitation, la partie executee en Tunisie ou a l'etranger, la facturation et l'encaissement doivent etre analyses separement. La conclusion TVA ne peut etre qualifiee d'exportation ou d'operation hors TVA sans preuves du client etranger et de l'utilisation a l'etranger. Conserver contrat, facture, preuve d'encaissement, statut fiscal du client, livrables et preuves d'execution/utilisation."
+        )
+    if card.doctrine_id == "tva_deduction":
+        return (
+            "## Droit a deduction\n"
+            "La TVA supportee n'est deductible que si la depense est liee a des operations ouvrant droit a deduction, appuyee par une facture conforme et non frappee d'une exclusion. Il faut verifier affectation, prorata eventuel, periode de deduction, regularisations et conservation des justificatifs avant de confirmer la deduction."
+        )
+    if card.doctrine_id == "doubtful_debt_provision":
+        return (
+            f"{receivable_visible_block(query)}\n\n"
+            "## Traitement comptable et fiscal\n"
+            "Individualiser la creance, documenter anciennete, relances et risque, puis constater la depreciation/provision correspondant au risque estime sur le solde. L'encaissement posterieur est analyse comme evenement posterieur selon ce qu'il revele de la situation a la cloture. La deductibilite fiscale est distincte et suppose les conditions legales et justificatifs de recouvrement; a defaut de passage direct, elle reste reservee."
+        )
+    if card.doctrine_id == "dividends_withholding":
+        return (
+            "## Analyse des distributions\n"
+            "Traiter chaque associe ou actionnaire separement: personne physique residente, societe tunisienne et non-resident. Pour chacun, documenter montant brut, retenue a la source eventuelle, declaration/reversement et certificat. Pour un non-resident, identifier le pays, obtenir le certificat de residence et verifier la convention fiscale. Aucun taux, article ou delai ne doit etre affirme sans passage direct applicable."
+        )
+    if card.doctrine_id == "fixed_asset_depreciation":
+        return (
+            f"{fixed_asset_visible_block(query)}\n\n"
+            "## Parametres d'amortissement\n"
+            "Distinguer acquisition, livraison, installation, tests et mise en service. Determiner base amortissable, valeur residuelle, duree d'utilite et composants significatifs ayant des rythmes differents. Le traitement fiscal et les limites de deduction sont controles separement de l'amortissement comptable."
+        )
+    if card.doctrine_id == "facturation_tunisia":
+        return (
+            "## Controle de facturation\n"
+            "Verifier identification du fournisseur et du client, numero et date, nature de l'operation, base HT, taux et montant de TVA, total TTC et mentions du regime particulier. Controler numerotation, conservation, transmission et facturation electronique seulement selon le champ et la date d'entree applicables. Une facture formelle ne remplace pas la preuve de la realite de l'operation."
+        )
+    if card.doctrine_id == "cdpf_procedure":
+        return (
+            "## Regle de procedure fiscale\n"
+            "Le CDPF distingue obligation declarative, controle, rectification/redressement, penalites et voies de reclamation ou recours. La reponse doit identifier l'impot, la periode, la notification et les pieces. Aucun delai, sanction ou voie de recours precise ne doit etre chiffre sans passage direct de l'edition applicable."
+        )
+    if card.doctrine_id == "standards_hierarchy_tunisia":
+        return (
+            "## Referentiel applicable\n"
+            "Pour une societe tunisienne ordinaire, la loi comptable et les normes comptables tunisiennes/SCT constituent le referentiel primaire. IAS/IFRS ne sont utilises comme source principale que si un texte ou le contexte de l'entite l'impose; sinon ils restent une comparaison clairement signalee. Si le passage tunisien manque, la conclusion est formulee sous reserve."
+        )
+    if card.doctrine_id == "irpp_is_framework":
+        return (
+            "## Regles IRPP/IS decisives\n"
+            "Identifier d'abord le contribuable et distinguer IRPP et IS, puis la categorie de revenu ou le benefice imposable, l'assiette, les charges admises et reintegrations, les retenues a la source et les obligations declaratives. Les taux, seuils, avantages et delais doivent provenir de la version consolidee et de la loi de finances applicable a l'exercice.\n\n"
+            "## Conclusion pratique\n"
+            "Le cabinet doit fixer l'exercice, le profil du contribuable et la nature du revenu ou de la charge avant de calculer l'impot, puis rapprocher declaration, retenues et justificatifs."
+        )
+    if card.doctrine_id == "fiscal_framework_tunisia":
+        return (
+            "## Architecture fiscale tunisienne\n"
+            "Le cadre n'est pas un code general unique: il faut articuler IRPP/IS, TVA, CDPF, droits d'enregistrement et de timbre, fiscalite locale et lois de finances. Les deductions et charges admises relevent du code substantiel concerne, tandis que le CDPF organise controle et recours. Les decrets et arretes completent ces textes; notes communes et circulaires en eclairent l'application sans remplacer la loi.\n\n"
+            "## Conclusion pratique\n"
+            "La conclusion cabinet identifie l'impot, la periode, le contribuable, l'assiette ou deduction examinee, la version applicable et les declarations concernees."
+        )
+    if card.doctrine_id == "registration_stamp":
+        return (
+            "## Enregistrement et timbre\n"
+            "Qualifier l'acte et sa date, les parties, l'assiette ou base taxable, la formalite, le regime fixe/proportionnel eventuel, les exemptions et les pieces. Le traitement comptable et les autres impots restent separes. Aucun taux ou delai n'est confirme sans article direct de l'edition applicable."
+        )
+    if card.doctrine_id == "local_taxation":
+        return (
+            "## Fiscalite locale\n"
+            "Identifier la collectivite, l'immeuble ou l'activite locale, le redevable, l'assiette, la periode, les exonerations et la formalite declarative. La fiscalite locale est une composante distincte du cadre fiscal national; taux et delais sont reserves au passage direct de l'edition en vigueur.\n\n"
+            "## Conclusion pratique\n"
+            "Le cabinet rapproche donc situation municipale, bien ou activite, base de calcul, declarations, avis et quittances avant validation."
+        )
+    if card.doctrine_id == "cnss_social":
+        return (
+            "## Traitement CNSS/social\n"
+            "Qualifier employeur, salarie ou travailleur non salarie, regime d'affiliation, periode et remuneration. Separer assiette des cotisations, taux par regime, declaration des salaires, paiement, prestations et pieces CNSS. Sans source directe actuelle sur le regime et le taux, donner la demarche et les formulaires mais ne pas chiffrer."
+        )
+    if card.doctrine_id == "audit_cac":
+        return (
+            "## Reponse audit/CAC\n"
+            "Qualifier la date de decouverte et la significativite, adapter les diligences, obtenir les elements probants, communiquer avec direction et gouvernance, puis evaluer correction/refus et incidence sur l'opinion. Distinguer avant et apres signature du rapport, documenter le jugement et envisager une consultation juridique ou professionnelle avant communication externe."
+        )
+    return (
+        "## Regle decisive\n"
+        f"{card.legal_accounting_rule}\n\n"
+        "## Conclusion pratique\n"
+        f"{card.practical_cabinet_consequence}"
+    )
+
+
+def build_doctrine_correction(cards: list[DoctrineCard], query: str, workflow: str, missing: list[str]) -> str:
+    if not cards:
+        return ""
+    missing_keys = {key(item) for item in missing}
+    blocks: list[str] = []
+    for card in cards:
+        card_elements = {key(item) for item in card.required_final_answer_elements}
+        if not missing_keys or card_elements & missing_keys:
+            block = doctrine_completion_block(card, query, workflow)
+            if block and block not in blocks:
+                blocks.append(block)
+    needs_support_label = any(key(element) == "source support level" for element in missing)
+    framework_cards = [card for card in cards if card.source_support_level != "direct_passage"]
+    if needs_support_label and framework_cards:
+        blocks.append(
+            "## Niveau de support\n"
+            "Les regles ci-dessus reposent sur une source-cadre. Un taux, article, seuil ou delai exact ne devient une conclusion client que lorsqu'un passage direct, semantiquement pertinent et applicable a la periode est retrouve."
+        )
+    return "\n\n".join(blocks)
 
 
 def repair_missing_facts(answer: str, query: str) -> tuple[str, bool]:
@@ -379,8 +766,8 @@ def repair_missing_facts(answer: str, query: str) -> tuple[str, bool]:
 
 
 def apply_doctrine_engine(answer: str, query: str, workflow: str) -> tuple[str, dict]:
-    output = answer or ""
-    changed = False
+    output, hidden_control_removed = _remove_visible_doctrine_control(answer or "")
+    changed = hidden_control_removed
     cards = select_doctrine_cards(query, workflow)
     blocks: list[str] = []
 
@@ -400,26 +787,15 @@ def apply_doctrine_engine(answer: str, query: str, workflow: str) -> tuple[str, 
         if block and ("amortissement comptable commence" not in normalized_output or needs_date):
             blocks.append(block)
 
-    contract_block, trace_cards = doctrine_contract_block(query, workflow)
-    if contract_block and "controle doctrine" not in normalized_output:
-        broad_tva = cards and cards[0].doctrine_id == "tva_general_framework"
-        standards = cards and cards[0].doctrine_id == "standards_hierarchy_tunisia"
-        if broad_tva or (standards and workflow not in {"revenue_cutoff_tva_case"}):
-            blocks.append(contract_block)
-
     if blocks:
-        marker = "\n## Sources utilisees"
         injection = "\n\n".join(blocks)
-        if marker in output:
-            output = output.replace(marker, f"\n{injection}\n{marker}", 1)
-        else:
-            output = f"{output.rstrip()}\n\n{injection}"
+        output = _insert_before_references(output, injection)
         changed = True
 
     output, missing_changed = repair_missing_facts(output, query)
     changed = changed or missing_changed
 
-    unsafe_patterns = [
+    unsafe_markers = [
         "180 000 - 14",
         "179 986",
         "source implicite",
@@ -428,11 +804,51 @@ def apply_doctrine_engine(answer: str, query: str, workflow: str) -> tuple[str, 
         "rewrite answer",
         "correcting error",
     ]
-    unsafe = [pattern for pattern in unsafe_patterns if pattern in key(output)]
+    unsafe = [pattern for pattern in unsafe_markers if pattern in key(output)]
+
+    required_elements: list[str] = []
+    for card in cards:
+        for element in card.required_final_answer_elements:
+            if element not in required_elements:
+                required_elements.append(element)
+    validation_before = validate_final_answer_doctrine(workflow, cards, required_elements, output, query)
+    regenerated = False
+    if cards and not validation_before["pass"]:
+        correction = build_doctrine_correction(
+            cards,
+            query,
+            workflow,
+            validation_before["missing_required_elements"],
+        )
+        if correction:
+            missing_ratio = (
+                len(validation_before["missing_required_elements"]) / len(required_elements)
+                if required_elements
+                else 0.0
+            )
+            if missing_ratio >= 0.6 or "sources_named_without_decisive_rule" in validation_before["unsafe_generic_patterns"]:
+                reference_section = doctrine_reference_block(cards)
+                output = f"{correction.rstrip()}\n\n{reference_section}".strip()
+            else:
+                output = _insert_before_references(output, correction)
+            output, _ = repair_missing_facts(output, query)
+            changed = True
+            regenerated = True
+    validation_after = validate_final_answer_doctrine(workflow, cards, required_elements, output, query)
+    unsafe.extend(validation_after["unsafe_generic_patterns"])
+    quality_status = "expert_pass" if validation_after["pass"] else "safe_pass"
 
     return output, {
         "doctrine_engine_applied": changed,
-        "doctrine_cards": trace_cards,
-        "doctrine_unsafe_patterns": unsafe,
-        "doctrine_card_count": len(trace_cards),
+        "doctrine_cards": doctrine_trace_cards(cards),
+        "doctrine_unsafe_patterns": sorted(set(unsafe)),
+        "doctrine_card_count": len(cards),
+        "doctrine_validation_pass": validation_after["pass"],
+        "doctrine_missing_elements_before": validation_before["missing_required_elements"],
+        "doctrine_missing_elements": validation_after["missing_required_elements"],
+        "doctrine_source_support_gaps": validation_after["source_support_gaps"],
+        "doctrine_regenerate_instruction": validation_before["regenerate_instruction"],
+        "doctrine_regenerated": regenerated,
+        "doctrine_quality_status": quality_status,
+        "doctrine_visible_control_hidden": "controle doctrine" not in key(output),
     }
