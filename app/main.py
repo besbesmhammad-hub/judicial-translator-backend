@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from . import config
 from .cabinet_coverage import cabinet_coverage_status, detect_cabinet_workflow
+from .deterministic_kernel import apply_deterministic_kernel
 from .doctrine_engine import apply_doctrine_engine, fixed_asset_visible_block
 from .financial_glossary import search_financial_glossary
 from .golden_kb import classify_query_intent, golden_kb_status, retrieve_golden_kb
@@ -5849,6 +5850,13 @@ def finalize_accounting_response(
     )
     if doctrine_trace.get("doctrine_engine_applied"):
         output["answer"] = doctrine_checked_answer
+    deterministic_checked_answer, deterministic_trace = apply_deterministic_kernel(
+        str(output.get("answer") or ""),
+        request.message,
+        effective_workflow,
+    )
+    if deterministic_trace.get("deterministic_kernel_applied"):
+        output["answer"] = deterministic_checked_answer
     blocked = answer_needs_professional_repair(str(output.get("answer") or ""))
     fatal_doctrine_markers = {
         "180 000 - 14",
@@ -5863,9 +5871,12 @@ def finalize_accounting_response(
     doctrine_unsafe = set(doctrine_trace.get("doctrine_unsafe_patterns") or [])
     if doctrine_unsafe & fatal_doctrine_markers:
         blocked = True
+    doctrine_quality_status = doctrine_trace.get("doctrine_quality_status") or "expert_pass"
+    if not deterministic_trace.get("consistency", {}).get("pass", True):
+        blocked = True
+        doctrine_quality_status = "safe_pass"
     if blocked:
         output = controlled_source_insufficient_response(output, effective_sources)
-    doctrine_quality_status = doctrine_trace.get("doctrine_quality_status") or "expert_pass"
     if blocked:
         doctrine_quality_status = "safe_pass"
     output["quality_status"] = doctrine_quality_status
@@ -5897,6 +5908,12 @@ def finalize_accounting_response(
         "doctrine_regenerated": bool(doctrine_trace.get("doctrine_regenerated")),
         "doctrine_quality_status": doctrine_quality_status,
         "doctrine_visible_control_hidden": bool(doctrine_trace.get("doctrine_visible_control_hidden", True)),
+        "deterministic_kernel_applied": bool(deterministic_trace.get("deterministic_kernel_applied")),
+        "deterministic_workflow": deterministic_trace.get("workflow"),
+        "deterministic_facts": deterministic_trace.get("facts") or {},
+        "deterministic_decision": deterministic_trace.get("decision") or {},
+        "deterministic_consistency": deterministic_trace.get("consistency") or {},
+        "deterministic_mode": deterministic_trace.get("mode") or "",
     }
     if accounting_debug_enabled(request):
         output["debug_trace"] = trace
