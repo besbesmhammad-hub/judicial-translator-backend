@@ -5875,6 +5875,9 @@ def finalize_accounting_response(
     if not deterministic_trace.get("consistency", {}).get("pass", True):
         blocked = True
         doctrine_quality_status = "safe_pass"
+    if not deterministic_trace.get("contamination", {}).get("pass", True):
+        blocked = True
+        doctrine_quality_status = "safe_pass"
     if blocked:
         output = controlled_source_insufficient_response(output, effective_sources)
     if blocked:
@@ -5913,6 +5916,7 @@ def finalize_accounting_response(
         "deterministic_facts": deterministic_trace.get("facts") or {},
         "deterministic_decision": deterministic_trace.get("decision") or {},
         "deterministic_consistency": deterministic_trace.get("consistency") or {},
+        "deterministic_contamination": deterministic_trace.get("contamination") or {},
         "deterministic_mode": deterministic_trace.get("mode") or "",
     }
     if accounting_debug_enabled(request):

@@ -11,6 +11,7 @@ MONTHS = {
     "fevrier": 2,
     "mars": 3,
     "avril": 4,
+    "april": 4,
     "mai": 5,
     "juin": 6,
     "juillet": 7,
@@ -87,25 +88,25 @@ def _parse_named_date(day: str, month_name: str, year: str | None, fallback_year
 def _dates_in(text: str, fallback_year: int | None = None) -> list[date]:
     source = _key(text)
     year = fallback_year or _default_year(source)
-    found: list[date] = []
+    found: list[tuple[int, date]] = []
     for match in re.finditer(r"\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b", source):
         y = match.group(3)
         if len(y) == 2:
             y = "20" + y
         parsed = _parse_numeric_date(match.group(1), match.group(2), y, year)
         if parsed:
-            found.append(parsed)
+            found.append((match.start(), parsed))
     month_names = "|".join(MONTHS)
     for match in re.finditer(rf"\b(\d{{1,2}}|1er)\s+({month_names})(?:\s+(\d{{4}}))?\b", source):
         day = "1" if match.group(1) == "1er" else match.group(1)
         parsed = _parse_named_date(day, match.group(2), match.group(3), year)
         if parsed:
-            found.append(parsed)
+            found.append((match.start(), parsed))
     for match in re.finditer(rf"\b(?:en|au mois de)\s+({month_names})\s+(\d{{4}})\b", source):
         parsed = _parse_named_date("1", match.group(1), match.group(2), year)
-        if parsed and parsed not in found:
-            found.append(parsed)
-    return found
+        if parsed:
+            found.append((match.start(), parsed))
+    return [value for _, value in sorted(found, key=lambda item: item[0])]
 
 
 def _date_after_marker(text: str, markers: list[str], *, fallback_year: int | None = None, window: int = 95) -> date | None:
@@ -124,11 +125,11 @@ def _date_after_marker(text: str, markers: list[str], *, fallback_year: int | No
 def _amounts_with_currency(text: str) -> list[int]:
     values: list[int] = []
     pattern = re.compile(
-        r"\b(\d{1,3}(?:[ .]\d{3})+|\d+)\s*(?:tnd|dt|dinars?|eur|euros?)\b",
+        r"\b(\d{1,3}(?:[ .,]\d{3})+|\d+)\s*(?:tnd|dt|dinars?|eur|euros?)\b",
         re.IGNORECASE,
     )
     for match in pattern.finditer(_key(text)):
-        raw = re.sub(r"[ .]", "", match.group(1))
+        raw = re.sub(r"[ .,]", "", match.group(1))
         try:
             values.append(int(raw))
         except ValueError:
@@ -139,8 +140,8 @@ def _amounts_with_currency(text: str) -> list[int]:
 def _all_large_amounts(text: str) -> list[int]:
     values = _amounts_with_currency(text)
     seen = set(values)
-    for match in re.finditer(r"\b(\d{1,3}(?:[ .]\d{3})+)\b", _key(text)):
-        raw = re.sub(r"[ .]", "", match.group(1))
+    for match in re.finditer(r"\b(\d{1,3}(?:[ .,]\d{3})+)\b", _key(text)):
+        raw = re.sub(r"[ .,]", "", match.group(1))
         try:
             value = int(raw)
         except ValueError:
@@ -200,6 +201,9 @@ def _detect_workflow(query: str, workflow: str) -> str:
         or "cloture" in key
         or "paye" in key
         or "paiement" in key
+        or "recoit" in key
+        or "recu" in key
+        or "encaisse" in key
     ):
         return "revenue_cutoff_tva_case"
     if "tva" in key and ("service" in key or "encaissement" in key or "realisation" in key or "facture" in key):
@@ -260,7 +264,7 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
         closing = _date_after_marker(query, ["cloture", "31/12", "au 31"], fallback_year=default_year)
         if not closing and default_year:
             closing = date(default_year, 12, 31)
-        realization = _date_after_marker(query, ["realisee", "realise", "execution", "sera realisee", "sera realise"], fallback_year=default_year)
+        realization = _date_after_marker(query, ["realisee", "realise", "effectuee", "effectue", "execution", "sera realisee", "sera realise", "sera effectuee", "sera effectue"], fallback_year=default_year)
         collection = _date_after_marker(query, ["recoit", "recu", "encaisse", "encaissement", "paye", "paiement", "regle"], fallback_year=default_year)
         amounts = _all_large_amounts(query)
         facts.update(
@@ -277,7 +281,7 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
         return facts
 
     if detected == "tva_operational_case":
-        realization = _date_after_marker(query, ["realisee", "realise", "execution", "sera realisee", "sera realise"], fallback_year=default_year)
+        realization = _date_after_marker(query, ["realisee", "realise", "effectuee", "effectue", "execution", "sera realisee", "sera realise", "sera effectuee", "sera effectue"], fallback_year=default_year)
         collection = _date_after_marker(query, ["recoit", "recu", "encaisse", "encaissement", "paye", "paiement", "regle"], fallback_year=default_year)
         facts.update(
             {
@@ -295,13 +299,14 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
 
 def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
     workflow = facts.get("workflow")
-    decision: dict[str, Any] = {"workflow": workflow, "available": False}
+    decision: dict[str, Any] = {"workflow": workflow, "available": False, "status": "not_applicable"}
 
     if workflow == "fixed_asset_depreciation_case":
         start = facts.get("ready_for_use_date")
         decision.update(
             {
                 "available": bool(start),
+                "status": "computed" if start else "not_computed",
                 "depreciation_start_date": start,
                 "rule": "ready_for_use_date_wins",
                 "component_required": bool(facts.get("component_issue")),
@@ -316,6 +321,7 @@ def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
             decision.update(
                 {
                     "available": True,
+                    "status": "computed",
                     "residual_exposure": gross - recovery,
                     "formula": f"{_format_amount(gross)} - {_format_amount(recovery)} = {_format_amount(gross - recovery)}",
                     "subsequent_event": "post_closing_recovery_is_evidence_to_consider",
@@ -336,6 +342,7 @@ def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
             decision.update(
                 {
                     "available": True,
+                    "status": "computed",
                     "earned_months": earned,
                     "deferred_months": deferred,
                     "total_months": total,
@@ -352,6 +359,7 @@ def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
             decision.update(
                 {
                     "available": True,
+                    "status": "computed",
                     "earned_months": 0,
                     "deferred_months": None,
                     "service_future_at_closing": True,
@@ -368,6 +376,7 @@ def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
             decision.update(
                 {
                     "available": True,
+                    "status": "computed",
                     "tva_collection_before_realization": True,
                     "rule": "service_collection_before_realization_triggers_exigibility_risk",
                 }
@@ -378,7 +387,7 @@ def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
 
 
 def _sources_tail(answer: str) -> str:
-    for marker in ["\n## Sources", "\n## Base legale"]:
+    for marker in ["\n## Sources"]:
         idx = answer.find(marker)
         if idx >= 0:
             return answer[idx:].strip()
@@ -425,16 +434,16 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
             )
             if decision.get("earned_amount") is not None and decision.get("deferred_amount") is not None:
                 lines.append(
-                    f"Sur le montant donne, cela donne environ {_format_amount(decision['earned_amount'])} en produit de l'exercice et {_format_amount(decision['deferred_amount'])} en produit constate d'avance."
+                    f"Sur le montant donne, cela donne environ {_format_amount(decision['earned_amount'])} TND en produit de l'exercice et {_format_amount(decision['deferred_amount'])} TND en produit constate d'avance."
                 )
             if decision.get("earned_fraction") == "1/12" and decision.get("deferred_fraction") == "11/12":
                 lines.append("Decembre est rendu avant le 31/12: 1/12 en produit 2025; janvier a novembre restent a differer: 11/12 en produit constate d'avance.")
         elif decision.get("service_future_at_closing"):
             lines.append("Au 31/12, la prestation n'est pas encore realisee: le produit ne doit pas etre reconnu en chiffre d'affaires de l'exercice clos.")
             if decision.get("deferred_amount") is not None:
-                lines.append(f"Le montant encaisse doit donc etre traite comme produit constate d'avance pour {_format_amount(decision['deferred_amount'])}.")
+                lines.append(f"Le revenu 2025 est 0 TND; le montant encaisse doit donc etre traite comme produit constate d'avance pour {_format_amount(decision['deferred_amount'])} TND HT, sous reserve du contrat et de la facture.")
             else:
-                lines.append("Le montant encaisse doit donc etre traite comme produit constate d'avance, sous reserve des pieces contractuelles.")
+                lines.append("Le revenu 2025 est 0; le montant encaisse doit donc etre traite comme produit constate d'avance, sous reserve des pieces contractuelles.")
         if decision.get("tva_collection_before_realization"):
             lines.append("La TVA doit etre analysee separement: si l'operation entre dans le champ de la TVA tunisienne, l'encaissement avant realisation peut rendre la TVA exigible sur le montant encaisse.")
         lines.append("Pieces a verifier: contrat, facture, preuve d'encaissement, periode couverte, date de realisation effective, declaration TVA et justification du cut-off.")
@@ -508,6 +517,36 @@ def validate_answer_against_decision(answer: str, facts: dict[str, Any], decisio
     }
 
 
+def validate_visible_contamination(answer: str, facts: dict[str, Any], decision: dict[str, Any]) -> dict[str, Any]:
+    key_answer = _key(answer)
+    key_query = _key(str(facts.get("query") or ""))
+    workflow = facts.get("workflow")
+    errors: list[str] = []
+
+    if decision.get("status") == "computed":
+        if "fevrier 2026" in key_answer and "fevrier 2026" not in key_query:
+            errors.append("mentions_service_date_not_in_prompt_february_2026")
+        if re.search(r"(?<!\d)1/1(?!\d)", key_answer) and decision.get("service_future_at_closing"):
+            errors.append("future_service_claims_one_of_one_rendered")
+        if "15 decembre" in key_answer and "15 decembre" not in key_query:
+            errors.append("invented_contract_start_15_december")
+    if workflow == "receivable_impairment_subsequent_event":
+        if "montant facture x" in key_answer or "periode" in key_answer and "montant facture" in key_answer:
+            errors.append("receivable_contains_revenue_cutoff_formula")
+        if "traitement comptable et tva" in key_answer and "tva" not in key_query:
+            errors.append("receivable_contains_unasked_tva_block")
+        if "produit constate d'avance" in key_answer:
+            errors.append("receivable_contains_revenue_cutoff_block")
+
+    if workflow == "revenue_cutoff_tva_case" and decision.get("service_future_at_closing"):
+        if "fevrier 2026" in key_answer and facts.get("service_realization_date") and facts["service_realization_date"].month != 2:
+            errors.append("service_month_replaced_by_february")
+        if re.search(r"(?<!\d)1/1(?!\d)", key_answer):
+            errors.append("future_service_one_of_one_rendered")
+
+    return {"pass": not errors, "errors": errors, "workflow": workflow}
+
+
 def apply_deterministic_kernel(answer: str, query: str, workflow: str) -> tuple[str, dict[str, Any]]:
     facts = extract_deterministic_facts(query, workflow)
     decision = compute_deterministic_decision(facts)
@@ -517,6 +556,7 @@ def apply_deterministic_kernel(answer: str, query: str, workflow: str) -> tuple[
         "facts": _json_safe(facts),
         "decision": _json_safe(decision),
         "consistency": {"pass": True, "errors": []},
+        "contamination": {"pass": True, "errors": []},
         "mode": "not_applicable",
     }
     if not decision.get("available"):
@@ -528,25 +568,19 @@ def apply_deterministic_kernel(answer: str, query: str, workflow: str) -> tuple[
         trace["consistency"] = initial
         return answer, trace
 
-    answer_key = _key(answer)
-    block_key = _key(block)
-    if initial.get("pass") and block_key[:80] in answer_key:
-        trace.update({"deterministic_kernel_applied": True, "consistency": initial, "mode": "already_visible"})
-        return answer, trace
-
     tail = _sources_tail(answer)
-    if initial.get("pass"):
-        new_answer = f"{block}\n\n{answer}".strip()
-        mode = "inserted_authoritative_block"
-    else:
-        new_answer = f"{block}\n\n{tail}".strip() if tail else block
-        mode = "replaced_contradictory_or_incomplete_answer"
+    new_answer = f"{block}\n\n{tail}".strip() if tail else block
+    mode = "deterministic_compact_answer"
     final = validate_answer_against_decision(new_answer, facts, decision)
+    contamination = validate_visible_contamination(new_answer, facts, decision)
     trace.update(
         {
             "deterministic_kernel_applied": True,
             "consistency": final,
+            "contamination": contamination,
             "mode": mode,
+            "discarded_legacy_answer": True,
+            "initial_consistency": initial,
         }
     )
     return new_answer, trace
