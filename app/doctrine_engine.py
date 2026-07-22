@@ -245,6 +245,35 @@ def extract_french_dates(text: str) -> list[date]:
     return dates
 
 
+def _context_year(text: str) -> int | None:
+    years = [int(item) for item in re.findall(r"\b((?:19|20)\d{2})\b", text or "")]
+    return years[0] if years else None
+
+
+def extract_french_dates_with_default_year(text: str, default_year: int | None) -> list[date]:
+    dates = extract_french_dates(text)
+    if default_year is None:
+        return dates
+    seen = {(value.year, value.month, value.day) for value in dates}
+    month_names = "|".join(sorted(map(re.escape, FRENCH_MONTHS), key=len, reverse=True))
+    pattern = re.compile(rf"\b(1er|[0-3]?\d)\s+({month_names})(?!\s+(?:19|20)\d{{2}})\b", re.I)
+    for match in pattern.finditer(repair_date_text(text) or ""):
+        raw_day = match.group(1).lower()
+        day = 1 if raw_day == "1er" else int(raw_day)
+        month = _normalize_month(match.group(2))
+        if not month:
+            continue
+        try:
+            value = date(default_year, month, day)
+        except ValueError:
+            continue
+        key_tuple = (value.year, value.month, value.day)
+        if key_tuple not in seen:
+            dates.append(value)
+            seen.add(key_tuple)
+    return dates
+
+
 def extract_money_values(text: str) -> list[int]:
     values: list[int] = []
     pattern = re.compile(
@@ -370,21 +399,22 @@ def receivable_visible_block(query: str) -> str:
 
 def fixed_asset_visible_block(query: str) -> str:
     normalized = key(query)
-    dates = extract_french_dates(query)
+    default_year = _context_year(query)
+    dates = extract_french_dates_with_default_year(query, default_year)
     if not dates:
         return (
             "## Application concrete\n"
             "L'amortissement comptable commence lorsque l'actif est pret ou disponible pour l'utilisation prevue, pas automatiquement a la facture ou a la livraison. Si la date de mise en service manque, la conclusion doit rester formulee comme une condition."
         )
     ready_patterns = [
-        r"(?:pret(?:e)? a fonctionner|prete a fonctionner|disponible|mise en service|mise en production|commence la production|pret pour l'utilisation|prets pour l'utilisation)[^.\n]{0,80}?((?:1er|[0-3]?\d)\s+\w+\s+(?:19|20)\d{2}|[0-3]?\d[/-][01]?\d[/-](?:19|20)\d{2})",
-        r"((?:1er|[0-3]?\d)\s+\w+\s+(?:19|20)\d{2}|[0-3]?\d[/-][01]?\d[/-](?:19|20)\d{2})[^.\n]{0,80}?(?:pret(?:e)? a fonctionner|prete a fonctionner|disponible|mise en service|mise en production|commence la production|pret pour l'utilisation)",
+        r"(?:pret(?:e)? a fonctionner|prete a fonctionner|disponible|mise en service|mise en production|commence la production|pret pour l'utilisation|prets pour l'utilisation)[^.\n]{0,80}?((?:1er|[0-3]?\d)\s+\w+(?:\s+(?:19|20)\d{2})?|[0-3]?\d[/-][01]?\d(?:[/-](?:19|20)\d{2})?)",
+        r"((?:1er|[0-3]?\d)\s+\w+(?:\s+(?:19|20)\d{2})?|[0-3]?\d[/-][01]?\d(?:[/-](?:19|20)\d{2})?)[^.\n]{0,80}?(?:pret(?:e)? a fonctionner|prete a fonctionner|disponible|mise en service|mise en production|commence la production|pret pour l'utilisation)",
     ]
     selected: date | None = None
     for pattern in ready_patterns:
         match = re.search(pattern, query or "", re.I)
         if match:
-            parsed = extract_french_dates(match.group(0))
+            parsed = extract_french_dates_with_default_year(match.group(0), default_year)
             if parsed:
                 selected = parsed[-1]
                 break

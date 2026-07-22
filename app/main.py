@@ -4,7 +4,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from . import config
 from .cabinet_coverage import cabinet_coverage_status, detect_cabinet_workflow
-from .doctrine_engine import apply_doctrine_engine
+from .doctrine_engine import apply_doctrine_engine, fixed_asset_visible_block
 from .financial_glossary import search_financial_glossary
 from .golden_kb import classify_query_intent, golden_kb_status, retrieve_golden_kb
 from .legal_corpus import corpus_status, infer_query_domain, load_corpus, retrieve_legal_context
@@ -1819,6 +1819,19 @@ def is_tva_service_exigibility_case(query: str) -> bool:
     )
 
 
+def is_prepaid_future_service_accounting_tva_case(query: str) -> bool:
+    service_markers = ["prestation", "service", "services", "maintenance", "assistance", "support"]
+    payment_markers = ["paiement", "encaisse", "encaissement", "recoit", "reçoit", "avance", "integral", "integralement", "payee avant", "paye avant"]
+    future_markers = ["sera realisee", "sera realise", "realisee en", "realise en", "realisation en", "fevrier", "mois suivant", "exercice suivant", "2026"]
+    domain_markers = ["comptablement", "comptabilite", "tva", "produit constate", "revenu", "exigibilite"]
+    return (
+        any(marker in query for marker in service_markers)
+        and any(marker in query for marker in payment_markers)
+        and any(marker in query for marker in future_markers)
+        and any(marker in query for marker in domain_markers)
+    )
+
+
 def is_tva_deduction_case(query: str) -> bool:
     return (
         any(marker in query for marker in ["tva", "taxe sur la valeur ajoutee"])
@@ -1952,7 +1965,7 @@ def is_revenue_cutoff_tva_case(query: str) -> bool:
     ]
     timing_markers = ["avance", "upfront", "paye", "payee", "facture", "facture d avance", "facture d'avance", "encaisse", "12 mois", "annuel"]
     cutoff_markers = ["2025", "2026", "cloture", "cut off", "cut-off", "produit constate d'avance", "rattachement", "periode", "produit 2025", "prorata"]
-    return (
+    return is_prepaid_future_service_accounting_tva_case(query) or (
         any(marker in query for marker in service_markers)
         and any(marker in query for marker in timing_markers)
         and sum(1 for marker in cutoff_markers if marker in query) >= 1
@@ -3948,6 +3961,10 @@ def compose_fixed_asset_depreciation_answer(query: str, facts_summary: str, sour
         if is_vehicle else
         "- Fiscalite: distinguer l'amortissement comptable de l'amortissement fiscal deductible; verifier la date de mise en service/exploitation, les taux ou limites fiscaux et les reintegrations eventuelles dans le Code IRPP/IS applicable.\n"
     )
+    visible_conclusion = fixed_asset_visible_block(query)
+    visible_sentence = ""
+    if "amortissement comptable commence le" in visible_conclusion:
+        visible_sentence = visible_conclusion.replace("## Application concrete", "").strip()
     intangible_note = (
         "- Nature incorporelle: pour un logiciel ou une licence, verifier le droit controle, la duree d'utilisation, la duree contractuelle, les frais activables et les regles NC 06/IAS 38 applicables.\n"
         if is_intangible else
@@ -3959,9 +3976,12 @@ def compose_fixed_asset_depreciation_answer(query: str, facts_summary: str, sour
         {
             "Reponse": (
                 f"L'analyse porte sur une {asset_kind}. Faits transmis: {facts_summary}. "
+                f"{visible_sentence + ' ' if visible_sentence else ''}"
                 f"{timing} Il faut determiner la base amortissable, la duree d'utilite, la valeur residuelle eventuelle, la methode d'amortissement et l'impact fiscal separement du traitement comptable."
             ),
             "Application pratique": (
+                (f"- Conclusion date: {visible_sentence}\n" if visible_sentence else "")
+                +
                 "- Date de depart: separer acquisition, facture, livraison, installation, tests, mise en service et mise en production. L'acquisition n'est le point de depart que si l'actif est deja pret a fonctionner dans les conditions prevues.\n"
                 "- Base amortissable: partir du cout d'entree de l'actif, ajouter les couts directement necessaires a sa mise en etat de fonctionner, puis retrancher la valeur residuelle eventuelle si elle est significative et documentee.\n"
                 "- Duree d'utilite: estimer la duree economique d'utilisation attendue, la reviser si les faits changent, et ne pas reprendre automatiquement un taux fiscal comme duree comptable.\n"
@@ -4771,6 +4791,33 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "Sources utilisees": source_lines,
                 },
             )
+
+    elif is_prepaid_future_service_accounting_tva_case(query):
+        workflow_name = "revenue_cutoff_tva_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Ce dossier doit separer le traitement comptable du revenu et l'exigibilite TVA. Faits transmis: {facts_summary}. "
+                    "Sur les faits donnes, le paiement est recu en decembre 2025 alors que la prestation sera realisee en fevrier 2026: au 31/12/2025, le service n'est pas encore rendu. Comptablement, le montant encaisse ne doit donc pas etre traite comme un produit acquis de 2025; il doit etre analyse comme produit non gagne, typiquement produit constate d'avance, sous reserve du contrat, de la facture et des pieces."
+                ),
+                "Application pratique": (
+                    "- Comptabilite: rattacher le revenu a la periode de realisation du service; si la prestation est realisee en fevrier 2026, le produit est a rattacher a 2026 et le montant recu en decembre 2025 reste a differer au 31/12/2025.\n"
+                    "- Ecriture de principe: constater l'encaissement et isoler la part non acquise en produit constate d'avance ou compte de passif approprie, puis reprendre en produit lorsque la prestation est executee.\n"
+                    "- TVA: si la prestation entre dans le champ de la TVA tunisienne, l'encaissement de decembre 2025 peut rendre la TVA exigible sur le montant encaisse, meme si le revenu comptable n'est pas encore acquis; la declaration TVA doit donc etre analysee separement du cut-off comptable.\n"
+                    "- Facturation: verifier la date de facture, la base HT, le taux et montant de TVA, la description du service, la periode couverte et le lien avec l'encaissement.\n"
+                    "- Justificatifs: contrat, facture, preuve de paiement de decembre 2025, date prevue de realisation en fevrier 2026, preuve d'execution/livrable, declaration TVA et tableau de rapprochement comptabilite-TVA."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas comptabiliser tout l'encaissement en produit 2025 si le service est realise en 2026.\n"
+                    "- Ne pas confondre reconnaissance du revenu comptable et exigibilite TVA: elles peuvent diverger.\n"
+                    "- Ne pas conclure sur le taux, l'exoneration ou le regime TVA sans passage direct et qualification du champ TVA."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
 
     elif is_revenue_cutoff_tva_case(query):
         workflow_name = "revenue_cutoff_tva_case"
