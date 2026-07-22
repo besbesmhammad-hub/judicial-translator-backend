@@ -735,15 +735,16 @@ def doctrine_completion_block(card: DoctrineCard, query: str, workflow: str) -> 
     if card.doctrine_id == "tva_general_framework":
         return (
             "## Regles TVA decisives\n"
-            "- **Base legale**: le Code de la TVA, promulgue par la loi n° 88-61 du 2 juin 1988, fixe le regime substantiel; les lois de finances peuvent le modifier. Le CDPF encadre declarations, controle, redressement, sanctions et recours.\n"
-            "- **Champ d'application**: qualifier l'operation, l'assujetti, les operations imposables, exonerees ou hors champ avant tout calcul.\n"
-            "- **Territorialite**: verifier ou le bien est livre ou le service utilise/exploite; la seule residence du client ne tranche pas toujours le regime.\n"
-            "- **Fait generateur et exigibilite**: les analyser selon la nature de l'operation; pour les services, la facturation, l'execution et surtout l'encaissement doivent etre rapproches du passage applicable.\n"
-            "- **Taux**: appliquer uniquement le taux et la liste de biens/services confirmes par la version consolidee en vigueur et la loi de finances; aucun taux ne doit etre invente sans passage direct.\n"
-            "- **Deduction**: verifier l'affectation a des operations ouvrant droit a deduction, la facture conforme, les exclusions et les regularisations eventuelles.\n"
-            "- **Facturation et declaration**: controler identites, numero/date, base HT, taux et montant de TVA, total, conservation des pieces, puis rapprocher TVA collectee/deductible avec la declaration de la periode.\n\n"
+            "- **Base legale**: le Code de la TVA, promulgue par la loi n° 88-61 du 2 juin 1988, fixe le regime substantiel. Les lois de finances peuvent modifier le code ou ses annexes; le CDPF organise declarations, controle, redressement, sanctions et recours.\n"
+            "- **Champ d'application**: l'operation doit etre classee comme imposable, exoneree, hors champ ou sous suspension/regime particulier. Cette conclusion depend de la nature de l'operation, de l'assujetti et du texte applicable.\n"
+            "- **Territorialite**: les biens se raisonnent notamment par livraison/importation; les services demandent une analyse de la nature de la prestation, du lieu d'utilisation ou d'exploitation lorsque ce critere est pertinent, et des preuves disponibles.\n"
+            "- **Fait generateur et exigibilite**: le moment de rattachement TVA depend de l'operation. Pour les services, il faut rapprocher realisation, facture et encaissement; un encaissement total ou partiel avant realisation peut rendre la TVA exigible sur le montant encaisse, sous reserve du champ TVA tunisien.\n"
+            "- **Taux**: le taux depend de la categorie du bien ou service et des listes du Code TVA, de ses annexes et des lois de finances. Ne pas annoncer de taux sans passage direct applicable.\n"
+            "- **Deduction**: la TVA supportee suppose une affectation a des operations ouvrant droit a deduction, une facture conforme, l'absence d'exclusion, et le traitement des prorata ou regularisations le cas echeant.\n"
+            "- **Facturation**: controler numerotation, date, identite des parties, description, base HT, taux, montant TVA, TTC, regime particulier et conservation des pieces.\n"
+            "- **Declaration et controle**: rapprocher TVA collectee et deductible avec la declaration; conserver factures, contrats, preuves d'encaissement et tableau comptabilite-TVA. Le CDPF encadre les suites en cas de controle.\n\n"
             "## Conclusion pratique\n"
-            "Pour un dossier client, le cabinet doit donc qualifier l'operation, fixer territorialite et exigibilite, verifier taux et deduction, controler la facture et rapprocher les montants de la declaration. Les articles, taux ou delais exacts restent reserves tant qu'un passage direct de la version applicable n'est pas retrouve."
+            "Pour un dossier client, la methode est: qualifier l'operation, fixer la territorialite, determiner fait generateur et exigibilite, choisir le taux uniquement avec source directe, verifier deduction, controler facture et rapprocher la declaration TVA. Les articles, taux, exemptions et delais exacts restent reserves a la version applicable du Code TVA et a la loi de finances pertinente."
         )
     if card.doctrine_id == "revenue_cutoff":
         return (

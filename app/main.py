@@ -2385,6 +2385,45 @@ def fastpath_concept_answer(
     }
 
 
+def tva_general_framework_answer(source_lines: str) -> str:
+    return "\n\n".join([
+        "## Cadre legal\n"
+        "En Tunisie, la TVA est principalement regie par le **Code de la taxe sur la valeur ajoutee**, "
+        "promulgue par la **loi n\u00b0 88-61 du 2 juin 1988**. Ce code constitue le texte de base du regime TVA. "
+        "Il est complete par ses textes d'application et par les modifications introduites par les lois de finances. "
+        "Le **Code des droits et procedures fiscaux** intervient pour les aspects de declaration, controle, redressement, sanctions et contentieux. "
+        "Le droit de consommation reste une imposition distincte, meme lorsqu'il figure dans le meme recueil officiel.",
+        "## Champ d'application\n"
+        "La premiere analyse consiste a qualifier l'operation. Une operation peut etre imposable a la TVA, exoneree, hors champ, ou placee sous un regime particulier comme la suspension lorsque les conditions legales sont reunies. "
+        "Cette qualification depend de la nature de l'operation, de la qualite de l'operateur, de l'activite exercee et du regime prevu par la version applicable du Code TVA.",
+        "## Territorialite\n"
+        "La territorialite n'est pas analysee de la meme maniere pour les biens et pour les services. Pour les biens, il faut raisonner sur le lieu de livraison ou d'importation. "
+        "Pour les services, il faut examiner la nature de la prestation, le lieu d'utilisation ou d'exploitation du service lorsque ce critere est pertinent, ainsi que les preuves disponibles. "
+        "La seule residence du client ne suffit donc pas toujours a conclure.",
+        "## Fait generateur et exigibilite\n"
+        "Le fait generateur et l'exigibilite determinent le moment ou la TVA doit etre rattachee. La regle depend de la nature de l'operation. "
+        "Pour les prestations de services, il faut rapprocher la realisation du service, la facturation et l'encaissement. Lorsqu'un encaissement total ou partiel intervient avant la realisation du service, la TVA peut devenir exigible sur le montant encaisse, sous reserve du passage applicable et du champ TVA tunisien.",
+        "## Taux\n"
+        "Le taux applicable depend de la categorie du bien ou du service et des listes prevues par le Code TVA, ses annexes, ses textes d'application et les lois de finances. "
+        "Dans une reponse cabinet, il ne faut pas annoncer un taux, une exoneration ou un regime reduit sans passage direct de la version en vigueur.",
+        "## Deduction\n"
+        "Le droit a deduction suppose en principe que la TVA supportee soit liee a des operations ouvrant droit a deduction, appuyee par une facture conforme et non exclue par une restriction particuliere. "
+        "Le cabinet doit aussi examiner les affectations mixtes, prorata, regularisations, exclusions et la conservation des justificatifs.",
+        "## Facturation\n"
+        "La facture doit permettre le controle de l'operation: numerotation, date, identification des parties, description du bien ou service, base hors taxe, taux, montant de TVA, total TTC, regime particulier le cas echeant et conservation des pieces. "
+        "Une facture formelle ne suffit pas si la realite de l'operation ou le regime TVA retenu n'est pas documente.",
+        "## Declaration et controle\n"
+        "La TVA collectee et la TVA deductible doivent etre rapprochees avec la declaration de la periode concernee. "
+        "Le dossier doit contenir les factures, contrats, preuves d'encaissement, livrables ou preuves d'utilisation, ainsi que le tableau de rapprochement comptabilite-TVA. "
+        "En cas de controle, le CDPF encadre les pouvoirs de l'administration, les redressements, penalites, reclamations et recours.",
+        "## Conclusion pratique\n"
+        "La methode cabinet est donc: qualifier l'operation, fixer la territorialite, determiner le fait generateur et l'exigibilite, choisir le taux seulement s'il est supporte par la source applicable, verifier le droit a deduction, controler la facture, puis rapprocher la declaration TVA et les justificatifs. "
+        "Les taux, delais, exemptions et articles precis doivent toujours etre verifies dans la version applicable du Code TVA et dans la loi de finances pertinente avant usage client.",
+        "## Base legale\n"
+        f"{source_lines}",
+    ])
+
+
 def fastpath_tva_overview_answer(
     message: str,
     intent: str,
@@ -2422,7 +2461,7 @@ def fastpath_tva_overview_answer(
 
     return {
         "success": True,
-        "answer": answer,
+        "answer": tva_general_framework_answer(source_lines),
         "assumptions": [],
         "next_steps": [],
         "warnings": [],
@@ -5525,6 +5564,7 @@ def is_fiscal_overview_query(message: str, legal_domain: str, intent: str) -> bo
         return False
     return bool(re.search(
         r"lois? de tva|tva .*generalement|donnez? moi les lois de tva|"
+        r"regles? generales? de tva|principes? generales? de tva|"
         r"presentation de la tva|cadre general de la tva|regime tva general",
         query,
         re.I,
