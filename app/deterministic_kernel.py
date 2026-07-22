@@ -59,6 +59,29 @@ def _format_amount(value: int | float | None) -> str:
     return text.replace(",", " ")
 
 
+def _main_answer_text(answer: str) -> str:
+    return (answer or "").split("\n## Sources", 1)[0]
+
+
+def _month_year_tokens(text: str) -> set[tuple[int, int]]:
+    normalized = _key(text)
+    tokens: set[tuple[int, int]] = set()
+    month_names = "|".join(re.escape(name) for name in MONTHS)
+    for match in re.finditer(rf"\b({month_names})\s+((?:19|20)\d{{2}})\b", normalized):
+        tokens.add((MONTHS[match.group(1)], int(match.group(2))))
+    for match in re.finditer(r"\b(\d{1,2})[/-](\d{1,2})[/-]((?:19|20)\d{2})\b", normalized):
+        tokens.add((int(match.group(2)), int(match.group(3))))
+    return tokens
+
+
+def _allowed_month_year_tokens(facts: dict[str, Any], decision: dict[str, Any]) -> set[tuple[int, int]]:
+    allowed = _month_year_tokens(str(facts.get("query") or ""))
+    for value in list(facts.values()) + list(decision.values()):
+        if isinstance(value, date):
+            allowed.add((value.month, value.year))
+    return allowed
+
+
 def _default_year(text: str) -> int | None:
     match = re.search(r"\b(20\d{2}|19\d{2})\b", text)
     return int(match.group(1)) if match else None
@@ -211,7 +234,7 @@ def _detect_workflow(query: str, workflow: str) -> str:
         return "receivable_impairment_subsequent_event"
     if "tva" in key and "quelle consequence tva" in key and "cloture" not in key:
         return "tva_operational_case"
-    if ("prestation" in key or "maintenance" in key or "contrat" in key or "facture annuelle" in key or "periode du" in key) and (
+    if ("prestation" in key or "maintenance" in key or "contrat" in key or "facture annuelle" in key or "periode du" in key or "acompte" in key or "avance" in key) and (
         "produit constate" in key
         or "cut-off" in key
         or "cut off" in key
@@ -221,6 +244,8 @@ def _detect_workflow(query: str, workflow: str) -> str:
         or "recoit" in key
         or "recu" in key
         or "encaisse" in key
+        or "sera execute" in key
+        or "sera realise" in key
     ):
         return "revenue_cutoff_tva_case"
     if "tva" in key and ("service" in key or "encaissement" in key or "realisation" in key or "facture" in key):
@@ -281,8 +306,13 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
         closing = _date_after_marker(query, ["cloture", "31/12", "au 31"], fallback_year=default_year)
         if not closing and default_year:
             closing = date(default_year, 12, 31)
-        realization = _date_after_marker(query, ["realisee", "realise", "effectuee", "effectue", "execution", "sera realisee", "sera realise", "sera effectuee", "sera effectue"], fallback_year=default_year)
-        collection = _date_after_marker(query, ["recoit", "recu", "encaisse", "encaissement", "paye", "paiement", "regle"], fallback_year=default_year)
+        execution_markers = [
+            "realisee", "realise", "effectuee", "effectue", "execution", "executee", "execute",
+            "sera realisee", "sera realise", "sera effectuee", "sera effectue", "sera executee", "sera execute",
+        ]
+        collection_markers = ["recoit", "recu", "encaisse", "encaissement", "paye", "paiement", "regle", "acompte", "avance"]
+        realization = _date_after_marker(query, execution_markers, fallback_year=default_year)
+        collection = _date_after_marker(query, collection_markers, fallback_year=default_year)
         amounts = _all_large_amounts(query)
         facts.update(
             {
@@ -298,8 +328,13 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
         return facts
 
     if detected == "tva_operational_case":
-        realization = _date_after_marker(query, ["realisee", "realise", "effectuee", "effectue", "execution", "sera realisee", "sera realise", "sera effectuee", "sera effectue"], fallback_year=default_year)
-        collection = _date_after_marker(query, ["recoit", "recu", "encaisse", "encaissement", "paye", "paiement", "regle"], fallback_year=default_year)
+        execution_markers = [
+            "realisee", "realise", "effectuee", "effectue", "execution", "executee", "execute",
+            "sera realisee", "sera realise", "sera effectuee", "sera effectue", "sera executee", "sera execute",
+        ]
+        collection_markers = ["recoit", "recu", "encaisse", "encaissement", "paye", "paiement", "regle", "acompte", "avance"]
+        realization = _date_after_marker(query, execution_markers, fallback_year=default_year)
+        collection = _date_after_marker(query, collection_markers, fallback_year=default_year)
         facts.update(
             {
                 "service_realization_date": realization,
@@ -529,6 +564,7 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
         if decision.get("component_required"):
             lines.append("Si un composant significatif a une duree d'utilite differente, il faut l'isoler et l'amortir sur sa propre duree.")
         lines.append("A verifier au dossier: facture, bon de livraison, PV d'installation, PV de mise en service, base amortissable, duree d'utilite et traitement fiscal.")
+        lines.append(f"Conclusion cabinet: retenir le {start} comme date de debut d'amortissement comptable, sous reserve du PV de mise en service ou d'une preuve equivalente.")
         return "\n".join(lines)
 
     if workflow == "receivable_impairment_subsequent_event" and decision.get("residual_exposure") is not None:
@@ -542,6 +578,7 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
         lines.append("L'encaissement posterieur a la cloture est un evenement a analyser comme indice sur la situation existant a la cloture.")
         lines.append("Comptablement, la depreciation/provision doit viser le solde estime non recouvrable, distinct d'une perte definitive.")
         lines.append("Fiscalement, la deductibilite depend des conditions legales applicables et d'un dossier probant: balance agee, relances, correspondances, actions de recouvrement, calcul et validation.")
+        lines.append(f"Conclusion cabinet: analyser la depreciation sur l'exposition residuelle de {residual} TND, avec reserve fiscale selon justificatifs.")
         return "\n".join(lines)
 
     if workflow == "revenue_cutoff_tva_case" and decision.get("available"):
@@ -555,13 +592,23 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
                 )
             if decision.get("earned_fraction") == "1/12" and decision.get("deferred_fraction") == "11/12":
                 lines.append("Decembre est rendu avant le 31/12: 1/12 en produit 2025; janvier a novembre restent a differer: 11/12 en produit constate d'avance.")
+            if decision.get("earned_amount") is not None and decision.get("deferred_amount") is not None:
+                lines.append(
+                    f"Conclusion cabinet: retenir {_format_amount(decision['earned_amount'])} TND en produit de l'exercice et differer {_format_amount(decision['deferred_amount'])} TND en produit constate d'avance."
+                )
+            else:
+                lines.append(
+                    f"Conclusion cabinet: retenir {decision['earned_fraction']} en produit de l'exercice et differer {decision['deferred_fraction']} en produit constate d'avance."
+                )
         elif decision.get("service_future_at_closing"):
             closing_year = decision.get("closing_year") or (facts.get("closing_date").year if facts.get("closing_date") else 2025)
             lines.append("Au 31/12, la prestation n'est pas encore realisee: le produit ne doit pas etre reconnu en chiffre d'affaires de l'exercice clos.")
             if decision.get("deferred_amount") is not None:
                 lines.append(f"Le revenu {closing_year} est 0 TND; le montant encaisse doit donc etre traite comme produit constate d'avance pour {_format_amount(decision['deferred_amount'])} TND HT, sous reserve du contrat et de la facture.")
+                lines.append(f"Conclusion cabinet: retenir 0 TND en produit {closing_year} et differer {_format_amount(decision['deferred_amount'])} TND HT en produit constate d'avance.")
             else:
                 lines.append(f"Le revenu {closing_year} est 0; le montant encaisse doit donc etre traite comme produit constate d'avance, sous reserve des pieces contractuelles.")
+                lines.append(f"Conclusion cabinet: retenir 0 en produit {closing_year} et differer le montant encaisse comme produit constate d'avance.")
         if decision.get("tva_collection_before_realization"):
             lines.append("La TVA doit etre analysee separement: si l'operation entre dans le champ de la TVA tunisienne, l'encaissement avant realisation peut rendre la TVA exigible sur le montant encaisse.")
         lines.append("Pieces a verifier: contrat, facture, preuve d'encaissement, periode couverte, date de realisation effective, declaration TVA et justification du cut-off.")
@@ -571,6 +618,7 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
         lines.append("Pour une prestation de services, si l'encaissement total ou partiel intervient avant la realisation, l'exigibilite TVA doit etre analysee sur le montant encaisse.")
         lines.append("Cette conclusion reste separee de la reconnaissance comptable du produit: la TVA peut devenir exigible avant que le produit soit acquis comptablement.")
         lines.append("Il faut confirmer le champ territorial, la qualite du client, le lieu d'utilisation/exploitation, la facture et la periode declarative.")
+        lines.append("Conclusion cabinet: traiter la TVA comme potentiellement exigible sur l'encaissement anticipe si l'operation est dans le champ tunisien, tout en gardant la reconnaissance du produit separee.")
         return "\n".join(lines)
 
     if workflow == "withholding_tax_classification_case" and decision.get("available"):
@@ -589,7 +637,9 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
             lines.append(f"Comme le beneficiaire est non-resident ({country}), il faut verifier le droit interne tunisien puis la convention fiscale applicable avant de conclure sur le taux ou l'exoneration.")
         else:
             lines.append("Si le beneficiaire est resident ou non precise, l'analyse reste fondee d'abord sur le droit interne tunisien et la declaration correspondante.")
-        lines.append("Pieces a verifier: contrat, facture, residence fiscale du beneficiaire, nature exacte du revenu, preuve de paiement, declaration et certificat de retenue.")
+        lines.append("Si une retenue est applicable, il faut la declarer, la reverser et emettre ou conserver le certificat de retenue correspondant; le taux doit etre lu dans une source directe.")
+        lines.append("Pieces a verifier: contrat, facture, residence fiscale du beneficiaire, nature exacte du revenu, preuve de paiement, declaration, reversement et certificat de retenue.")
+        lines.append("Conclusion cabinet: qualifier le paiement, verifier beneficiaire/residence, appliquer d'abord le droit interne, verifier la convention seulement pour un non-resident, puis declarer/reverser/certifier sans inventer le taux.")
         return "\n".join(lines)
 
     if workflow == "accounting_standards_hierarchy_case" and decision.get("available"):
@@ -599,6 +649,7 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
             lines.append("Pour une societe tunisienne ordinaire, le referentiel de depart est le Systeme Comptable des Entreprises et les Normes Comptables Tunisiennes.")
             lines.append("IAS/IFRS peuvent servir de reference technique ou comparative, mais ne doivent pas remplacer les normes tunisiennes sauf contexte IFRS explicite.")
         lines.append("La conclusion doit donc identifier d'abord le referentiel applicable, puis seulement utiliser IAS/IFRS si le dossier le justifie.")
+        lines.append("Conclusion cabinet: pour des comptes locaux ordinaires, retenir le referentiel tunisien comme primaire; IAS/IFRS restent comparatifs sauf obligation explicite.")
         return "\n".join(lines)
 
     return ""
@@ -679,7 +730,8 @@ def validate_answer_against_decision(answer: str, facts: dict[str, Any], decisio
 
 
 def validate_visible_contamination(answer: str, facts: dict[str, Any], decision: dict[str, Any]) -> dict[str, Any]:
-    key_answer = _key(answer)
+    main_answer = _main_answer_text(answer)
+    key_answer = _key(main_answer)
     key_query = _key(str(facts.get("query") or ""))
     workflow = facts.get("workflow")
     errors: list[str] = []
@@ -704,6 +756,12 @@ def validate_visible_contamination(answer: str, facts: dict[str, Any], decision:
             errors.append("service_month_replaced_by_february")
         if re.search(r"(?<!\d)1/1(?!\d)", key_answer):
             errors.append("future_service_one_of_one_rendered")
+    if workflow in {"revenue_cutoff_tva_case", "tva_operational_case"} and decision.get("status") == "computed":
+        allowed_tokens = _allowed_month_year_tokens(facts, decision)
+        answer_tokens = _month_year_tokens(main_answer)
+        invented = sorted(answer_tokens - allowed_tokens)
+        if invented:
+            errors.extend(f"invented_month_year_{month:02d}_{year}" for month, year in invented)
 
     return {"pass": not errors, "errors": errors, "workflow": workflow}
 

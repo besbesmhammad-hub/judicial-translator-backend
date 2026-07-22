@@ -1823,7 +1823,11 @@ def is_tva_service_exigibility_case(query: str) -> bool:
 def is_prepaid_future_service_accounting_tva_case(query: str) -> bool:
     service_markers = ["prestation", "service", "services", "maintenance", "assistance", "support"]
     payment_markers = ["paiement", "encaisse", "encaissement", "recoit", "reçoit", "avance", "integral", "integralement", "payee avant", "paye avant"]
-    future_markers = ["sera realisee", "sera realise", "realisee en", "realise en", "realisation en", "fevrier", "mois suivant", "exercice suivant", "2026"]
+    future_markers = [
+        "sera realisee", "sera realise", "sera executee", "sera execute", "realisee en", "realise en",
+        "executee en", "execute en", "realisation en", "execution en", "janvier", "fevrier",
+        "mars", "avril", "mois suivant", "exercice suivant", "2026"
+    ]
     domain_markers = ["comptablement", "comptabilite", "tva", "produit constate", "revenu", "exigibilite"]
     return (
         any(marker in query for marker in service_markers)
@@ -2165,10 +2169,27 @@ def is_related_party_property_case(query: str) -> bool:
 
 
 def is_cash_consulting_evidence_case(query: str) -> bool:
-    service_markers = ["consulting", "consultant", "conseil", "honoraires", "prestation externe", "mission", "service"]
-    evidence_markers = ["facture", "contrat", "livrable", "rapport", "justificatif", "preuve", "bon de commande"]
-    payment_markers = ["especes", "cash", "liquide", "virement", "paiement", "banque"]
-    issue_markers = ["deduire", "deductible", "deductibilite", "deduction", "valider", "risque", "controle", "repondre"]
+    explicit_tva_deduction = (
+        ("tva" in query or "taxe sur la valeur ajoutee" in query)
+        and any(marker in query for marker in ["deduire", "deduction", "deductible", "droit a deduction", "recuperer"])
+    )
+    if explicit_tva_deduction:
+        return False
+    service_markers = [
+        "consulting", "consultant", "conseil", "honoraires", "prestation externe", "mission", "service",
+        "charge", "charges", "achat", "depense", "frais", "sous traitance", "prestation",
+    ]
+    evidence_markers = [
+        "sans facture", "facture non conforme", "facture incomplete", "facture", "contrat", "livrable",
+        "rapport", "justificatif", "justificatifs", "preuve", "preuves", "bon de commande",
+        "commande", "document", "piece", "pieces",
+    ]
+    payment_markers = ["especes", "cash", "liquide", "virement", "paiement", "banque", "bancaire", "cheque"]
+    issue_markers = [
+        "deduire", "deductible", "deductibilite", "deduction", "admis fiscalement",
+        "admise fiscalement", "fiscalement admis", "valider", "risque", "controle",
+        "repondre", "reintegr", "rejet", "accepter",
+    ]
     return (
         any(marker in query for marker in service_markers)
         and any(marker in query for marker in evidence_markers)
@@ -3265,6 +3286,15 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "code_commerce_2014",
             "code_obligations_contrats_2015",
         }
+    elif is_cash_consulting_evidence_case(query):
+        priority_doc_ids = [irpp_is_doc_id, "procedures_fiscales_2026", "loi_finances_2026", "loi_comptable", "nc_01_norme_generale"]
+        blocked_doc_ids = {
+            "tva_droit_consommation",
+            "ias_7_tableau_flux_tresorerie",
+            "audit_resume_gaida_normes_missions",
+            "fiscalite_locale",
+            "code_commerce_2014",
+        }
     elif is_tva_service_exigibility_case(query) or is_tva_deduction_case(query) or is_invoice_formal_case(query):
         priority_doc_ids = [tva_doc_id_for_query(query), "procedures_fiscales_2026", "loi_finances_2026"]
         blocked_doc_ids = {
@@ -4230,7 +4260,7 @@ def cabinet_answer_standard_block(workflow_name: str, query: str, answer: str) -
         prepaid_future_service = (
             _query_has_any(query, ["paiement integral", "paiement intégral", "encaissement integral", "recoit en decembre", "reçoit en décembre", "recu en decembre"])
             and _query_has_any(query, ["prestation de service", "prestation", "service"])
-            and _query_has_any(query, ["fevrier 2026", "février 2026", "realisee en fevrier", "réalisée en février", "sera realisee", "sera réalisée"])
+            and _query_has_any(query, ["janvier 2026", "fevrier 2026", "février 2026", "mars 2026", "avril 2026", "realisee en", "réalisée en", "executee en", "exécutée en", "sera realisee", "sera réalisée", "sera executee", "sera exécutée"])
         )
         starts_december_2025 = (
             ("1 decembre 2025" in normalized_query or "1er decembre 2025" in normalized_query or "decembre 2025" in normalized_query)
@@ -4238,7 +4268,7 @@ def cabinet_answer_standard_block(workflow_name: str, query: str, answer: str) -
         )
         starts_after_closing = "janvier" in normalized_query and "decembre 2026" in normalized_query and "decembre 2025" in normalized_query
         if prepaid_future_service:
-            quantification = "Dans le cas donne, le paiement est recu en decembre 2025 alors que la prestation sera realisee en fevrier 2026. A la cloture du 31/12/2025, le service n'est pas encore rendu: le produit acquis 2025 est nul sur cette prestation future et le montant encaisse reste a differer comme produit non gagne / produit constate d'avance, sous reserve du contrat, de la facture et des pieces."
+            quantification = "Dans le cas donne, le paiement est recu avant une prestation future. A la cloture, si le service n'est pas encore rendu, le produit acquis de l'exercice est nul sur cette prestation future et le montant encaisse reste a differer comme produit non gagne / produit constate d'avance, sous reserve du contrat, de la facture et des pieces."
         elif starts_december_2025:
             quantification = "Dans le cas donne, le contrat couvre le 1er decembre 2025 au 30 novembre 2026. Pour une cloture au 31/12/2025, decembre 2025 est deja rendu: le traitement preliminaire est donc 1/12 en produit 2025 et 11/12 en produit constate d'avance pour 2026, sous reserve du contrat, de la facture et de l'absence de clause particuliere."
         elif starts_after_closing:
@@ -4300,7 +4330,7 @@ def cabinet_answer_standard_block(workflow_name: str, query: str, answer: str) -
     if workflow_name == "expense_deductibility_evidence_case":
         return (
             "\n\n## Conclusion cabinet\n"
-            "Sur les faits fournis, une facture seule, surtout avec paiement en especes, ne suffit pas pour conclure a la deductibilite. Le cabinet doit demander la preuve de la realite du service, l'interet de l'entreprise, les livrables, le contrat ou bon de commande, et la tracabilite du paiement; sans ces pieces, la conclusion client doit rester reservee."
+            "Sur les faits fournis, une piece incomplete, une facture absente ou non conforme, un bon de commande ou un paiement trace ne suffisent pas seuls pour conclure a la deductibilite. Le cabinet doit obtenir la preuve de la realite de la depense, l'interet de l'entreprise, les livrables ou pieces d'execution, la facture conforme lorsque requise et la tracabilite du paiement; sans ces elements, la conclusion client doit rester reservee ou conduire a une reintegration."
         )
 
     if workflow_name == "audit_cac_response_case":
@@ -4490,6 +4520,35 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Ne pas fonder la parite uniquement sur les capitaux propres comptables non corriges.\n"
                     "- Ne pas ignorer les actifs/passifs latents, risques fiscaux ou provisions.\n"
                     "- Distinguer validation economique de la parite, regularite societaire et regime fiscal."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_cash_consulting_evidence_case(query):
+        workflow_name = "expense_deductibility_evidence_case"
+        returned_intent = "tax_calculation"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"La question porte d'abord sur l'admission de la charge et la force probante du dossier, pas sur une simple formalite de facture ou de TVA. Faits transmis: {facts_summary}. "
+                    "La comptabilisation depend de la realite de la depense, de l'obligation supportee par l'entreprise, du rattachement a la bonne periode et des pieces disponibles. "
+                    "La deductibilite fiscale exige en plus l'interet de l'entreprise, une documentation suffisante, l'absence d'exclusion fiscale et le respect des conditions applicables."
+                ),
+                "Application pratique": (
+                    "- Comptabilite: verifier que la charge correspond a une prestation ou depense reelle, engagee pour l'entreprise, rattachee au bon exercice et appuyee par une piece probante.\n"
+                    "- Fiscalite directe: une facture absente, non conforme ou trop vague expose la charge a un rejet ou a une reintegration extra-comptable; un bon de commande ou un paiement bancaire aide le dossier mais ne remplace pas a lui seul une facture conforme et les preuves de service.\n"
+                    "- Preuves: demander contrat, bon de commande, facture detaillee, rapport ou livrables, validation interne, correspondances, preuve de paiement et lien avec l'activite.\n"
+                    "- Paiement: distinguer paiement bancaire, cheque, especes ou cash; la tracabilite renforce le dossier, mais ne suffit pas si la realite ou l'interet de la prestation ne sont pas prouves.\n"
+                    "- TVA: le droit a deduction TVA est une question distincte a traiter seulement si le dossier demande la TVA ou si la facture porte TVA; il suppose une facture conforme et une affectation a des operations ouvrant droit a deduction.\n"
+                    "- Conclusion prudente: la charge ne doit etre admise fiscalement que si les pieces et les conditions legales sont reunies; sinon preparer une reserve, une demande de pieces ou une reintegration."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas confondre paiement bancaire et preuve complete de deductibilite.\n"
+                    "- Ne pas router ce cas vers TVA si la question principale est la deductibilite de la charge.\n"
+                    "- Ne pas conclure a un taux, delai ou article fiscal sans passage direct."
                 ),
                 "Sources utilisees": source_lines,
             },

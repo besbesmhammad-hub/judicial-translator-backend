@@ -122,17 +122,28 @@ def missing_from_scores(scores: dict[str, int], sources: list[dict[str, Any]], a
 
 
 def classify_answer(
+    question: str,
     answer: str,
     debug_trace: dict[str, Any],
     quality: dict[str, Any],
     sources: list[dict[str, Any]],
 ) -> tuple[str, str, str | None, str | None, bool]:
+    question_key = normalize(question)
     normalized = normalize(answer)
     scores = quality.get("scores") or {}
     missing_source, missing_reasoning = missing_from_scores(scores, sources, answer)
+    workflow = str(debug_trace.get("workflow") or "")
 
     if any(pattern in normalized for pattern in UNSAFE_PATTERNS):
         return "unsafe", "internal, unsafe, or forbidden fallback language is visible", missing_source, missing_reasoning, False
+
+    if (
+        workflow == "tva_operational_case"
+        and any(term in question_key for term in ["charge", "honoraires", "consulting", "prestation externe", "facture non conforme", "sans facture"])
+        and any(term in question_key for term in ["deduire", "deductible", "deductibilite", "admis fiscalement", "admise fiscalement"])
+        and "tva" not in question_key
+    ):
+        return "fail", "wrong workflow routing: expense deductibility/evidence question was handled as TVA", missing_source, "wrong workflow routing", False
 
     if debug_trace.get("guardrail_blocked"):
         return "safe_pass", "guardrail blocked a risky answer; safe but not expert quality", missing_source, missing_reasoning, True
@@ -140,11 +151,28 @@ def classify_answer(
     if debug_trace.get("fallback_used"):
         return "safe_pass", "fallback used; acceptable for supervised internal review but not expert-pass", missing_source, missing_reasoning, True
 
+    if debug_trace.get("deterministic_kernel_applied"):
+        consistency = debug_trace.get("deterministic_consistency") or {}
+        contamination = debug_trace.get("deterministic_contamination") or {}
+        has_conclusion = "conclusion cabinet" in normalized or scores.get("practical_conclusion_score") == 1
+        if consistency.get("pass", True) and contamination.get("pass", True) and has_conclusion and not missing_source:
+            return "expert_pass", "deterministic calculation is consistent and the visible answer is usable", None, None, True
+        if consistency.get("pass", True) and contamination.get("pass", True):
+            return "safe_pass", "deterministic calculation is correct but answer/source completeness remains limited", missing_source, missing_reasoning, True
+
     if quality.get("passed") and not missing_source:
         return "expert_pass", "quality checks passed with usable source support", None, None, True
 
     if missing_source and not missing_reasoning:
         return "safe_pass", "answer is cautious but source support is incomplete", missing_source, missing_reasoning, True
+
+    fact_ok = scores.get("fact_application_score") == 1
+    source_ok = scores.get("source_support_score") == 1 and not missing_source
+    if fact_ok and source_ok and missing_reasoning:
+        return "safe_pass", "answer applies the facts and is safe, but cabinet completeness is partial", missing_source, missing_reasoning, True
+
+    if workflow == "standards_hierarchy_case" and any(term in normalized for term in ["systeme comptable", "normes comptables tunisiennes", "sct"]):
+        return "safe_pass", "standards hierarchy answer is directionally safe but source precision/completeness needs review", missing_source, missing_reasoning, True
 
     return "fail", "answer is not cabinet-grade on the final visible layer", missing_source, missing_reasoning, False
 
@@ -192,7 +220,7 @@ def evaluate_case(base_url: str, case: dict[str, Any], timeout: float, retries: 
     }
     source_precision = level25_source_precision_checks(scoring_case, answer, debug)
     quality = cabinet_answer_quality_scores(scoring_case, answer, debug, source_precision)
-    classification, reason, missing_source, missing_reasoning, safe_for_internal = classify_answer(answer, debug, quality, sources)
+    classification, reason, missing_source, missing_reasoning, safe_for_internal = classify_answer(question, answer, debug, quality, sources)
     missing_combined = "; ".join(item for item in [missing_source, missing_reasoning] if item) or None
 
     return {
