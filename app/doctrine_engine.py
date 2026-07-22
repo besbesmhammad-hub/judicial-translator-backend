@@ -757,7 +757,7 @@ def doctrine_completion_block(card: DoctrineCard, query: str, workflow: str) -> 
     if card.doctrine_id == "expense_evidence":
         return (
             "## Analyse de la charge et des preuves\n"
-            "Une facture seule ne suffit pas a prouver la realite du service ni la deductibilite fiscale. Verifier l'interet de l'entreprise, le contrat ou bon de commande, le rapport de mission, les livrables, les echanges et la validation interne. Le paiement en especes accroit le risque; un virement ameliore la tracabilite mais ne remplace pas la preuve de la prestation.\n\n"
+            "Une facture absente, incomplete ou isolee ne suffit pas a prouver la realite du service ni la deductibilite fiscale. Verifier l'interet de l'entreprise, le contrat ou bon de commande, le rapport de mission, les livrables, les echanges, la validation interne et la tracabilite du paiement. Un paiement trace renforce le dossier, mais ne remplace pas la preuve de la prestation; un paiement en especes ou non trace augmente le risque de rejet.\n\n"
             "## Conclusion pratique\n"
             "Sans contrat, livrable ou autre preuve de service, la charge peut etre comptabilisee seulement si sa realite et son rattachement sont defendables, mais la deduction fiscale ne peut pas etre confirmee: le cabinet doit formuler une reserve et demander les justificatifs avant deduction."
         )

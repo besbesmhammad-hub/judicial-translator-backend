@@ -5181,17 +5181,17 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             {
                 "Reponse": (
                     f"Pour une charge de conseil, honoraires ou prestation externe, il faut partir des faits transmis: {facts_summary}. "
-                    "Avec seulement une facture de consulting et un paiement en especes, la deductibilite ne peut pas etre confirmee prudemment. "
+                    "Avec une facture absente, non conforme ou trop vague et des preuves incompletes, la deductibilite ne peut pas etre confirmee prudemment. "
                     "Il faut prouver la realite du service, l'interet de l'entreprise, la documentation contractuelle, les livrables et la tracabilite du paiement."
                 ),
                 "Application pratique": (
                     "- Realite du service: demander contrat, bon de commande, rapport de mission, livrables, emails, planning, preuve d'intervention et validation interne.\n"
                     "- Interet de l'entreprise: rattacher la charge a l'activite, au besoin economique et au benefice attendu.\n"
                     "- Facture: verifier l'identite du prestataire, matricule fiscal, description precise, date, montant, TVA et coherence avec les livrables.\n"
-                    "- Paiement: distinguer paiement en especes, liquide, cash, virement bancaire ou paiement bancaire; le cash augmente le risque de rejet, alors qu'un virement bancaire ne remplace pas les preuves de service.\n"
+                    "- Paiement: distinguer paiement en especes, liquide, cash, virement bancaire ou paiement bancaire; un paiement trace renforce le dossier, mais ne remplace pas les preuves de service.\n"
                     "- Partie liee et prix: si le prestataire est une partie liee, verifier en plus le prix de marche, l'interet social et les autorisations applicables.\n"
                     "- Fiscalite: examiner la deductibilite dans le Code de l'IRPP/IS, les conditions de justification et les risques de rejet en controle.\n"
-                    "- Conclusion prudente: sans preuves autres que la facture et le cash, preparer une reserve et demander les justificatifs avant deduction."
+                    "- Conclusion prudente: sans preuves suffisantes de la realite du service, preparer une reserve et demander les justificatifs avant deduction."
                 ),
                 "Points de vigilance": (
                     "- Ne pas router ce cas vers une simple analyse de tresorerie: la question porte sur la deductibilite et la preuve.\n"
