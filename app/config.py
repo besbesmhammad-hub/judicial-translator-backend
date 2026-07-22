@@ -57,3 +57,6 @@ ALLOWED_ORIGINS = csv_env(
 APP_REVISION = current_revision()
 ACCOUNTING_CHAT_LOG_ENABLED = os.getenv("ACCOUNTING_CHAT_LOG_ENABLED", "true").lower() not in {"0", "false", "no", "off"}
 ACCOUNTING_CHAT_LOG_PATH = os.getenv("ACCOUNTING_CHAT_LOG_PATH", "/tmp/accounting_chat_requests.jsonl")
+BETA_REVIEW_LOG_ENABLED = os.getenv("BETA_REVIEW_LOG_ENABLED", "true").lower() not in {"0", "false", "no", "off"}
+BETA_REVIEW_LOG_PATH = os.getenv("BETA_REVIEW_LOG_PATH", "/tmp/accounting_beta_review.jsonl")
+BETA_FEEDBACK_LOG_PATH = os.getenv("BETA_FEEDBACK_LOG_PATH", "/tmp/accounting_beta_feedback.jsonl")

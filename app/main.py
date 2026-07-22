@@ -12,7 +12,7 @@ from .legal_corpus import corpus_status, infer_query_domain, load_corpus, retrie
 from .native_documents import translate_docx_native, translate_pdf_visual_native, translate_pptx_native, translate_xlsx_native
 from .parser import detect_file_format, parse_document
 from .renderer import render_document
-from .schemas import AccountingChatRequest, AnalyzeResponse, TranslateRequest, TranslateResponse
+from .schemas import AccountingChatRequest, AccountingFeedbackRequest, AnalyzeResponse, TranslateRequest, TranslateResponse
 from .skills import ACTIVE_SKILLS, detect_document_kind
 from .translator import (
     ProviderCreditError,
@@ -357,6 +357,10 @@ JOB_DIR = Path(os.getenv("TRANSLATION_JOB_DIR", "/tmp/judicial_translator_jobs")
 JOB_DIR.mkdir(parents=True, exist_ok=True)
 ACCOUNTING_CHAT_LOG_PATH = Path(config.ACCOUNTING_CHAT_LOG_PATH)
 ACCOUNTING_CHAT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+BETA_REVIEW_LOG_PATH = Path(config.BETA_REVIEW_LOG_PATH)
+BETA_REVIEW_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+BETA_FEEDBACK_LOG_PATH = Path(config.BETA_FEEDBACK_LOG_PATH)
+BETA_FEEDBACK_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 SPACE_REVISION_CACHE: dict[str, str | float | None] = {"value": None, "ts": 0.0}
 
 app = FastAPI(title="Judicial Translator Backend", version="1.0.0")
@@ -6008,6 +6012,73 @@ def append_accounting_chat_log(event: dict) -> None:
         return
 
 
+def append_jsonl(path: Path, event: dict) -> bool:
+    payload = {
+        "logged_at": int(time.time()),
+        "app_revision": effective_app_revision() if "effective_app_revision" in globals() else config.APP_REVISION,
+        **event,
+    }
+    try:
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        return True
+    except Exception:
+        return False
+
+
+def source_confidence_summary(rows: list[dict]) -> dict:
+    levels: dict[str, int] = {}
+    for row in rows or []:
+        level = row.get("support_level") or "unclassified"
+        levels[level] = levels.get(level, 0) + 1
+    missing = [row for row in rows or [] if (row.get("support_level") or "") == "missing_source" or row.get("missing")]
+    return {
+        "levels": levels,
+        "has_direct_passage": levels.get("direct_passage", 0) > 0,
+        "has_framework_source": levels.get("framework_source", 0) > 0,
+        "has_missing_source": bool(missing),
+        "missing_sources": [
+            {
+                "doc_id": row.get("doc_id"),
+                "title": row.get("title") or client_source_title(row),
+            }
+            for row in missing[:8]
+        ],
+    }
+
+
+def append_beta_review_log(request: AccountingChatRequest, response: dict, trace: dict, sources: list[dict]) -> None:
+    if not config.BETA_REVIEW_LOG_ENABLED:
+        return
+    validation_required = bool(
+        (response.get("legal_domain") or "") in {"fiscalite", "comptabilite", "audit", "droit_societes", "paie_social"}
+        or trace.get("workflow")
+        or sources
+    )
+    append_jsonl(
+        BETA_REVIEW_LOG_PATH,
+        {
+            "kind": "beta_review_case",
+            "question": request.message[:4000],
+            "detected_workflow": trace.get("workflow") or response.get("workflow"),
+            "extracted_facts": trace.get("deterministic_facts") or {},
+            "deterministic_decision": trace.get("deterministic_decision") or {},
+            "deterministic_kernel_applied": bool(trace.get("deterministic_kernel_applied")),
+            "final_visible_answer": str(response.get("answer") or "")[:12000],
+            "sources": sources,
+            "source_confidence": source_confidence_summary(sources),
+            "validation_flags": {
+                "validation_expert_required": validation_required,
+                "quality_status": response.get("quality_status"),
+                "fallback_used": bool(trace.get("fallback_used")),
+                "guardrail_blocked": bool(trace.get("guardrail_blocked")),
+                "missing_source_warning": source_confidence_summary(sources).get("has_missing_source", False),
+            },
+            "user_feedback": None,
+        },
+    )
+
+
 def accounting_runtime_environment() -> str:
     return (
         os.getenv("APP_ENV")
@@ -6243,6 +6314,13 @@ def finalize_accounting_response(
     }
     if accounting_debug_enabled(request):
         output["debug_trace"] = trace
+    output["source_confidence"] = source_confidence_summary(accounting_log_doc_refs(effective_sources))
+    output["validation_expert_required"] = bool(
+        output.get("legal_domain")
+        or effective_workflow
+        or output.get("sources")
+    )
+    append_beta_review_log(request, output, trace, accounting_log_doc_refs(effective_sources))
     return output
 
 
@@ -6429,6 +6507,26 @@ async def health() -> dict:
 @app.get("/version")
 async def version() -> dict:
     return version_payload()
+
+
+@app.post("/v1/accounting-feedback")
+def accounting_feedback(request: AccountingFeedbackRequest) -> dict:
+    event = {
+        "kind": "accounting_feedback",
+        "timestamp": int(time.time()),
+        "question": request.question[:4000],
+        "answer": request.answer[:12000],
+        "workflow": request.workflow or "",
+        "deterministic_kernel_applied": request.deterministic_kernel_applied,
+        "sources": accounting_log_doc_refs(request.sources or []),
+        "feedback_label": request.feedback_label,
+        "reviewer_note": (request.reviewer_note or "")[:2000],
+        "debug_trace": request.debug_trace or {},
+    }
+    stored = append_jsonl(BETA_FEEDBACK_LOG_PATH, event)
+    if config.BETA_REVIEW_LOG_ENABLED:
+        append_jsonl(BETA_REVIEW_LOG_PATH, {**event, "kind": "beta_review_feedback"})
+    return {"ok": stored, "feedback_label": request.feedback_label}
 
 
 @app.post("/v1/analyze-file", response_model=AnalyzeResponse)

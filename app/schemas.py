@@ -18,6 +18,17 @@ class AccountingChatRequest(BaseModel):
     debug: bool = False
 
 
+class AccountingFeedbackRequest(BaseModel):
+    question: str = Field(..., min_length=1)
+    answer: str = Field(..., min_length=1)
+    workflow: str | None = None
+    deterministic_kernel_applied: bool | None = None
+    sources: list[dict] = Field(default_factory=list)
+    feedback_label: str = Field(..., pattern="^(correct|incomplete|wrong|unsafe|missing_source|bad_routing)$")
+    reviewer_note: str | None = None
+    debug_trace: dict | None = None
+
+
 class RetrievedTerm(BaseModel):
     id: str
     source: str
