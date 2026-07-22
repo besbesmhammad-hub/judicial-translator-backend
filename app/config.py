@@ -4,13 +4,13 @@ import subprocess
 
 def current_revision() -> str:
     explicit = (
-        os.getenv("APP_REVISION")
-        or os.getenv("RENDER_GIT_COMMIT")
+        os.getenv("RENDER_GIT_COMMIT")
         or os.getenv("RENDER_COMMIT")
         or os.getenv("COMMIT_SHA")
         or os.getenv("GIT_COMMIT")
         or os.getenv("SOURCE_VERSION")
         or os.getenv("SPACE_VERSION")
+        or os.getenv("APP_REVISION")
     )
     if explicit:
         return explicit[:12]
