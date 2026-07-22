@@ -6,13 +6,14 @@ Candidate status: supervised beta candidate. The assistant is not autonomous cli
 
 - Frontend URL: `https://judicial-translator-20260706031117.netlify.app`
 - Backend URL: `https://judicial-translator-backend.onrender.com`
-- Current frozen backend commit before beta-infrastructure changes: `a76ef8e2ab2d`
+- Current supervised beta infrastructure commit: `e93b0b61fb3f`
+- Last protected reasoning baseline before beta-infrastructure changes: `a76ef8e2ab2d`
 - Backend branch: `level35-adversarial-benchmark`
 
 ## Protected gates
 
 - Deterministic release gate is mandatory before deployment.
-- Latest accepted deterministic gate: 18 static regressions passed, 375 mutation regressions passed.
+- Latest accepted deterministic gate before deploying `e93b0b61fb3f`: 18 static regressions passed, 375 mutation regressions passed.
 - Mutation seeds: `20260722`, `20260723`, `20260724`, `20260725`, `20260726`
 - Acceptance criteria: 0 wrong deterministic calculations, 0 contradictory dates, 0 fact mutations, 0 legacy-template contamination, 0 irrelevant final-answer blocks.
 
@@ -36,6 +37,13 @@ Candidate status: supervised beta candidate. The assistant is not autonomous cli
 - Rates, deadlines, articles and final legal conclusions must not be invented without a direct source.
 - Missing-source cases must remain reserved until the precise corpus source is added and tested.
 - Feedback and beta logs may contain confidential facts; they must remain server-side and reviewed by authorized experts only.
+
+## Beta safeguards added
+
+- Visible UI disclaimer: "Assistant de préparation pour cabinet. Les réponses doivent être validées par un expert avant usage client."
+- Answer safety display: sources, source confidence, missing-source warning and validation-expert-required flag.
+- Feedback labels: `correct`, `incomplete`, `wrong`, `unsafe`, `missing_source`, `bad_routing`.
+- Private beta review logs: question, workflow, deterministic facts/decision, final answer, sources, source confidence and validation flags.
 
 ## Round 3 blind evaluation
 
