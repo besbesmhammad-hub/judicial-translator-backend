@@ -8,3 +8,7 @@ dist/
 build/
 *.log
 tessdata-local/
+reports/
+benchmark_results*.json
+*_response*.json
+uvicorn-*.out.log
