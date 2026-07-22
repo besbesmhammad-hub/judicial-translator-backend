@@ -4187,12 +4187,19 @@ def cabinet_answer_standard_block(workflow_name: str, query: str, answer: str) -
         return ""
 
     if workflow_name == "revenue_cutoff_tva_case":
+        prepaid_future_service = (
+            _query_has_any(query, ["paiement integral", "paiement intégral", "encaissement integral", "recoit en decembre", "reçoit en décembre", "recu en decembre"])
+            and _query_has_any(query, ["prestation de service", "prestation", "service"])
+            and _query_has_any(query, ["fevrier 2026", "février 2026", "realisee en fevrier", "réalisée en février", "sera realisee", "sera réalisée"])
+        )
         starts_december_2025 = (
             ("1 decembre 2025" in normalized_query or "1er decembre 2025" in normalized_query or "decembre 2025" in normalized_query)
             and ("30 novembre 2026" in normalized_query or "novembre 2026" in normalized_query)
         )
         starts_after_closing = "janvier" in normalized_query and "decembre 2026" in normalized_query and "decembre 2025" in normalized_query
-        if starts_december_2025:
+        if prepaid_future_service:
+            quantification = "Dans le cas donne, le paiement est recu en decembre 2025 alors que la prestation sera realisee en fevrier 2026. A la cloture du 31/12/2025, le service n'est pas encore rendu: le produit acquis 2025 est nul sur cette prestation future et le montant encaisse reste a differer comme produit non gagne / produit constate d'avance, sous reserve du contrat, de la facture et des pieces."
+        elif starts_december_2025:
             quantification = "Dans le cas donne, le contrat couvre le 1er decembre 2025 au 30 novembre 2026. Pour une cloture au 31/12/2025, decembre 2025 est deja rendu: le traitement preliminaire est donc 1/12 en produit 2025 et 11/12 en produit constate d'avance pour 2026, sous reserve du contrat, de la facture et de l'absence de clause particuliere."
         elif starts_after_closing:
             quantification = "Dans le cas donne, le contrat facture/encaisse en decembre 2025 couvre janvier a decembre 2026: au 31/12/2025, le revenu n'est pas encore gagne; le traitement preliminaire est donc 0/12 en produit 2025 et 12/12 en produit constate d'avance, sous reserve de la facture et du contrat."
@@ -4804,7 +4811,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "Sur les faits donnes, le paiement est recu en decembre 2025 alors que la prestation sera realisee en fevrier 2026: au 31/12/2025, le service n'est pas encore rendu. Comptablement, le montant encaisse ne doit donc pas etre traite comme un produit acquis de 2025; il doit etre analyse comme produit non gagne, typiquement produit constate d'avance, sous reserve du contrat, de la facture et des pieces."
                 ),
                 "Application pratique": (
-                    "- Comptabilite: rattacher le revenu a la periode de realisation du service; si la prestation est realisee en fevrier 2026, le produit est a rattacher a 2026 et le montant recu en decembre 2025 reste a differer au 31/12/2025.\n"
+                    "- Application concrete: au 31/12/2025, le service de fevrier 2026 n'est pas encore rendu; le produit acquis 2025 est donc nul sur cette prestation future et le montant recu en decembre 2025 reste a differer au 31/12/2025 comme produit non gagne / produit constate d'avance.\n"
                     "- Ecriture de principe: constater l'encaissement et isoler la part non acquise en produit constate d'avance ou compte de passif approprie, puis reprendre en produit lorsque la prestation est executee.\n"
                     "- TVA: si la prestation entre dans le champ de la TVA tunisienne, l'encaissement de decembre 2025 peut rendre la TVA exigible sur le montant encaisse, meme si le revenu comptable n'est pas encore acquis; la declaration TVA doit donc etre analysee separement du cut-off comptable.\n"
                     "- Facturation: verifier la date de facture, la base HT, le taux et montant de TVA, la description du service, la periode couverte et le lien avec l'encaissement.\n"
