@@ -100,6 +100,7 @@ def fixed_asset_cases(rng: random.Random, count: int) -> list[dict[str, Any]]:
                 "Une machine est achetee le {a}, livree le {d}, installee le {i} et prete a fonctionner le {r}. A partir de quelle date commence l'amortissement comptable ?",
                 "Pour une immobilisation corporelle: achat {a}, livraison {d}, installation {i}, mise en service {r}. Quelle date retenir pour l'amortissement ?",
                 "La facture de la machine date du {a}; elle arrive le {d}, les tests finissent apres installation le {i}, et l'actif est pret a fonctionner le {r}. Quand amortir ?",
+                "Actif achete le {a}, livre le {d}, installe le {i}, tests finaux valides le {r}. Quelle date de debut d'amortissement comptable retenir ?",
             ]
         )
         cases.append(
@@ -124,7 +125,7 @@ def revenue_cutoff_cases(rng: random.Random, count: int) -> list[dict[str, Any]]
         year = rng.choice([2025, 2026])
         start_month = rng.randint(1, 12)
         start = date(year, start_month, 1)
-        end = add_months(start, 11)
+        end = add_months(start, 12) - timedelta(days=1)
         closing = date(year, 12, 31)
         total = month_count_inclusive(start, end)
         earned = months_earned(start, end, closing)
@@ -148,6 +149,27 @@ def revenue_cutoff_cases(rng: random.Random, count: int) -> list[dict[str, Any]]
                     "required": [f"{earned}/{total}", f"{deferred}/{total}", _format_amount(earned_amount), _format_amount(deferred_amount)],
                     "earned_fraction": f"{earned}/{total}",
                     "deferred_fraction": f"{deferred}/{total}",
+                },
+            }
+        )
+
+        mid_start = date(year, rng.choice([3, 7, 10]), rng.choice([10, 15, 20]))
+        mid_end = add_months(mid_start, 12) - timedelta(days=1)
+        total_days = (mid_end - mid_start).days + 1
+        earned_days = max(0, (min(mid_end, closing) - mid_start).days + 1) if closing >= mid_start else 0
+        deferred_days = total_days - earned_days
+        mid_amount = rng.choice([72000, 96000, 144000])
+        earned_mid_amount = round(mid_amount * earned_days / total_days, 2)
+        deferred_mid_amount = round(mid_amount - earned_mid_amount, 2)
+        cases.append(
+            {
+                "id": f"mut_revenue_midmonth_{i + 1:02d}",
+                "family": "revenue_cutoff_prepaid_services",
+                "prompt": f"Contrat de maintenance de {_format_amount(mid_amount)} TND du {fr_date(mid_start)} au {fr_date(mid_end)}, facture avant cloture, cloture au 31 decembre {year}. Quel cut-off ?",
+                "expected": {
+                    "workflow": "revenue_cutoff_tva_case",
+                    "required": [f"{earned_days}/{total_days}", f"{deferred_days}/{total_days}", _format_amount(earned_mid_amount), _format_amount(deferred_mid_amount)],
+                    "forbidden": ["3/3"],
                 },
             }
         )
@@ -181,6 +203,54 @@ def revenue_cutoff_cases(rng: random.Random, count: int) -> list[dict[str, Any]]
                     "workflow": "revenue_cutoff_tva_case",
                     "required": ["revenu 2025 est 0" if year == 2025 else f"revenu {year} est 0", _format_amount(future_amount), "encaissement avant realisation"],
                     "forbidden_fake_dates": [month for month in MONTHS if month not in norm(fr_date(service_date)) and month in ["fevrier", "avril"]],
+                },
+            }
+        )
+    return cases
+
+
+def expense_cutoff_cases(rng: random.Random, count: int) -> list[dict[str, Any]]:
+    cases = []
+    for i in range(count):
+        year = rng.choice([2025, 2026])
+        amount = rng.choice([24000, 60000, 120000])
+        wording = rng.choice(
+            [
+                "Facture d'assurance de {amount} TND recue en decembre {year}, couvrant janvier a decembre {next_year}. Quel traitement comptable et fiscal a la cloture du 31/12/{year} ?",
+                "Une charge importante de {amount} TND est comptabilisee en decembre {year} pour un service effectue en janvier {next_year}. Peut-on la deduire en {year} ?",
+                "Facture fournisseur {amount} TND payee en decembre {year}; la prestation sera realisee en fevrier {next_year}. Quelle charge constatee d'avance constater ?",
+            ]
+        )
+        cases.append(
+            {
+                "id": f"mut_expense_future_{i + 1:02d}",
+                "family": "expense_cutoff_prepaid",
+                "prompt": wording.format(amount=_format_amount(amount), year=year, next_year=year + 1),
+                "expected": {
+                    "workflow": "expense_cutoff_prepaid_case",
+                    "required": ["charge constatee d'avance", _format_amount(amount)],
+                    "forbidden": ["produit constate d'avance", "produit constate", "traitement comptable et tva"],
+                },
+            }
+        )
+
+        start = date(year, rng.choice([7, 10, 11]), rng.choice([10, 15]))
+        end = add_months(start, 12) - timedelta(days=1)
+        closing = date(year, 12, 31)
+        total_days = (end - start).days + 1
+        current_days = max(0, (min(end, closing) - start).days + 1) if closing >= start else 0
+        prepaid_days = total_days - current_days
+        current_amount = round(amount * current_days / total_days, 2)
+        prepaid_amount = round(amount - current_amount, 2)
+        cases.append(
+            {
+                "id": f"mut_expense_midmonth_{i + 1:02d}",
+                "family": "expense_cutoff_prepaid",
+                "prompt": f"Facture d'assurance { _format_amount(amount) } TND couvrant la periode du {fr_date(start)} au {fr_date(end)}, comptabilisee avant cloture au 31/12/{year}. Quelle charge 2025 et quelle CCA ?",
+                "expected": {
+                    "workflow": "expense_cutoff_prepaid_case",
+                    "required": [f"{current_days}/{total_days}", f"{prepaid_days}/{total_days}", _format_amount(current_amount), _format_amount(prepaid_amount), "charge constatee d'avance"],
+                    "forbidden": ["produit constate d'avance", "3/3"],
                 },
             }
         )
@@ -308,6 +378,7 @@ def build_cases(seed: int, cases_per_workflow: int) -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
     cases.extend(fixed_asset_cases(rng, cases_per_workflow))
     cases.extend(revenue_cutoff_cases(rng, max(1, cases_per_workflow // 2)))
+    cases.extend(expense_cutoff_cases(rng, max(1, cases_per_workflow // 2)))
     cases.extend(receivable_cases(rng, cases_per_workflow))
     cases.extend(tva_service_cases(rng, cases_per_workflow))
     cases.extend(withholding_cases(rng, cases_per_workflow))
@@ -335,7 +406,12 @@ def validate_case(case: dict[str, Any], answer: str, trace: dict[str, Any]) -> t
             reasons.append(f"missing_required:{item}")
 
     for item in expected.get("forbidden", []):
-        if norm(str(item)) in answer_key:
+        item_key = norm(str(item))
+        if re.fullmatch(r"\d+/\d+", item_key):
+            hit = bool(re.search(rf"(?<!\d){re.escape(item_key)}(?!\d)", answer_key))
+        else:
+            hit = item_key in answer_key
+        if hit:
             reasons.append(f"forbidden_visible:{item}")
             categories["wrong_deterministic_calculation"] = "-" in str(item)
             categories["legacy_template_contamination"] = categories["legacy_template_contamination"] or "montant facture" in norm(str(item))

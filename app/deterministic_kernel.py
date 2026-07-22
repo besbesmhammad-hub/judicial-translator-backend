@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 
@@ -218,6 +218,21 @@ def _months_earned_until(start: date, end: date, closing: date) -> int:
     return min(_month_count_inclusive(start, end), _month_count_inclusive(start, effective_end))
 
 
+def _days_inclusive(start: date, end: date) -> int:
+    return max(0, (end - start).days + 1)
+
+
+def _days_earned_until(start: date, end: date, closing: date) -> int:
+    if closing < start:
+        return 0
+    return _days_inclusive(start, min(end, closing))
+
+
+def _is_clean_month_period(start: date, end: date) -> bool:
+    next_day = end + timedelta(days=1)
+    return start.day == 1 and next_day.day == 1
+
+
 def _extract_period(text: str) -> tuple[date | None, date | None]:
     source = _key(text)
     year = _default_year(source)
@@ -240,11 +255,29 @@ def _extract_period(text: str) -> tuple[date | None, date | None]:
         start = _parse_numeric_date(m.group(1), m.group(2), m.group(3), year)
         end = _parse_numeric_date(m.group(4), m.group(5), m.group(6), year)
         return start, end
+    m = re.search(rf"\b(?:couvrant|couvre|periode)\s+({month_names})\s+(?:a|au|e)\s+({month_names})\s+(\d{{4}})\b", source)
+    if m:
+        start_month = MONTHS[m.group(1)]
+        end_month = MONTHS[m.group(2)]
+        y = int(m.group(3))
+        start = date(y, start_month, 1)
+        next_month = date(y + (1 if end_month == 12 else 0), 1 if end_month == 12 else end_month + 1, 1)
+        end = next_month - timedelta(days=1)
+        return start, end
     return None, None
 
 
 def _detect_workflow(query: str, workflow: str) -> str:
     key = _key(f"{workflow} {query}")
+    if "expense_cutoff_prepaid_case" in key:
+        return "expense_cutoff_prepaid_case"
+    if (
+        any(term in key for term in ["assurance", "charge", "honoraires", "loyer", "abonnement", "facture"])
+        and any(term in key for term in ["charge constatee d'avance", "charges constatees d'avance", "cca", "janvier", "2026", "service effectue", "service realise", "couvre"])
+        and any(term in key for term in ["cloture", "31/12", "decembre", "rattachement", "deductibilite", "deduire"])
+        and not any(term in key for term in ["produit", "vente", "client encaisse", "encaisse", "maintenance", "prestation annuelle", "contrat de maintenance"])
+    ):
+        return "expense_cutoff_prepaid_case"
     if (
         "retenue a la source" in key
         or "ras" in key
@@ -260,7 +293,7 @@ def _detect_workflow(query: str, workflow: str) -> str:
         or ("normes comptables tunisiennes" in key and ("ias" in key or "ifrs" in key))
     ):
         return "accounting_standards_hierarchy_case"
-    if "amort" in key or "immobilisation" in key or "machine" in key or "pret a fonctionner" in key:
+    if "amort" in key or "immobilisation" in key or "machine" in key or "pret a fonctionner" in key or "tests" in key:
         return "fixed_asset_depreciation_case"
     if "creance" in key or "client impaye" in key or "provisionner le solde" in key:
         return "receivable_impairment_subsequent_event"
@@ -292,16 +325,25 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
     facts: dict[str, Any] = {"workflow": detected, "query": query}
 
     if detected == "fixed_asset_depreciation_case":
+        ready = _date_after_marker(
+            query,
+            [
+                "prete a fonctionner", "pret a fonctionner", "prete a l'emploi", "pret a l'emploi",
+                "mise en service", "mise en production", "tests valides", "tests valides",
+                "tests termines", "tests finalises", "tests finissent", "tests finaux valides",
+            ],
+            fallback_year=default_year,
+            window=120,
+        )
+        if not ready and "tests" in key:
+            test_dates = _date_after_marker(query, ["tests"], fallback_year=default_year, window=140)
+            ready = test_dates
         facts.update(
             {
                 "acquisition_date": _date_after_marker(query, ["achete", "acquis", "acquisition", "facture"], fallback_year=default_year),
                 "delivery_date": _date_after_marker(query, ["livre", "livraison"], fallback_year=default_year),
                 "installation_date": _date_after_marker(query, ["installe", "installation"], fallback_year=default_year),
-                "ready_for_use_date": _date_after_marker(
-                    query,
-                    ["prete a fonctionner", "pret a fonctionner", "prete a l'emploi", "pret a l'emploi", "mise en service", "mise en production"],
-                    fallback_year=default_year,
-                ),
+                "ready_for_use_date": ready,
                 "component_issue": bool(re.search(r"composant|remplace|piece majeure|3 ans|trois ans", key)),
             }
         )
@@ -365,6 +407,27 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
         )
         return facts
 
+    if detected == "expense_cutoff_prepaid_case":
+        period_start, period_end = _extract_period(query)
+        closing = _closing_date(query, default_year)
+        service_markers = [
+            "service effectue", "service realise", "prestation effectuee", "prestation realisee",
+            "sera effectue", "sera realise", "realisee en", "effectuee en", "janvier", "fevrier",
+        ]
+        realization = _date_after_marker(query, service_markers, fallback_year=default_year, window=120)
+        amounts = _all_large_amounts(query)
+        facts.update(
+            {
+                "amount": amounts[0] if amounts else None,
+                "coverage_start": period_start,
+                "coverage_end": period_end,
+                "closing_date": closing,
+                "service_realization_date": realization,
+                "expense_nature": "insurance" if "assurance" in key else "service_or_expense",
+            }
+        )
+        return facts
+
     if detected == "tva_operational_case":
         execution_markers = [
             "realisee", "realise", "effectuee", "effectue", "execution", "executee", "execute",
@@ -415,12 +478,17 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
     if detected == "accounting_standards_hierarchy_case":
         explicit_ifrs = any(term in key for term in ["ifrs obligatoire", "referentiel ifrs", "consolide ifrs", "cotee", "groupe ifrs"])
         ordinary_tunisian = any(term in key for term in ["societe tunisienne", "entreprise tunisienne", "sarl", "sa tunisienne", "tunisie"])
+        mentioned = []
+        for standard in ["ifrs 15", "ifrs 16", "ifrs 3", "ias 37", "ias 16", "ias 10", "nc 05", "nc 03"]:
+            if standard in key:
+                mentioned.append(standard.upper())
         facts.update(
             {
                 "ordinary_tunisian_company": ordinary_tunisian,
                 "explicit_ifrs_context": explicit_ifrs,
                 "mentions_sct": "sct" in key or "normes comptables tunisiennes" in key,
                 "mentions_ias_ifrs": "ias" in key or "ifrs" in key,
+                "mentioned_standards": mentioned,
             }
         )
         return facts
@@ -467,13 +535,20 @@ def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
         amount = facts.get("amount")
         realization = facts.get("service_realization_date")
         if start and end and closing:
-            total = _month_count_inclusive(start, end)
-            earned = _months_earned_until(start, end, closing)
+            if _is_clean_month_period(start, end):
+                total = _month_count_inclusive(start, end)
+                earned = _months_earned_until(start, end, closing)
+                basis = "monthly"
+            else:
+                total = _days_inclusive(start, end)
+                earned = _days_earned_until(start, end, closing)
+                basis = "daily"
             deferred = max(0, total - earned)
             decision.update(
                 {
                     "available": True,
                     "status": "computed",
+                    "basis": basis,
                     "earned_months": earned,
                     "deferred_months": deferred,
                     "total_months": total,
@@ -501,6 +576,54 @@ def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
                 decision["deferred_amount"] = amount
         if facts.get("payment_before_service"):
             decision["tva_collection_before_realization"] = True
+        return decision
+
+    if workflow == "expense_cutoff_prepaid_case":
+        start = facts.get("coverage_start")
+        end = facts.get("coverage_end")
+        closing = facts.get("closing_date")
+        amount = facts.get("amount")
+        realization = facts.get("service_realization_date")
+        if start and end and closing:
+            if _is_clean_month_period(start, end):
+                total = _month_count_inclusive(start, end)
+                current = _months_earned_until(start, end, closing)
+                basis = "monthly"
+            else:
+                total = _days_inclusive(start, end)
+                current = _days_earned_until(start, end, closing)
+                basis = "daily"
+            prepaid = max(0, total - current)
+            decision.update(
+                {
+                    "available": True,
+                    "status": "computed",
+                    "basis": basis,
+                    "current_units": current,
+                    "prepaid_units": prepaid,
+                    "total_units": total,
+                    "current_fraction": f"{current}/{total}",
+                    "prepaid_fraction": f"{prepaid}/{total}",
+                    "future_expense_at_closing": current == 0,
+                }
+            )
+            if amount is not None and total:
+                current_amount = round(amount * current / total, 2)
+                prepaid_amount = round(amount - current_amount, 2)
+                decision["current_period_expense"] = current_amount
+                decision["prepaid_expense"] = prepaid_amount
+        elif realization and closing and realization > closing:
+            decision.update(
+                {
+                    "available": True,
+                    "status": "computed",
+                    "future_expense_at_closing": True,
+                    "closing_year": closing.year,
+                    "current_period_expense": 0,
+                }
+            )
+            if amount is not None:
+                decision["prepaid_expense"] = amount
         return decision
 
     if workflow == "tva_operational_case":
@@ -554,6 +677,7 @@ def _source_allowed(line: str, workflow: str) -> bool:
     allowed_by_workflow = {
         "fixed_asset_depreciation_case": ["nc 05", "ias 16", "immobilisations corporelles"],
         "revenue_cutoff_tva_case": ["nc 03", "nc 01", "code tva", "taxe sur la valeur ajoutee"],
+        "expense_cutoff_prepaid_case": ["nc 01", "loi comptable", "irpp", "is"],
         "receivable_impairment_subsequent_event": ["nc 01", "ias 37", "ias 10", "irpp", "is"],
         "tva_operational_case": ["code tva", "taxe sur la valeur ajoutee", "cdpf", "procedures fiscaux"],
         "withholding_tax_classification_case": ["irpp", "is", "loi de finances", "convention", "cdpf"],
@@ -652,6 +776,38 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
         lines.append("Pieces a verifier: contrat, facture, preuve d'encaissement, periode couverte, date de realisation effective, declaration TVA et justification du cut-off.")
         return "\n".join(lines)
 
+    if workflow == "expense_cutoff_prepaid_case" and decision.get("available"):
+        closing_year = decision.get("closing_year") or (facts.get("closing_date").year if facts.get("closing_date") else 2025)
+        if decision.get("current_fraction") and decision.get("prepaid_fraction"):
+            unit_label = "mois" if decision.get("basis") == "monthly" else "jours"
+            lines.append(
+                f"A la cloture, la part rattachee a l'exercice est {decision['current_fraction']} et la part a reporter est {decision['prepaid_fraction']} ({unit_label})."
+            )
+            if decision.get("current_period_expense") is not None and decision.get("prepaid_expense") is not None:
+                lines.append(
+                    f"Sur le montant donne, cela donne environ {_format_amount(decision['current_period_expense'])} TND en charge de l'exercice et {_format_amount(decision['prepaid_expense'])} TND en charge constatee d'avance."
+                )
+                if float(decision.get("current_period_expense") or 0) == 0:
+                    lines.append(f"La charge {closing_year} est 0 TND; toute la depense est rattachee a l'exercice suivant.")
+                lines.append(
+                    f"Conclusion cabinet: retenir {_format_amount(decision['current_period_expense'])} TND en charge {closing_year} et reporter {_format_amount(decision['prepaid_expense'])} TND en charge constatee d'avance."
+                )
+            else:
+                lines.append(
+                    f"Conclusion cabinet: retenir {decision['current_fraction']} en charge de l'exercice et reporter {decision['prepaid_fraction']} en charge constatee d'avance."
+                )
+        elif decision.get("future_expense_at_closing"):
+            if decision.get("prepaid_expense") is not None:
+                lines.append(f"Au 31/12/{closing_year}, la prestation ou couverture concerne une periode future: la charge {closing_year} est 0 TND.")
+                lines.append(f"Le montant doit etre reclasse en charge constatee d'avance pour {_format_amount(decision['prepaid_expense'])} TND HT, sous reserve de la facture et du contrat.")
+                lines.append(f"Conclusion cabinet: ne pas laisser la charge en resultat {closing_year}; reporter {_format_amount(decision['prepaid_expense'])} TND HT en charge constatee d'avance.")
+            else:
+                lines.append(f"Au 31/12/{closing_year}, la prestation ou couverture concerne une periode future: la charge de l'exercice est nulle sur cette depense.")
+                lines.append("Conclusion cabinet: reclasser le montant en charge constatee d'avance lorsque la facture et la periode couverte sont confirmees.")
+        lines.append("Fiscalement, la deduction doit suivre le rattachement a la bonne periode et rester appuyee par facture, contrat, periode couverte, preuve de paiement et justification de l'interet de l'entreprise.")
+        lines.append("Pieces a verifier: facture, contrat/police, periode de couverture ou date de realisation, preuve de paiement, tableau de cut-off et traitement fiscal.")
+        return "\n".join(lines)
+
     if workflow == "tva_operational_case" and decision.get("tva_collection_before_realization"):
         lines.append("Pour une prestation de services, si l'encaissement total ou partiel intervient avant la realisation, l'exigibilite TVA doit etre analysee sur le montant encaisse.")
         lines.append("Cette conclusion reste separee de la reconnaissance comptable du produit: la TVA peut devenir exigible avant que le produit soit acquis comptablement.")
@@ -681,11 +837,12 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
         return "\n".join(lines)
 
     if workflow == "accounting_standards_hierarchy_case" and decision.get("available"):
+        standards_label = ", ".join(facts.get("mentioned_standards") or []) or "IAS/IFRS"
         if decision.get("primary_framework") == "IFRS":
-            lines.append("Le contexte IFRS est explicitement mentionne: il faut donc analyser le traitement selon le referentiel IFRS applicable, tout en verifiant les obligations tunisiennes de presentation ou de reporting.")
+            lines.append(f"Le contexte IFRS est explicitement mentionne: il faut donc analyser {standards_label} selon le referentiel IFRS applicable, tout en verifiant les obligations tunisiennes de presentation ou de reporting.")
         else:
             lines.append("Pour une societe tunisienne ordinaire, le referentiel de depart est le Systeme Comptable des Entreprises et les Normes Comptables Tunisiennes.")
-            lines.append("IAS/IFRS peuvent servir de reference technique ou comparative, mais ne doivent pas remplacer les normes tunisiennes sauf contexte IFRS explicite.")
+            lines.append(f"{standards_label}: ces references peuvent servir de reference technique ou comparative, mais ne doivent pas remplacer les normes tunisiennes sauf contexte IFRS explicite.")
         lines.append("La conclusion doit donc identifier d'abord le referentiel applicable, puis seulement utiliser IAS/IFRS si le dossier le justifie.")
         lines.append("Conclusion cabinet: pour des comptes locaux ordinaires, retenir le referentiel tunisien comme primaire; IAS/IFRS restent comparatifs sauf obligation explicite.")
         return "\n".join(lines)
@@ -741,6 +898,20 @@ def validate_answer_against_decision(answer: str, facts: dict[str, Any], decisio
         if facts.get("contract_end") and "date de fin" in key_answer and "manqu" in key_answer:
             errors.append("known_end_date_marked_missing")
 
+    if workflow == "expense_cutoff_prepaid_case" and decision.get("available"):
+        if "produit constate" in key_answer:
+            errors.append("expense_answer_uses_revenue_pca_wording")
+        if "charge constatee d'avance" not in key_answer:
+            errors.append("missing_prepaid_expense_wording")
+        if decision.get("current_period_expense") is not None:
+            current = _key(_format_amount(decision.get("current_period_expense")))
+            if current not in key_answer:
+                errors.append("missing_current_period_expense")
+        if decision.get("prepaid_expense") is not None:
+            prepaid = _key(_format_amount(decision.get("prepaid_expense")))
+            if prepaid not in key_answer:
+                errors.append("missing_prepaid_expense_amount")
+
     if workflow == "tva_operational_case" and decision.get("tva_collection_before_realization"):
         if not ("encaisse" in key_answer and "avant" in key_answer and "exigib" in key_answer):
             errors.append("missing_collection_before_realization_tva_rule")
@@ -757,6 +928,9 @@ def validate_answer_against_decision(answer: str, facts: dict[str, Any], decisio
         if decision.get("primary_framework") == "SCT/NC tunisiennes":
             if not any(term in key_answer for term in ["systeme comptable", "normes comptables tunisiennes", "sct"]):
                 errors.append("missing_tunisian_primary_framework")
+            for standard in facts.get("mentioned_standards") or []:
+                if _key(standard) not in key_answer:
+                    errors.append("mentioned_standard_not_preserved")
             if re.search(r"ifrs[^.\n]{0,80}(prime|prioritaire|obligatoire)", key_answer) and not facts.get("explicit_ifrs_context"):
                 errors.append("ifrs_wrongly_primary_without_context")
 
@@ -788,6 +962,14 @@ def validate_visible_contamination(answer: str, facts: dict[str, Any], decision:
             errors.append("receivable_contains_unasked_tva_block")
         if "produit constate d'avance" in key_answer:
             errors.append("receivable_contains_revenue_cutoff_block")
+    if workflow == "expense_cutoff_prepaid_case":
+        if "produit constate" in key_answer:
+            errors.append("expense_contains_revenue_cutoff_block")
+        if "traitement comptable et tva" in key_answer and "tva" not in key_query:
+            errors.append("expense_contains_unasked_tva_block")
+    if workflow not in {"revenue_cutoff_tva_case", "expense_cutoff_prepaid_case"}:
+        if "montant facture x" in key_answer or "produit constate d'avance" in key_answer:
+            errors.append("non_cutoff_contains_cutoff_block")
 
     if workflow == "revenue_cutoff_tva_case" and decision.get("service_future_at_closing"):
         if "fevrier 2026" in key_answer and facts.get("service_realization_date") and facts["service_realization_date"].month != 2:

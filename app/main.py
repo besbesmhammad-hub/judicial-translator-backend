@@ -922,6 +922,31 @@ def source_precision_rules(message: str) -> list[dict]:
                 "missing": True,
             })
         return rules
+    if is_nonresident_service_payment_tax_case(query):
+        return [
+            {"doc_id": irpp_is_doc_id, "terms": ["non resident", "retenue a la source", "beneficiaire", "services", "honoraires"], "min_matches": 2},
+            {"doc_id": "procedures_fiscales_2026", "terms": ["retenue", "declaration", "reversement", "certificat", "controle"], "min_matches": 2},
+            {"doc_id": "convention_fiscale_applicable", "title": "Convention fiscale applicable et certificat de residence", "missing": True},
+            {"doc_id": "loi_comptable", "terms": ["pieces justificatives", "operation", "livres", "comptabilite"], "min_matches": 2},
+        ]
+    if is_expense_cutoff_prepaid_case(query):
+        return [
+            {"doc_id": "nc_01_norme_generale", "terms": ["charges", "rattachement", "exercice", "periodicite"], "min_matches": 2},
+            {"doc_id": "loi_comptable", "terms": ["pieces justificatives", "exercice", "comptabilite", "livres"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["charges", "deduction", "benefice imposable", "exercice"], "min_matches": 2},
+        ]
+    if is_sales_cutoff_delivery_case(query) or is_goods_advance_delivery_case(query):
+        return [
+            {"doc_id": "nc_03_revenus", "terms": ["revenu", "vente", "livraison", "realisation", "exercice"], "min_matches": 2},
+            {"doc_id": "nc_01_norme_generale", "terms": ["rattachement", "exercice", "periodicite", "produits"], "min_matches": 2},
+            {"doc_id": tva_doc_id_for_query(query), "terms": ["livraison", "facture", "tva", "exigibilite"], "min_matches": 2},
+        ]
+    if is_tax_penalty_accounting_deductibility_case(query):
+        return [
+            {"doc_id": "nc_01_norme_generale", "terms": ["charges", "passif", "obligation", "exercice"], "min_matches": 2},
+            {"doc_id": irpp_is_doc_id, "terms": ["charges", "deduction", "amendes", "penalites", "benefice imposable"], "min_matches": 2},
+            {"doc_id": "procedures_fiscales_2026", "terms": ["penalites", "sanctions", "controle", "recours"], "min_matches": 2},
+        ]
     if is_revenue_cutoff_tva_case(query):
         return [
             {"doc_id": "nc_03_revenus", "terms": ["revenu", "prestation de services", "realisation", "exercice"], "min_matches": 2},
@@ -1822,6 +1847,18 @@ def is_tva_service_exigibility_case(query: str) -> bool:
     )
 
 
+def is_imported_digital_service_tva_case(query: str) -> bool:
+    digital_markers = ["service digital", "services digitaux", "service numerique", "logiciel", "saas", "plateforme", "abonnement digital"]
+    foreign_markers = ["etranger", "non resident", "fournisseur etranger", "hors de tunisie", "prestataire etranger"]
+    tunisia_use = ["utilise en tunisie", "utilisee en tunisie", "usage en tunisie", "exploite en tunisie", "consomme en tunisie"]
+    return (
+        any(marker in query for marker in ["tva", "taxe sur la valeur ajoutee", "consequence tva"])
+        and any(marker in query for marker in digital_markers)
+        and any(marker in query for marker in foreign_markers)
+        and any(marker in query for marker in tunisia_use)
+    )
+
+
 def is_prepaid_future_service_accounting_tva_case(query: str) -> bool:
     service_markers = ["prestation", "service", "services", "maintenance", "assistance", "support", "formation", "conseil", "mission", "honoraires"]
     payment_markers = ["paiement", "encaisse", "encaissement", "recoit", "reçoit", "avance", "acompte", "integral", "integralement", "payee avant", "paye avant", "facture avant"]
@@ -1837,6 +1874,60 @@ def is_prepaid_future_service_accounting_tva_case(query: str) -> bool:
         and any(marker in query for marker in future_markers)
         and any(marker in query for marker in domain_markers)
     )
+
+
+def is_expense_cutoff_prepaid_case(query: str) -> bool:
+    expense_markers = [
+        "assurance", "charge", "charges", "honoraires", "loyer", "abonnement",
+        "facture fournisseur", "facture recue", "facture comptabilisee",
+    ]
+    future_markers = [
+        "janvier", "fevrier", "mars", "avril", "2026", "exercice suivant",
+        "service effectue", "service realise", "sera realise", "sera effectue",
+        "couvre", "periode du", "du 1er", "du 1 ",
+    ]
+    cutoff_markers = [
+        "cloture", "31/12", "decembre 2025", "rattachement", "deductibilite",
+        "deduire", "charge constatee", "charges constatees", "cca",
+    ]
+    revenue_markers = ["produit", "vente client", "client encaisse", "encaisse un client"]
+    return (
+        any(marker in query for marker in expense_markers)
+        and any(marker in query for marker in future_markers)
+        and any(marker in query for marker in cutoff_markers)
+        and not any(marker in query for marker in revenue_markers)
+    )
+
+
+def is_nonresident_service_payment_tax_case(query: str) -> bool:
+    payment_markers = ["paie", "paye", "paiement", "regle", "facture", "honoraires", "consulting", "conseil", "service"]
+    nonresident_markers = ["non resident", "non-resident", "etranger", "residence fiscale", "certificat de residence", "sans certificat"]
+    tax_markers = ["retenue", "source", "convention", "deductibilite", "fiscal", "reversement", "declaration"]
+    return (
+        any(marker in query for marker in payment_markers)
+        and any(marker in query for marker in nonresident_markers)
+        and any(marker in query for marker in tax_markers)
+    )
+
+
+def is_sales_cutoff_delivery_case(query: str) -> bool:
+    sales_markers = ["vente", "ventes", "chiffre d'affaires", "facture client", "enregistree", "comptabilisee"]
+    delivery_markers = ["bon de livraison", "bons de livraison", "livraison", "livree", "livre", "janvier"]
+    cutoff_markers = ["31 decembre", "31/12", "cloture", "decembre", "cut-off", "cut off", "stock", "risques"]
+    return any(marker in query for marker in sales_markers) and any(marker in query for marker in delivery_markers) and any(marker in query for marker in cutoff_markers)
+
+
+def is_goods_advance_delivery_case(query: str) -> bool:
+    advance_markers = ["avance", "acompte", "encaisse", "paiement", "client"]
+    goods_markers = ["marchandise", "marchandises", "biens", "produits", "stock", "livree", "livraison", "delivree"]
+    future_markers = ["2026", "annee suivante", "exercice suivant", "janvier", "fevrier", "apres cloture"]
+    return any(marker in query for marker in advance_markers) and any(marker in query for marker in goods_markers) and any(marker in query for marker in future_markers)
+
+
+def is_tax_penalty_accounting_deductibility_case(query: str) -> bool:
+    penalty_markers = ["penalite", "penalites", "amende", "majoration", "sanction fiscale", "interet de retard"]
+    treatment_markers = ["charge", "comptabilise", "comptabilisee", "deductible", "deductibilite", "fiscal", "reintegr"]
+    return any(marker in query for marker in penalty_markers) and any(marker in query for marker in treatment_markers)
 
 
 def is_tva_deduction_case(query: str) -> bool:
@@ -4588,6 +4679,33 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             },
         )
 
+    elif is_imported_digital_service_tva_case(query):
+        workflow_name = "tva_operational_case"
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Ce dossier concerne un service digital fourni par un prestataire etranger mais utilise en Tunisie. Faits transmis: {facts_summary}. "
+                    "Il faut analyser la territorialite TVA, le mecanisme de taxation applicable a l'importation ou a l'utilisation locale du service, puis le droit a deduction separement."
+                ),
+                "Application pratique": (
+                    "- Territorialite: confirmer que le service est effectivement utilise ou exploite en Tunisie; ce point oriente le risque de TVA tunisienne.\n"
+                    "- Redevable/collecte: verifier si le client tunisien doit auto-liquider, retenir ou declarer la TVA selon le Code TVA et les procedures applicables; ne pas inventer le mecanisme sans passage direct.\n"
+                    "- Deduction: si la TVA est due et que l'achat sert des operations ouvrant droit a deduction, analyser le droit a deduction separement avec facture et justificatifs.\n"
+                    "- Facture et documents: contrat, facture du prestataire etranger, preuve d'utilisation en Tunisie, preuve de paiement, declaration TVA et rapprochement comptable.\n"
+                    "- Conclusion cabinet: traiter comme un risque TVA tunisienne a verifier prioritairement, pas comme un cut-off comptable; aucune section PCA/produit ne doit etre ajoutee."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas confondre service importe utilise en Tunisie et exportation de services.\n"
+                    "- Ne pas appliquer automatiquement une exoneration ou un taux sans source directe.\n"
+                    "- Ne pas ajouter de bloc cut-off/revenu si la question porte uniquement sur TVA."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
     elif is_tva_service_exigibility_case(query):
         workflow_name = "tva_operational_case"
         returned_intent = "legal_basis"
@@ -4901,6 +5019,140 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                 },
             )
 
+    elif is_nonresident_service_payment_tax_case(query):
+        workflow_name = "nonresident_service_payment_tax_case"
+        returned_intent = "tax_calculation"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Ce dossier doit etre traite d'abord comme un paiement a un prestataire non-resident. Faits transmis: {facts_summary}. "
+                    "La question principale est la retenue a la source et l'application eventuelle d'une convention fiscale; la deductibilite de la charge reste secondaire et depend des preuves de prestation."
+                ),
+                "Application pratique": (
+                    "- Qualification: identifier la nature exacte du paiement: honoraires, assistance technique, conseil, redevance, licence logicielle ou autre service.\n"
+                    "- Beneficiaire: confirmer l'identite du beneficiaire effectif, son pays de residence et son statut non-resident.\n"
+                    "- Droit interne: verifier si le paiement entre dans une categorie soumise a retenue a la source en Tunisie, sans inventer de taux sans passage direct.\n"
+                    "- Convention fiscale: sans certificat de residence et sans convention applicable identifiee, ne pas appliquer un avantage conventionnel; conserver la conclusion sous reserve.\n"
+                    "- Declaration/reversement: si une retenue est applicable, preparer declaration, reversement, certificat de retenue et rapprochement avec le paiement.\n"
+                    "- Deductibilite: verifier contrat, facture, livrables, rapport de mission, preuve de paiement et interet de l'entreprise avant deduction de la charge."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas router ce cas comme simple charge deductible: le risque principal est la retenue non-resident et la convention.\n"
+                    "- Ne pas appliquer la convention sans certificat de residence.\n"
+                    "- Ne pas qualifier automatiquement un service comme redevance sans analyser contrat, licence, droits transmis et beneficiaire effectif."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_expense_cutoff_prepaid_case(query):
+        workflow_name = "expense_cutoff_prepaid_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Ce dossier est un cut-off de charge, pas un cut-off de produit. Faits transmis: {facts_summary}. "
+                    "Il faut rattacher la charge a la periode couverte ou a la date d'execution du service, puis reporter la partie non consommee en charge constatee d'avance."
+                ),
+                "Application pratique": (
+                    "- Comptabilite: si la prestation ou la couverture concerne uniquement l'exercice suivant, la charge de l'exercice clos est nulle et le montant doit etre reclasse en charge constatee d'avance.\n"
+                    "- Prorata: si la periode couvre deux exercices, ventiler selon la periode reelle couverte; utiliser un prorata journalier lorsque le contrat commence en milieu de mois.\n"
+                    "- Fiscalite: la deductibilite doit suivre le bon exercice de rattachement et rester appuyee par facture, contrat, police d'assurance, periode couverte et interet de l'entreprise.\n"
+                    "- Documentation: facture, contrat/police, periode couverte, preuve de paiement, tableau de cut-off et note de justification fiscale.\n"
+                    "- Conclusion: ne pas employer produit constate d'avance; pour une charge future, utiliser charge constatee d'avance."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas maintenir une charge 2025 si le service ou la couverture concerne 2026.\n"
+                    "- Ne pas confondre charge constatee d'avance et produit constate d'avance.\n"
+                    "- Ne pas ajouter un bloc TVA sauf si la TVA est explicitement demandee."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_sales_cutoff_delivery_case(query):
+        workflow_name = "sales_cutoff_delivery_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Ce dossier est un cut-off de ventes. Faits transmis: {facts_summary}. "
+                    "Il faut verifier si la livraison, le transfert de controle/risques et l'acceptation sont intervenus avant ou apres la cloture."
+                ),
+                "Application pratique": (
+                    "- Comptabilite: si les bons de livraison ou le transfert des risques datent de janvier, les ventes enregistrees au 31 decembre peuvent devoir etre extournees ou reclassees.\n"
+                    "- Pieces: rapprocher facture, bon de commande, bon de livraison, conditions de vente, Incoterms/termes de transfert, sortie de stock, acceptation client, avoirs et encaissement posterieur.\n"
+                    "- Fiscalite: verifier le rattachement du produit au bon exercice et l'impact sur resultat fiscal.\n"
+                    "- TVA: traiter separement exigibilite, facturation et declaration selon la nature de l'operation et les pieces disponibles.\n"
+                    "- Conclusion cabinet: ne valider le chiffre d'affaires de decembre que si la livraison/controle/risques sont transferes avant cloture; sinon preparer correction de cut-off."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas se fier a la seule date de facture.\n"
+                    "- Ne pas ignorer les bons de livraison de janvier.\n"
+                    "- Documenter l'audit trail complet."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_goods_advance_delivery_case(query):
+        workflow_name = "goods_advance_delivery_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Une avance client sur marchandises a livrer apres cloture doit etre separee d'une vente realisee. Faits transmis: {facts_summary}. "
+                    "Tant que les biens ne sont pas livres et que le controle/risques n'est pas transfere, le montant encaisse doit etre analyse comme avance client ou passif, pas comme chiffre d'affaires acquis."
+                ),
+                "Application pratique": (
+                    "- Comptabilite: constater l'encaissement en avance client/passif; reconnaitre le revenu lorsque la livraison ou le transfert de controle est justifie.\n"
+                    "- TVA: distinguer biens et services; verifier facture, encaissement, livraison et regle d'exigibilite applicable dans le Code TVA avant declaration.\n"
+                    "- Pieces: contrat, bon de commande, facture d'acompte, preuve de paiement, bon de livraison, sortie de stock, acceptation client et rapprochement TVA.\n"
+                    "- Conclusion cabinet: si la livraison intervient en 2026, ne pas constater le chiffre d'affaires 2025 sans preuve de transfert avant cloture."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas appliquer automatiquement la logique des prestations de services aux marchandises.\n"
+                    "- Ne pas confondre avance client, passif envers le client et vente effectivement livree.\n"
+                    "- Ne pas conclure TVA sans verifier la regle propre aux biens."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_tax_penalty_accounting_deductibility_case(query):
+        workflow_name = "tax_penalty_accounting_deductibility_case"
+        returned_intent = "tax_calculation"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Une penalite, amende ou majoration fiscale doit etre analysee separement en comptabilite et en fiscalite. Faits transmis: {facts_summary}. "
+                    "La comptabilisation peut etre necessaire si l'obligation existe et le montant est fiable, mais la deductibilite fiscale exige une verification directe du Code IRPP/IS et des textes applicables."
+                ),
+                "Application pratique": (
+                    "- Comptabilite: constater la charge ou le passif si l'entreprise a une obligation actuelle et si le montant est mesurable de maniere fiable.\n"
+                    "- Fiscalite: verifier si la penalite, amende, majoration ou sanction est deductible ou doit etre reintegree extra-comptablement; ne pas conclure sans passage direct.\n"
+                    "- Procedure: verifier origine de la penalite, notification, recours, transaction/reglement, echeance de paiement et pieces probantes.\n"
+                    "- Conclusion cabinet: comptabiliser selon l'obligation, puis reserver la deduction fiscale jusqu'a confirmation de la regle de non-deductibilite/deductibilite applicable."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas traiter la question uniquement comme procedure fiscale.\n"
+                    "- Ne pas affirmer la deductibilite d'une penalite sans source directe.\n"
+                    "- Documenter tout recours ou contestation."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
     elif is_prepaid_future_service_accounting_tva_case(query):
         workflow_name = "revenue_cutoff_tva_case"
         returned_intent = "accounting_treatment"
@@ -5030,6 +5282,11 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
         workflow_name = "standards_hierarchy_case"
         returned_intent = "accounting_treatment"
         returned_domain = "comptabilite"
+        mentioned_standards = []
+        for label in ["IFRS 15", "IFRS 16", "IFRS 3", "IAS 37", "IAS 16", "IAS 10", "NC 05", "NC 03"]:
+            if label.lower() in query:
+                mentioned_standards.append(label)
+        standards_label = ", ".join(mentioned_standards) if mentioned_standards else "IAS/IFRS"
         standard_sources = merge_priority_sources(
             legal_sources_by_doc_ids([
                 "loi_comptable",
@@ -5050,12 +5307,12 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             {
                 "Reponse": (
                     f"Pour une societe tunisienne ordinaire, la source comptable prioritaire est le referentiel tunisien: loi comptable, systeme comptable des entreprises et normes comptables tunisiennes (NC/SCT). Faits transmis: {facts_summary}. "
-                    "Donc, pour une PME tunisienne non cotee, la reponse de principe est non: IAS 10 et IAS 37 ne s'appliquent pas automatiquement comme referentiel primaire. Ils peuvent etre utilises comme comparaison, ou comme referentiel applicable seulement si un texte, un groupe, une consolidation ou une obligation contractuelle l'impose."
+                    f"Donc, pour une PME tunisienne non cotee, {standards_label} ne s'applique pas automatiquement comme referentiel primaire. Ce standard peut etre utilise comme comparaison, ou comme referentiel applicable seulement si un texte, un groupe, une consolidation ou une obligation contractuelle l'impose."
                 ),
                 "Application pratique": (
                     "- Hierarchie pratique: chercher d'abord la norme tunisienne directement applicable au sujet; citer IAS/IFRS seulement comme source comparative ou complementaire clairement etiquetee.\n"
-                    "- Provision fiscale: IAS 37 peut aider a comprendre la notion comptable de provision, mais ne suffit pas a justifier une deduction fiscale tunisienne; il faut un passage fiscal tunisien direct ou une reserve explicite.\n"
-                    "- Immobilisations: pour une PME tunisienne, NC 05 prime sur IAS 16 lorsque la question porte sur les comptes tunisiens ordinaires; IAS 16 ne doit pas etre la source primaire sauf contexte IFRS.\n"
+                    f"- Standard cite: si la question mentionne {standards_label}, conserver ce standard dans l'analyse et ne pas remplacer le sujet par un autre IAS/IFRS non demande.\n"
+                    "- Comptes locaux: pour une PME tunisienne, la norme tunisienne directement applicable prime lorsque la question porte sur les comptes tunisiens ordinaires; IAS/IFRS ne doit pas etre la source primaire sauf contexte IFRS.\n"
                     "- Conclusion client: indiquer le referentiel retenu, la source tunisienne, l'usage eventuel d'IFRS comme comparaison et la reserve lorsque la source tunisienne directe manque."
                 ),
                 "Points de vigilance": (
