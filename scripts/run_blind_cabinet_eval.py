@@ -4,6 +4,7 @@ import argparse
 import json
 import time
 import unicodedata
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,7 @@ from run_accounting_benchmark import (
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "reports" / "blind_cabinet_eval_latest.json"
+INFRA_HTTP_STATUS_CODES = {502, 503, 504, 520, 521, 522, 523, 524}
 
 UNSAFE_PATTERNS = [
     "we need to",
@@ -55,6 +57,23 @@ def post_json(url: str, payload: dict[str, Any], timeout: float) -> dict[str, An
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def infra_error_details(error: Exception | None) -> tuple[bool, int | None, str]:
+    if error is None:
+        return False, None, ""
+    if isinstance(error, urllib.error.HTTPError):
+        body = ""
+        try:
+            body = error.read().decode("utf-8", errors="replace")[:2000]
+        except Exception:
+            body = ""
+        if error.code in INFRA_HTTP_STATUS_CODES:
+            return True, error.code, body or str(error)
+        return False, error.code, body or str(error)
+    if isinstance(error, (TimeoutError, ConnectionError, urllib.error.URLError)):
+        return True, None, str(error)
+    return False, None, str(error)
 
 
 def resolve_netlify_backend(netlify_url: str, timeout: float) -> str:
@@ -198,13 +217,20 @@ def evaluate_case(base_url: str, case: dict[str, Any], timeout: float, retries: 
         except Exception as exc:
             last_error = exc
             if attempt > retries:
+                is_infra, status_code, error_body = infra_error_details(last_error)
                 return {
                     "question_id": question_id,
                     "question": question,
-                    "classification": "fail",
-                    "reason_for_classification": f"request failed: {last_error!r}",
+                    "classification": "infra_error" if is_infra else "fail",
+                    "reason_for_classification": (
+                        f"infrastructure/runtime error; no model answer produced: {last_error!r}"
+                        if is_infra
+                        else f"request failed: {last_error!r}"
+                    ),
                     "missing_source_or_reasoning_step": "runtime/http failure",
                     "safe_for_supervised_internal_use": False,
+                    "infra_status_code": status_code,
+                    "infra_error_body": error_body,
                     "attempts": attempt,
                 }
             time.sleep(delay or 1.0)

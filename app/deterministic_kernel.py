@@ -269,6 +269,8 @@ def _extract_period(text: str) -> tuple[date | None, date | None]:
 
 def _detect_workflow(query: str, workflow: str) -> str:
     key = _key(f"{workflow} {query}")
+    if "goods_advance_delivery_report_case" in key:
+        return "goods_advance_delivery_report_case"
     if "revenue_cutoff_tva_case" in key:
         return "revenue_cutoff_tva_case"
     if "expense_cutoff_prepaid_case" in key:
@@ -295,7 +297,11 @@ def _detect_workflow(query: str, workflow: str) -> str:
     if (
         any(term in key for term in ["avance client", "acompte client", "encaisse"])
         and any(term in key for term in ["marchandise", "marchandises", "biens", "livree", "livraison"])
-        and any(term in key for term in ["2026", "janvier", "apres cloture"])
+        and any(term in key for term in [
+            "2026", "janvier", "apres cloture", "avant livraison", "avant la livraison",
+            "non encore livre", "non encore livree", "non encore livres", "non encore livrees",
+            "pas encore livre", "pas encore livree", "pas encore livres", "pas encore livrees",
+        ])
     ):
         return "goods_advance_delivery_case"
     if (
@@ -311,6 +317,9 @@ def _detect_workflow(query: str, workflow: str) -> str:
         or "ordre des normes" in key
         or ("sct" in key and ("ias" in key or "ifrs" in key))
         or ("normes comptables tunisiennes" in key and ("ias" in key or "ifrs" in key))
+        or ("nc tunisienne" in key and ("ias" in key or "ifrs" in key))
+        or ("norme comptable tunisienne" in key and ("ias" in key or "ifrs" in key))
+        or ("reference comparative" in key and ("ias" in key or "ifrs" in key))
     ):
         return "accounting_standards_hierarchy_case"
     if "amort" in key or "immobilisation" in key or "machine" in key or "pret a fonctionner" in key or "tests" in key:
@@ -745,6 +754,7 @@ def _source_allowed(line: str, workflow: str) -> bool:
         "expense_cutoff_prepaid_case": ["nc 01", "loi comptable", "irpp", "is"],
         "sales_cutoff_delivery_case": ["nc 03", "nc 01", "code tva", "taxe sur la valeur ajoutee"],
         "goods_advance_delivery_case": ["nc 03", "nc 01", "code tva", "taxe sur la valeur ajoutee"],
+        "goods_advance_delivery_report_case": ["nc 03", "nc 01", "code tva", "taxe sur la valeur ajoutee"],
         "receivable_impairment_subsequent_event": ["nc 01", "ias 37", "ias 10", "irpp", "is"],
         "tva_operational_case": ["code tva", "taxe sur la valeur ajoutee", "cdpf", "procedures fiscaux"],
         "withholding_tax_classification_case": ["irpp", "is", "loi de finances", "convention", "cdpf"],

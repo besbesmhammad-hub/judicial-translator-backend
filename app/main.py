@@ -945,6 +945,14 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": "nc_01_norme_generale", "terms": ["rattachement", "exercice", "periodicite", "produits"], "min_matches": 2},
             {"doc_id": tva_doc_id_for_query(query), "terms": ["livraison", "facture", "tva", "exigibilite"], "min_matches": 2},
         ]
+    if is_standards_hierarchy_case(query):
+        return [
+            {"doc_id": "loi_comptable", "terms": ["comptabilite", "normes comptables", "systeme comptable", "etats financiers"], "min_matches": 2},
+            {"doc_id": "nc_01_norme_generale", "terms": ["norme comptable", "etats financiers", "conventions comptables", "principes"], "min_matches": 2},
+            {"doc_id": "nc_05_immobilisations_corporelles", "terms": ["norme comptable", "immobilisations corporelles", "amortissement"], "min_matches": 1},
+            {"doc_id": "ias_37_provisions_passifs_actifs_eventuels", "terms": ["ias", "provisions", "passifs", "actifs eventuels"], "min_matches": 1},
+            {"doc_id": "ias_16_immobilisations_corporelles", "terms": ["ias", "immobilisations corporelles", "amortissement"], "min_matches": 1},
+        ]
     if is_tax_penalty_accounting_deductibility_case(query):
         return [
             {"doc_id": "nc_01_norme_generale", "terms": ["charges", "passif", "obligation", "exercice"], "min_matches": 2},
@@ -1925,8 +1933,31 @@ def is_sales_cutoff_delivery_case(query: str) -> bool:
 def is_goods_advance_delivery_case(query: str) -> bool:
     advance_markers = ["avance", "acompte", "encaisse", "paiement", "client"]
     goods_markers = ["marchandise", "marchandises", "biens", "produits", "stock", "livree", "livraison", "delivree"]
-    future_markers = ["2026", "annee suivante", "exercice suivant", "janvier", "fevrier", "apres cloture"]
+    future_markers = [
+        "2026", "annee suivante", "exercice suivant", "janvier", "fevrier",
+        "apres cloture", "avant livraison", "avant la livraison",
+        "non encore livre", "non encore livree", "non encore livres", "non encore livrees",
+        "pas encore livre", "pas encore livree", "pas encore livres", "pas encore livrees",
+    ]
     return any(marker in query for marker in advance_markers) and any(marker in query for marker in goods_markers) and any(marker in query for marker in future_markers)
+
+
+def is_goods_advance_delivery_report_case(query: str) -> bool:
+    query = match_key(query)
+    report_markers = [
+        "note",
+        "note de synthese",
+        "rapport",
+        "rapport de synthese",
+        "memo",
+        "memorandum",
+        "prepare",
+        "preparer",
+        "redige",
+        "rediger",
+        "synthese cabinet",
+    ]
+    return is_goods_advance_delivery_case(query) and any(marker in query for marker in report_markers)
 
 
 def is_tax_penalty_accounting_deductibility_case(query: str) -> bool:
@@ -2173,10 +2204,13 @@ def is_standards_hierarchy_case(query: str) -> bool:
     hierarchy_markers = [
         "ias", "ifrs", "nc 05", "nc05", "normes tunisiennes", "referentiel tunisien",
         "sct", "source primaire", "pme tunisienne", "societe tunisienne ordinaire",
+        "nc tunisienne", "norme comptable tunisienne", "norme tunisienne",
     ]
     decision_markers = [
         "peut", "suffit", "remplacer", "prioriser", "utiliser", "comparaison",
         "source", "justifier", "repondre", "eviter", "appliquer", "doit",
+        "documenter", "documentation", "reference comparative", "utilisation",
+        "absence d une regle", "absence de regle", "regle detaillee",
     ]
     return any(marker in query for marker in hierarchy_markers) and any(marker in query for marker in decision_markers)
 
@@ -5108,6 +5142,57 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             },
         )
 
+    elif is_goods_advance_delivery_report_case(query):
+        workflow_name = "goods_advance_delivery_report_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        report_sources = precision_sources_for_case(message, legal_sources_by_doc_ids([
+                "nc_03_revenus",
+                "nc_01_norme_generale",
+                tva_doc_id_for_query(query),
+                "procedures_fiscales_2026",
+        ]))
+        source_lines = summarize_source_titles(report_sources, limit=5)
+        precision_note = source_precision_note(report_sources)
+        if precision_note:
+            source_lines = f"{source_lines}\n{precision_note}" if source_lines else precision_note
+        answer = (
+            "## Objet de la note\n"
+            "Analyser le traitement comptable et fiscal d'un acompte client encaisse avant la livraison des marchandises, "
+            "pour preparer une position cabinet revue par un expert.\n\n"
+            "## Faits resumes\n"
+            "Le dossier mentionne un acompte ou une avance client recu avant la livraison de marchandises. "
+            "Les dates exactes d'encaissement, de facturation, de livraison et de transfert de controle doivent etre confirmees dans les pieces.\n\n"
+            "## Qualification comptable\n"
+            "L'encaissement avant livraison ne constitue pas, a lui seul, une vente realisee. Tant que les marchandises ne sont pas livrees "
+            "et que le controle ou les risques n'ont pas ete transferes au client, le montant doit etre qualifie d'avance client ou de passif envers le client.\n\n"
+            "## Traitement comptable\n"
+            "- Comptabiliser l'encaissement comme avance client/passif, et non comme chiffre d'affaires definitif, lorsque la livraison intervient apres la cloture ou reste non justifiee.\n"
+            "- Reconnaitre le revenu seulement lorsque la livraison, l'acceptation ou le transfert de controle/risques est documente.\n"
+            "- Si une facture a deja ete emise, rapprocher la facture avec le bon de livraison, la sortie de stock et les conditions contractuelles avant de valider le chiffre d'affaires.\n\n"
+            "## TVA\n"
+            "- Traiter la TVA separement de la reconnaissance comptable du revenu.\n"
+            "- Pour des biens, verifier dans le Code TVA applicable la regle d'exigibilite liee a la facture, a l'acompte/encaissement et a la livraison.\n"
+            "- Ne pas appliquer automatiquement la regle des prestations de services; documenter la nature de l'operation, la facture d'acompte, la date de livraison et la periode declarative.\n\n"
+            "## Pieces a demander\n"
+            "- Contrat ou bon de commande.\n"
+            "- Facture d'acompte ou facture definitive.\n"
+            "- Preuve d'encaissement.\n"
+            "- Bon de livraison, sortie de stock, acceptation client et conditions de transfert de risques/controle.\n"
+            "- Tableau de cut-off, declaration TVA et rapprochement comptabilite-TVA.\n\n"
+            "## Risques cabinet\n"
+            "- Surconstatation du chiffre d'affaires si l'avance est traitee comme vente avant livraison.\n"
+            "- Mauvais rattachement d'exercice si le transfert de controle intervient apres cloture.\n"
+            "- Mauvaise declaration TVA si l'exigibilite propre aux biens n'est pas verifiee.\n"
+            "- Insuffisance de pieces probantes en cas de controle ou de revue des comptes.\n\n"
+            "## Conclusion cabinet\n"
+            "Conclusion cabinet: tant que la livraison ou le transfert de controle des marchandises n'est pas prouve, conserver l'encaissement en avance client/passif "
+            "et ne reconnaitre le chiffre d'affaires qu'a la livraison justifiee. La TVA doit etre analysee separement selon facture, acompte, livraison et Code TVA applicable. "
+            "Validation expert requise avant usage client.\n\n"
+            f"## Sources utilisees\n{source_lines}"
+        )
+        sources = report_sources
+
     elif is_goods_advance_delivery_case(query):
         workflow_name = "goods_advance_delivery_case"
         returned_intent = "accounting_treatment"
@@ -5294,7 +5379,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             if label.lower() in query:
                 mentioned_standards.append(label)
         standards_label = ", ".join(mentioned_standards) if mentioned_standards else "IAS/IFRS"
-        standard_sources = merge_priority_sources(
+        standard_sources = precision_sources_for_case(message, merge_priority_sources(
             legal_sources_by_doc_ids([
                 "loi_comptable",
                 "nc_01_norme_generale",
@@ -5304,7 +5389,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             ]),
             sources,
             limit=5,
-        )
+        ))
         source_lines = summarize_source_titles(standard_sources, limit=5)
         precision_note = source_precision_note(standard_sources)
         if precision_note:
