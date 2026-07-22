@@ -2264,6 +2264,8 @@ def is_related_party_property_case(query: str) -> bool:
 
 
 def is_cash_consulting_evidence_case(query: str) -> bool:
+    if is_nonresident_service_payment_tax_case(query):
+        return False
     explicit_tva_deduction = (
         ("tva" in query or "taxe sur la valeur ajoutee" in query)
         and any(marker in query for marker in ["deduire", "deduction", "deductible", "droit a deduction", "recuperer"])
