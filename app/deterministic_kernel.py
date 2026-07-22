@@ -211,7 +211,7 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
     detected = _detect_workflow(query, workflow)
     key = _key(query)
     default_year = _default_year(key)
-    facts: dict[str, Any] = {"workflow": detected}
+    facts: dict[str, Any] = {"workflow": detected, "query": query}
 
     if detected == "fixed_asset_depreciation_case":
         facts.update(
@@ -451,6 +451,7 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
 
 def validate_answer_against_decision(answer: str, facts: dict[str, Any], decision: dict[str, Any]) -> dict[str, Any]:
     key_answer = _key(answer)
+    key_query = _key(str(facts.get("query") or ""))
     workflow = facts.get("workflow")
     errors: list[str] = []
 
@@ -481,6 +482,10 @@ def validate_answer_against_decision(answer: str, facts: dict[str, Any], decisio
                 errors.append("money_month_confusion")
 
     if workflow == "revenue_cutoff_tva_case" and decision.get("available"):
+        if "fevrier 2026" in key_answer and "fevrier 2026" not in key_query:
+            errors.append("stale_future_service_date_not_in_prompt")
+        if "prestation sera realisee" in key_answer and facts.get("contract_start") and facts.get("contract_end"):
+            errors.append("stale_single_service_language_for_period_contract")
         if decision.get("earned_fraction") and decision.get("earned_fraction") not in key_answer:
             errors.append("missing_earned_fraction")
         if decision.get("deferred_fraction") and decision.get("deferred_fraction") not in key_answer:
