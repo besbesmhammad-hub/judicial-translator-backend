@@ -239,7 +239,7 @@ def run_mutations_testclient(seeds: list[int], cases_per_workflow: int) -> dict[
     }
 
 
-def run_mutations_http(base_url: str, seeds: list[int], cases_per_workflow: int, timeout: float, delay: float) -> dict[str, Any]:
+def run_mutations_http(base_url: str, seeds: list[int], cases_per_workflow: int, timeout: float, delay: float, retries: int) -> dict[str, Any]:
     endpoint = base_url.rstrip("/") + "/v1/accounting-chat"
     version: dict[str, Any] = {}
     try:
@@ -254,11 +254,26 @@ def run_mutations_http(base_url: str, seeds: list[int], cases_per_workflow: int,
         for case in build_cases(seed, cases_per_workflow):
             payload = {"message": case["prompt"], "language": "francais", "debug": True}
             started = time.perf_counter()
+            attempt = 0
+            data: dict[str, Any] | None = None
+            final_error: Exception | None = None
+            while True:
+                attempt += 1
+                try:
+                    data = post_json(endpoint, payload, timeout)
+                    latency_ms = round((time.perf_counter() - started) * 1000)
+                    break
+                except Exception as exc:
+                    final_error = exc
+                    if attempt > retries + 1:
+                        break
+                    time.sleep(max(delay, 1.0))
             try:
-                data = post_json(endpoint, payload, timeout)
-                latency_ms = round((time.perf_counter() - started) * 1000)
+                if data is None:
+                    raise final_error or RuntimeError("request failed")
                 ok, row = _validate_endpoint_response(case, data, latency_ms)
                 row["seed"] = seed
+                row["attempts"] = attempt
                 if not ok:
                     failures.append(f"{seed}:{case['id']}")
                 deterministic_applied += int(bool(row.get("deterministic_kernel_applied")))
@@ -316,6 +331,7 @@ def main() -> int:
     parser.add_argument("--reports-dir", type=Path, default=ROOT / "reports" / "release_gate")
     parser.add_argument("--timeout", type=float, default=120)
     parser.add_argument("--delay", type=float, default=0)
+    parser.add_argument("--retries", type=int, default=0)
     args = parser.parse_args()
 
     seeds = parse_seeds(args.seeds)
@@ -335,7 +351,7 @@ def main() -> int:
             base_url = resolve_netlify_backend_get(args.netlify_url, args.timeout)
         if not base_url:
             raise SystemExit("--base-url or --netlify-url is required in http mode")
-        report = run_mutations_http(base_url, seeds, args.cases_per_workflow, args.timeout, args.delay)
+        report = run_mutations_http(base_url, seeds, args.cases_per_workflow, args.timeout, args.delay, args.retries)
         output = write_report(report, args.reports_dir, "deterministic_release_gate_http.json")
         summary = {k: v for k, v in report.items() if k != "results"} | {"output": str(output)}
         print(json.dumps(summary, ensure_ascii=False, indent=2))
