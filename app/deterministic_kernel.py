@@ -279,6 +279,18 @@ def _detect_workflow(query: str, workflow: str) -> str:
     ):
         return "expense_cutoff_prepaid_case"
     if (
+        any(term in key for term in ["vente", "ventes", "chiffre d'affaires", "facture de vente", "facture client"])
+        and any(term in key for term in ["livraison", "bon de livraison", "bons de livraison", "livree", "janvier"])
+        and any(term in key for term in ["31/12", "31 decembre", "cloture", "cut off", "cut-off"])
+    ):
+        return "sales_cutoff_delivery_case"
+    if (
+        any(term in key for term in ["avance client", "acompte client", "encaisse"])
+        and any(term in key for term in ["marchandise", "marchandises", "biens", "livree", "livraison"])
+        and any(term in key for term in ["2026", "janvier", "apres cloture"])
+    ):
+        return "goods_advance_delivery_case"
+    if (
         "retenue a la source" in key
         or "ras" in key
         or "withholding" in key
@@ -424,6 +436,28 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
                 "closing_date": closing,
                 "service_realization_date": realization,
                 "expense_nature": "insurance" if "assurance" in key else "service_or_expense",
+            }
+        )
+        return facts
+
+    if detected == "sales_cutoff_delivery_case":
+        facts.update(
+            {
+                "invoice_or_recording_date": _date_after_marker(query, ["facture", "enregistree", "comptabilisee", "vente"], fallback_year=default_year),
+                "delivery_date": _date_after_marker(query, ["livraison", "bon de livraison", "bons de livraison", "livree", "livre"], fallback_year=default_year),
+                "closing_date": _closing_date(query, default_year),
+                "january_delivery": "janvier" in key,
+            }
+        )
+        return facts
+
+    if detected == "goods_advance_delivery_case":
+        facts.update(
+            {
+                "delivery_date": _date_after_marker(query, ["livree", "livraison", "delivree"], fallback_year=default_year),
+                "collection_date": _date_after_marker(query, ["encaisse", "avance", "acompte", "paiement"], fallback_year=default_year),
+                "closing_date": _closing_date(query, default_year),
+                "amount": (_all_large_amounts(query) or [None])[0],
             }
         )
         return facts
@@ -626,6 +660,29 @@ def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
                 decision["prepaid_expense"] = amount
         return decision
 
+    if workflow == "sales_cutoff_delivery_case":
+        decision.update(
+            {
+                "available": True,
+                "status": "computed",
+                "delivery_after_closing": bool(facts.get("january_delivery") or (facts.get("delivery_date") and facts.get("closing_date") and facts["delivery_date"] > facts["closing_date"])),
+                "rule": "delivery_or_control_transfer_drives_revenue_cutoff",
+            }
+        )
+        return decision
+
+    if workflow == "goods_advance_delivery_case":
+        decision.update(
+            {
+                "available": True,
+                "status": "computed",
+                "advance_liability": True,
+                "delivery_after_closing": bool(facts.get("delivery_date") and facts.get("closing_date") and facts["delivery_date"] > facts["closing_date"]),
+                "rule": "advance_is_liability_until_goods_delivery_or_control_transfer",
+            }
+        )
+        return decision
+
     if workflow == "tva_operational_case":
         if facts.get("collection_before_realization"):
             decision.update(
@@ -678,6 +735,8 @@ def _source_allowed(line: str, workflow: str) -> bool:
         "fixed_asset_depreciation_case": ["nc 05", "ias 16", "immobilisations corporelles"],
         "revenue_cutoff_tva_case": ["nc 03", "nc 01", "code tva", "taxe sur la valeur ajoutee"],
         "expense_cutoff_prepaid_case": ["nc 01", "loi comptable", "irpp", "is"],
+        "sales_cutoff_delivery_case": ["nc 03", "nc 01", "code tva", "taxe sur la valeur ajoutee"],
+        "goods_advance_delivery_case": ["nc 03", "nc 01", "code tva", "taxe sur la valeur ajoutee"],
         "receivable_impairment_subsequent_event": ["nc 01", "ias 37", "ias 10", "irpp", "is"],
         "tva_operational_case": ["code tva", "taxe sur la valeur ajoutee", "cdpf", "procedures fiscaux"],
         "withholding_tax_classification_case": ["irpp", "is", "loi de finances", "convention", "cdpf"],
@@ -808,6 +867,25 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
         lines.append("Pieces a verifier: facture, contrat/police, periode de couverture ou date de realisation, preuve de paiement, tableau de cut-off et traitement fiscal.")
         return "\n".join(lines)
 
+    if workflow == "sales_cutoff_delivery_case" and decision.get("available"):
+        lines.append("La date de facture ou d'enregistrement au 31/12 ne suffit pas a valider le chiffre d'affaires.")
+        if decision.get("delivery_after_closing"):
+            lines.append("Les bons de livraison ou la livraison en janvier indiquent que le transfert de controle/risques peut etre posterieur a la cloture.")
+            lines.append("Conclusion cabinet: ne pas garder le chiffre d'affaires de decembre sans preuve de livraison/controle avant cloture; preparer extourne ou reclassement si la livraison est en janvier.")
+        else:
+            lines.append("Conclusion cabinet: verifier la date effective de livraison, le transfert de controle/risques et l'acceptation client avant de valider le chiffre d'affaires.")
+        lines.append("Pieces a verifier: facture, bon de commande, bons de livraison, conditions de vente/Incoterms, sortie de stock, acceptation client, avoirs et encaissement posterieur.")
+        lines.append("TVA et fiscalite doivent etre analysees separement apres qualification du cut-off comptable.")
+        return "\n".join(lines)
+
+    if workflow == "goods_advance_delivery_case" and decision.get("available"):
+        lines.append("Une avance client sur marchandises a livrer apres cloture ne constitue pas automatiquement un chiffre d'affaires acquis.")
+        lines.append("Comptablement, l'encaissement doit etre traite comme avance client ou passif jusqu'a livraison/transfert de controle des biens.")
+        lines.append("Conclusion cabinet: si les marchandises sont livrees apres cloture, ne pas constater la vente avant preuve de livraison ou de transfert de controle; conserver l'avance en passif.")
+        lines.append("TVA: distinguer les biens des services et verifier facture, encaissement, livraison et regle d'exigibilite applicable avant declaration.")
+        lines.append("Pieces a verifier: contrat, commande, facture d'acompte, preuve de paiement, bon de livraison, sortie de stock, acceptation client et rapprochement TVA.")
+        return "\n".join(lines)
+
     if workflow == "tva_operational_case" and decision.get("tva_collection_before_realization"):
         lines.append("Pour une prestation de services, si l'encaissement total ou partiel intervient avant la realisation, l'exigibilite TVA doit etre analysee sur le montant encaisse.")
         lines.append("Cette conclusion reste separee de la reconnaissance comptable du produit: la TVA peut devenir exigible avant que le produit soit acquis comptablement.")
@@ -912,6 +990,18 @@ def validate_answer_against_decision(answer: str, facts: dict[str, Any], decisio
             if prepaid not in key_answer:
                 errors.append("missing_prepaid_expense_amount")
 
+    if workflow == "sales_cutoff_delivery_case" and decision.get("available"):
+        if not any(term in key_answer for term in ["chiffre d'affaires", "vente"]):
+            errors.append("missing_sales_cutoff_revenue_conclusion")
+        if decision.get("delivery_after_closing") and not any(term in key_answer for term in ["janvier", "apres cloture", "posterieur"]):
+            errors.append("missing_delivery_after_closing_application")
+
+    if workflow == "goods_advance_delivery_case" and decision.get("available"):
+        if "avance client" not in key_answer or "passif" not in key_answer:
+            errors.append("missing_customer_advance_liability")
+        if "produit constate" in key_answer:
+            errors.append("goods_advance_uses_revenue_pca_wording")
+
     if workflow == "tva_operational_case" and decision.get("tva_collection_before_realization"):
         if not ("encaisse" in key_answer and "avant" in key_answer and "exigib" in key_answer):
             errors.append("missing_collection_before_realization_tva_rule")
@@ -967,6 +1057,12 @@ def validate_visible_contamination(answer: str, facts: dict[str, Any], decision:
             errors.append("expense_contains_revenue_cutoff_block")
         if "traitement comptable et tva" in key_answer and "tva" not in key_query:
             errors.append("expense_contains_unasked_tva_block")
+    if workflow == "sales_cutoff_delivery_case":
+        if "analyse de la charge" in key_answer or "deductibilite fiscale" in key_answer:
+            errors.append("sales_contains_expense_evidence_block")
+    if workflow == "goods_advance_delivery_case":
+        if "produit constate d'avance" in key_answer:
+            errors.append("goods_contains_revenue_pca_block")
     if workflow not in {"revenue_cutoff_tva_case", "expense_cutoff_prepaid_case"}:
         if "montant facture x" in key_answer or "produit constate d'avance" in key_answer:
             errors.append("non_cutoff_contains_cutoff_block")
