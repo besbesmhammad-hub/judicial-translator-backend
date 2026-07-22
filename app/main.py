@@ -1008,6 +1008,14 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": "audit_resume_gaida_normes_missions", "terms": ["continuite", "rapport", "opinion", "elements probants"], "min_matches": 2},
             {"doc_id": "audit_resume_acceptation_controle_qualite", "terms": ["planification", "risque", "rapport", "documentation"], "min_matches": 2},
         ]
+    if is_cac_related_party_undocumented_case(query):
+        return [
+            {"doc_id": "nc_39_parties_liees", "terms": ["parties liees", "transactions", "informations", "dirigeants"], "min_matches": 2},
+            {"doc_id": "audit_resume_gaida_normes_missions", "terms": ["parties liees", "risque", "rapport", "documentation", "elements probants"], "min_matches": 2},
+            {"doc_id": "audit_resume_acceptation_controle_qualite", "terms": ["risque", "documentation", "direction", "gouvernance", "opinion"], "min_matches": 2},
+            {"doc_id": "code_societes_commerciales_2022", "terms": ["conventions", "dirigeants", "autorisation", "rapport special", "commissaire aux comptes"], "min_matches": 2},
+            {"doc_id": "textes_profession_comptable_2018", "terms": ["commissaire aux comptes", "diligences", "rapport", "profession"], "min_matches": 2},
+        ]
     if is_related_party_property_case(query):
         return [
             {"doc_id": "nc_39_parties_liees", "terms": ["parties liees", "transactions", "informations", "dirigeants"], "min_matches": 2},
@@ -2114,6 +2122,29 @@ def is_audit_cac_event_case(query: str) -> bool:
         "continuité d exploitation", "continuite d exploitation", "going concern",
     ]
     return any(marker in query for marker in audit_markers) and any(marker in query for marker in event_markers)
+
+
+def is_cac_related_party_undocumented_case(query: str) -> bool:
+    audit_markers = ["commissaire aux comptes", "cac", "auditeur", "audit"]
+    related_markers = [
+        "partie liee", "parties liees", "partie liée", "parties liées",
+        "transaction avec partie", "convention reglementee", "convention réglementée",
+    ]
+    documentation_markers = [
+        "non documentee", "non documente", "non documentée", "non documenté",
+        "sans documentation", "absence de documentation", "pas de documentation",
+        "non justifiee", "non justifie", "non justifiée", "non justifié",
+        "sans justificatif", "sans pieces", "sans pièces",
+    ]
+    significance_markers = [
+        "importante", "important", "significative", "significatif",
+        "materielle", "materiel", "matérielle", "matériel",
+    ]
+    return (
+        any(marker in query for marker in audit_markers)
+        and any(marker in query for marker in related_markers)
+        and (any(marker in query for marker in documentation_markers) or any(marker in query for marker in significance_markers))
+    )
 
 
 def is_multi_beneficiary_dividend_case(query: str) -> bool:
@@ -3726,6 +3757,15 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
     elif is_going_concern_case(query):
         priority_doc_ids = ["cadre_conceptuel_comptable", "nc_01_norme_generale", "audit_resume_gaida_normes_missions", "audit_resume_acceptation_controle_qualite"]
         blocked_doc_ids = {"code_societes_commerciales_2022", "fiscalite_locale", *IRPP_IS_DOC_IDS}
+    elif is_cac_related_party_undocumented_case(query):
+        priority_doc_ids = [
+            "nc_39_parties_liees",
+            "audit_resume_gaida_normes_missions",
+            "audit_resume_acceptation_controle_qualite",
+            "code_societes_commerciales_2022",
+            "textes_profession_comptable_2018",
+        ]
+        blocked_doc_ids = {"fiscalite_locale", "tva_droit_consommation", "ias_7_tableau_flux_tresorerie", *IRPP_IS_DOC_IDS}
     elif is_related_party_property_case(query):
         priority_doc_ids = ["nc_39_parties_liees", "code_societes_commerciales_2022", irpp_is_doc_id, "audit_resume_gaida_normes_missions"]
         blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale", "tva_droit_consommation"}
@@ -4174,6 +4214,34 @@ def compose_audit_cac_case_answer(query: str, facts_summary: str, source_lines: 
     )
 
 
+def compose_cac_related_party_undocumented_answer(query: str, facts_summary: str, source_lines: str) -> str:
+    return compose_structured_answer(
+        "practical_analysis",
+        {
+            "Reponse": (
+                f"Le CAC ne doit pas traiter ce point comme une simple remarque generale d'audit. Faits transmis: {facts_summary}. "
+                "Il s'agit d'une transaction importante avec une partie liee non documentee: le risque porte a la fois sur la realite de l'operation, "
+                "sa valorisation, son autorisation, son information en annexe ou dans l'information financiere, et l'existence possible d'une anomalie significative."
+            ),
+            "Application pratique": (
+                "- Qualification du risque: identifier la partie liee, la nature exacte du lien, le montant, la date, les conditions de prix, l'objet economique et l'effet sur les comptes. L'absence de documentation cree un risque de non-exhaustivite, de realite, de valorisation, de regularite juridique et de disclosure insuffisant.\n"
+                "- Pieces probantes a demander: contrat ou convention, factures, bons de commande, PV ou autorisations des organes competents, justification economique, base de prix ou comparables de marche, preuves de paiement, ecritures comptables, correspondances, livrables ou preuves d'execution.\n"
+                "- Diligences d'audit: rapprocher l'operation avec le grand livre, les journaux, les paiements bancaires, les declarations fiscales si pertinentes et les informations sur parties liees; obtenir les explications de la direction et, si necessaire, une lettre d'affirmation ciblee.\n"
+                "- Gouvernance / juridique: communiquer le point a la direction et aux organes de gouvernance, verifier si l'operation releve des regles applicables aux conventions ou operations avec parties liees selon la forme de la societe, et controler l'autorisation, l'approbation et la documentation disponible.\n"
+                "- Incidence comptable: verifier si les comptes exigent une correction, une reclassification ou une information en annexe sur les parties liees, notamment si les conditions ne sont pas normales ou si la transaction est significative.\n"
+                "- Incidence sur l'opinion: si la direction ne fournit pas d'elements probants suffisants, le CAC doit evaluer une limitation de travaux; si les comptes ou disclosures sont inexacts et que la direction refuse de corriger, il faut analyser un desaccord. L'effet sur l'opinion depend de la significativite et du caractere diffus ou circonscrit du point.\n"
+                "- Conclusion cabinet: aucune conclusion propre ne doit etre emise tant que la transaction importante avec partie liee n'est pas documentee, justifiee economiquement, communiquee a la gouvernance et traitee correctement dans les comptes et informations financieres."
+            ),
+            "Points de vigilance": (
+                "- Ne pas inventer d'article, de seuil ou de sanction si le passage primaire relatif aux parties liees ou aux obligations du CAC n'est pas retrouve.\n"
+                "- Si les sources disponibles sont des resumes d'audit ou des sources-cadre, garder une reserve sur l'obligation professionnelle exacte et demander le texte primaire applicable.\n"
+                "- Ne pas se limiter a dire gouvernance/opinion: il faut appliquer le risque a la partie liee, a l'absence de documentation, aux preuves, aux disclosures et a l'effet possible sur le rapport."
+            ),
+            "Sources utilisees": source_lines,
+        },
+    )
+
+
 def compose_fixed_asset_depreciation_answer(query: str, facts_summary: str, source_lines: str) -> str:
     has_purchase_date = any(marker in query for marker in ["15 septembre", "achete", "achetee", "acquisition", "facture"])
     has_installation = any(marker in query for marker in ["installation", "installe", "installee", "tests", "essais"])
@@ -4428,6 +4496,8 @@ def cabinet_answer_standard_block(workflow_name: str, query: str, answer: str) -
     normalized_query = match_key(query)
     normalized_answer = match_key(answer)
     if "## conclusion cabinet" in normalized_answer:
+        return ""
+    if workflow_name == "cac_related_party_undocumented_transaction_case":
         return ""
 
     if workflow_name == "revenue_cutoff_tva_case":
@@ -5595,6 +5665,12 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                 "Sources utilisees": source_lines,
             },
         )
+
+    elif is_cac_related_party_undocumented_case(query):
+        workflow_name = "cac_related_party_undocumented_transaction_case"
+        returned_intent = "legal_basis"
+        returned_domain = "audit"
+        answer = compose_cac_related_party_undocumented_answer(query, facts_summary, source_lines)
 
     elif is_related_party_property_case(query):
         workflow_name = "related_party_transaction_case"

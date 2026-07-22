@@ -112,6 +112,8 @@ def _doctrine_card_allowed(card: DoctrineCard, normalized: str, workflow: str) -
         return doctrine_id == "expense_evidence"
     if workflow == "shareholder_split_tax_analysis":
         return doctrine_id == "dividends_withholding"
+    if workflow == "cac_related_party_undocumented_transaction_case":
+        return False
     if workflow in {"audit_cac_response_case", "going_concern_case_analysis"}:
         return doctrine_id == "audit_cac"
     return True
