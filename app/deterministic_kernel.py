@@ -264,11 +264,21 @@ def _extract_period(text: str) -> tuple[date | None, date | None]:
         next_month = date(y + (1 if end_month == 12 else 0), 1 if end_month == 12 else end_month + 1, 1)
         end = next_month - timedelta(days=1)
         return start, end
+    m = re.search(r"\b(?:couvrant|couvre|pour|pour l annee|annee|exercice)\s+(20\d{2})\b", source)
+    if m:
+        y = int(m.group(1))
+        return date(y, 1, 1), date(y, 12, 31)
+    m = re.search(r"\b(?:annee suivante|exercice suivant|n\+1)\b", source)
+    if m and year:
+        y = year + 1
+        return date(y, 1, 1), date(y, 12, 31)
     return None, None
 
 
 def _detect_workflow(query: str, workflow: str) -> str:
     key = _key(f"{workflow} {query}")
+    if "receivable_impairment_report_case" in key:
+        return "receivable_impairment_report_case"
     if "goods_advance_delivery_report_case" in key:
         return "goods_advance_delivery_report_case"
     if "revenue_cutoff_tva_case" in key:
@@ -283,7 +293,12 @@ def _detect_workflow(query: str, workflow: str) -> str:
         return "fixed_asset_depreciation_case"
     if (
         any(term in key for term in ["assurance", "charge", "honoraires", "loyer", "abonnement", "facture"])
-        and any(term in key for term in ["charge constatee d'avance", "charges constatees d'avance", "cca", "janvier", "2026", "service effectue", "service realise", "couvre"])
+        and any(term in key for term in [
+            "charge constatee d'avance", "charges constatees d'avance", "cca",
+            "janvier", "2026", "service effectue", "service realise",
+            "couvre", "couvrant", "pour l annee", "exercice suivant",
+            "annee suivante", "n+1",
+        ])
         and any(term in key for term in ["cloture", "31/12", "decembre", "rattachement", "deductibilite", "deduire"])
         and not any(term in key for term in ["produit", "vente", "client encaisse", "encaisse", "maintenance", "prestation annuelle", "contrat de maintenance"])
     ):

@@ -1896,7 +1896,8 @@ def is_expense_cutoff_prepaid_case(query: str) -> bool:
     future_markers = [
         "janvier", "fevrier", "mars", "avril", "2026", "exercice suivant",
         "service effectue", "service realise", "sera realise", "sera effectue",
-        "couvre", "periode du", "du 1er", "du 1 ",
+        "couvre", "couvrant", "pour l annee", "annee suivante", "n+1",
+        "periode du", "du 1er", "du 1 ",
     ]
     cutoff_markers = [
         "cloture", "31/12", "decembre 2025", "rattachement", "deductibilite",
@@ -1909,6 +1910,44 @@ def is_expense_cutoff_prepaid_case(query: str) -> bool:
         and any(marker in query for marker in cutoff_markers)
         and not any(marker in query for marker in revenue_markers)
     )
+
+
+def is_receivable_impairment_report_case(query: str) -> bool:
+    query = match_key(query)
+    report_markers = [
+        "note",
+        "note cabinet",
+        "note de synthese",
+        "rapport",
+        "rapport de synthese",
+        "memo",
+        "memorandum",
+        "prepare",
+        "preparer",
+        "redige",
+        "rediger",
+    ]
+    return is_receivable_subsequent_recovery_case(query) and any(marker in query for marker in report_markers)
+
+
+def case_amounts_with_currency(text: str) -> list[int]:
+    values: list[int] = []
+    pattern = re.compile(r"\b(\d{1,3}(?:[ .]\d{3})+|\d+)\s*(?:tnd|dt|dinars?)\b", re.I)
+    for match in pattern.finditer(match_key(text)):
+        raw = re.sub(r"[ .]", "", match.group(1))
+        try:
+            values.append(int(raw))
+        except ValueError:
+            continue
+    return values
+
+
+def format_tnd_amount(value: int | float | None) -> str:
+    if value is None:
+        return "montant a confirmer"
+    if float(value).is_integer():
+        return f"{int(value):,}".replace(",", " ")
+    return f"{value:,.2f}".replace(",", " ")
 
 
 def is_nonresident_service_payment_tax_case(query: str) -> bool:
@@ -5302,6 +5341,69 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                 "Sources utilisees": source_lines,
             },
         )
+
+    elif is_receivable_impairment_report_case(query):
+        workflow_name = "receivable_impairment_report_case"
+        returned_intent = "accounting_treatment"
+        returned_domain = "comptabilite"
+        amounts = case_amounts_with_currency(message)
+        gross_amount = amounts[0] if amounts else None
+        recovery_amount = amounts[1] if len(amounts) > 1 else None
+        residual_amount = gross_amount - recovery_amount if gross_amount is not None and recovery_amount is not None else None
+        gross_label = format_tnd_amount(gross_amount)
+        recovery_label = format_tnd_amount(recovery_amount)
+        residual_label = format_tnd_amount(residual_amount)
+        exposure_line = (
+            f"Exposition residuelle preliminaire: {gross_label} - {recovery_label} = {residual_label} TND."
+            if residual_amount is not None
+            else "Exposition residuelle: montant brut, encaissement posterieur et solde restant a confirmer dans la balance agee et les preuves d'encaissement."
+        )
+        receivable_report_sources = precision_sources_for_case(message, legal_sources_by_doc_ids([
+            "nc_01_norme_generale",
+            "ias_37_provisions_passifs_actifs_eventuels",
+            "ias_10_evenements_post_cloture",
+            irpp_is_doc_id_for_query(query),
+        ]))
+        source_lines = summarize_source_titles(receivable_report_sources, limit=5)
+        precision_note = source_precision_note(receivable_report_sources)
+        if precision_note:
+            source_lines = f"{source_lines}\n{precision_note}" if source_lines else precision_note
+        answer = (
+            "## Objet de la note\n"
+            "Analyser le traitement comptable, fiscal et documentaire d'une creance douteuse avec paiement partiel posterieur a la cloture.\n\n"
+            "## Faits resumes\n"
+            f"Le dossier mentionne une creance douteuse de {gross_label} TND et un paiement partiel posterieur a la cloture de {recovery_label} TND. "
+            "La date de cloture, l'echeance initiale, l'anciennete, les relances et le niveau de recouvrabilite doivent etre documentes.\n\n"
+            "## Exposition residuelle\n"
+            f"{exposure_line}\n\n"
+            "## Analyse comptable\n"
+            "- Le paiement posterieur doit etre analyse comme un indice sur la situation existant a la cloture lorsqu'il confirme la recouvrabilite partielle de la creance.\n"
+            "- La depreciation/provision doit porter sur l'exposition restant douteuse, en fonction de la meilleure estimation de recouvrement a la cloture.\n"
+            "- L'encaissement posterieur diminue la creance client; il peut conduire a ajuster la depreciation ou a constater une reprise selon le traitement deja passe.\n"
+            "- La creance douteuse, la depreciation/provision et la perte definitive doivent rester distinguees.\n\n"
+            "## Analyse fiscale\n"
+            "- La deductibilite fiscale de la provision reste soumise aux conditions legales applicables et a un dossier probant.\n"
+            "- Le cabinet doit verifier l'individualisation de la creance, les diligences de recouvrement, la justification du risque, le calcul de la provision et les limites fiscales applicables.\n"
+            "- Ne pas conclure a une deduction fiscale automatique si les relances, actions de recouvrement ou justificatifs sont insuffisants.\n\n"
+            "## Pieces a demander\n"
+            "- Balance agee client.\n"
+            "- Facture, echeance et rapprochement comptable.\n"
+            "- Relances, mises en demeure, correspondances et confirmations client.\n"
+            "- Echeancier ou accord de paiement le cas echeant.\n"
+            "- Preuves d'encaissement posterieur.\n"
+            "- Actions de recouvrement et note de calcul de la depreciation/provision.\n\n"
+            "## Risques cabinet\n"
+            "- Surprovisionner si le paiement posterieur reduit l'exposition reelle.\n"
+            "- Sous-provisionner si le solde restant presente encore un risque significatif de non-recouvrement.\n"
+            "- Deduire fiscalement une provision insuffisamment justifiee.\n"
+            "- Confondre evenement posterieur probant et evenement nouveau non ajustant.\n\n"
+            "## Conclusion cabinet\n"
+            f"Conclusion cabinet: retenir l'exposition residuelle de {residual_label} TND comme base preliminaire d'analyse lorsque les montants sont confirmes, "
+            "puis evaluer la depreciation comptable selon la recouvrabilite du solde et reserver la deduction fiscale aux conditions et justificatifs verifiables. "
+            "Validation expert requise avant usage client.\n\n"
+            f"## Sources utilisees\n{source_lines}"
+        )
+        sources = receivable_report_sources
 
     elif is_receivable_subsequent_recovery_case(query):
         workflow_name = "receivable_impairment_subsequent_event"

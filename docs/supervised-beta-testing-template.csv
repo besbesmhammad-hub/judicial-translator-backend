@@ -1,0 +1,2 @@
+case ID,date,reviewer,question,domain,expected expert answer,app answer,verdict: expert_pass / safe_pass / fail / unsafe,issue type: missing source / wrong routing / wrong calculation / generic answer / contamination / infra error,reviewer note,action needed,fixed yes/no,commit if fixed
+
