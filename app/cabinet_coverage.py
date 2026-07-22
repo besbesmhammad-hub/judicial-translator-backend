@@ -36,6 +36,28 @@ class CabinetWorkflow:
 
 CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
     CabinetWorkflow(
+        id="withholding_tax_general_case",
+        family="fiscalite_directe",
+        title="Fiscalite directe: retenues a la source",
+        intent="legal_basis",
+        legal_domain="fiscalite",
+        trigger_any=("retenue a la source", "retenues a la source", "withholding tax", "certificat de retenue", "reversement retenue"),
+        trigger_all_any=(("retenue", "retenues", "withholding"), ("source", "certificat", "reversement", "declaration", "beneficiaire")),
+        source_doc_ids=("code_irpp_is_2025", "procedures_fiscales_2026", "loi_finances_2026"),
+        issue_split=(
+            "classer le flux par nature de revenu ou paiement",
+            "identifier le payeur, le beneficiaire, la residence et le statut fiscal",
+            "verifier obligation de retenue, declaration, reversement et certificat",
+            "controler la convention fiscale seulement pour les non-residents",
+        ),
+        missing_facts=("nature du revenu", "payeur", "beneficiaire", "resident ou non-resident", "date de paiement", "article/taux direct"),
+        source_terms=(
+            ("code_irpp_is_2025", ("retenue a la source", "article 52", "revenus", "paiement", "beneficiaire"), 2),
+            ("procedures_fiscales_2026", ("declaration", "retenue", "certificat", "reversement", "controle"), 2),
+            ("loi_finances_2026", ("retenue", "loi de finances", "2026", "impot"), 2),
+        ),
+    ),
+    CabinetWorkflow(
         id="direct_tax_deductibility_adjustment_case",
         family="fiscalite_directe",
         title="Fiscalite directe: deductibilite, reintegrations et avantages",
@@ -71,7 +93,7 @@ CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
         legal_domain="fiscalite",
         trigger_any=("tva", "taxe sur la valeur ajoutee", "deduction tva", "tva deductible", "tva collectee", "exigibilite", "exoneration", "facturation", "regularisation tva", "exportation de services"),
         trigger_all_any=(("tva", "taxe sur la valeur ajoutee", "facture", "exoneration", "deduction"), ("territorialite", "export", "deductible", "exigible", "regularisation", "justificatif")),
-        source_doc_ids=("tva_droit_consommation", "procedures_fiscales_2026", "loi_finances_2026", "code_irpp_is_2011", "convention_fiscale_france_tunisie", "convention_fiscale_france_tunisie_texte_1973", "boi_france_tunisie_convention_fiscale_2012"),
+        source_doc_ids=("tva_droit_consommation", "procedures_fiscales_2026", "loi_finances_2026"),
         issue_split=(
             "qualifier l'operation, le lieu d'utilisation et le statut du client",
             "separer champ d'application, territorialite, exonération, exigibilite et droit a deduction",
@@ -83,8 +105,6 @@ CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
             ("tva_droit_consommation", ("tva", "taxe sur la valeur ajoutee", "facture", "deduction", "exoneration"), 2),
             ("procedures_fiscales_2026", ("facture", "controle", "declaration", "justificatifs"), 2),
             ("loi_finances_2026", ("tva", "loi de finances", "2026"), 2),
-            ("convention_fiscale_france_tunisie", ("france", "tunisie", "etablissement stable", "redevances"), 2),
-            ("boi_france_tunisie_convention_fiscale_2012", ("france", "tunisie", "prestations", "etablissement stable"), 2),
         ),
     ),
     CabinetWorkflow(
@@ -371,6 +391,20 @@ CABINET_WORKFLOWS: tuple[CabinetWorkflow, ...] = (
 
 def detect_cabinet_workflow(query: str) -> CabinetWorkflow | None:
     normalized = _key(query)
+    if (
+        any(_contains(normalized, term) for term in ("retenue a la source", "retenues a la source", "withholding tax"))
+        and not any(_contains(normalized, term) for term in ("dividende", "benefices distribues", "deduire", "deductibilite", "charge deductible"))
+    ):
+        for workflow in CABINET_WORKFLOWS:
+            if workflow.id == "withholding_tax_general_case":
+                return workflow
+    if (
+        any(_contains(normalized, term) for term in ("ias", "ifrs"))
+        and any(_contains(normalized, term) for term in ("pme tunisienne", "non cotee", "normes tunisiennes", "sct", "appliquer"))
+    ):
+        for workflow in CABINET_WORKFLOWS:
+            if workflow.id == "accounting_closing_estimate_case":
+                return workflow
     if _contains(normalized, "cnss") and any(_contains(normalized, term) for term in ("appel d offres", "appel d offre", "consultation", "tuneps", "marches publics")):
         for workflow in CABINET_WORKFLOWS:
             if workflow.family == "paie_social":

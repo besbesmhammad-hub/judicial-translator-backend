@@ -71,6 +71,52 @@ def load_doctrine_cards() -> tuple[DoctrineCard, ...]:
     return tuple(cards)
 
 
+def _doctrine_card_allowed(card: DoctrineCard, normalized: str, workflow: str) -> bool:
+    doctrine_id = card.doctrine_id
+    if workflow == "withholding_tax_general_case":
+        return doctrine_id == "withholding_tax_general"
+    if workflow == "standards_hierarchy_case":
+        return doctrine_id == "standards_hierarchy_tunisia"
+    if workflow == "tva_operational_case":
+        if doctrine_id == "tva_general_framework":
+            return bool(re.search(r"lois? de tva|tva .*generalement|cadre general de la tva|regime tva general", normalized))
+        if doctrine_id == "tva_services_exigibility":
+            return any(term in normalized for term in ["prestation", "service", "export", "client etranger", "client francais", "exigibilite", "encaissement"])
+        if doctrine_id == "tva_deduction":
+            return any(term in normalized for term in ["deduction", "deduire la tva", "tva deductible", "droit a deduction"])
+        if doctrine_id == "facturation_tunisia":
+            return any(term in normalized for term in ["facture", "facturation", "mentions obligatoires", "numero de facture"])
+        return False
+    if workflow == "tax_electronic_invoice_compliance_case":
+        return doctrine_id in {"facturation_tunisia", "tva_deduction"}
+    if workflow in {"fixed_asset_depreciation_case", "fixed_asset_component_depreciation_case"}:
+        return doctrine_id in {"fixed_asset_depreciation", "standards_hierarchy_tunisia"}
+    if workflow == "revenue_cutoff_tva_case":
+        return doctrine_id == "revenue_cutoff"
+    if workflow == "receivable_impairment_subsequent_event":
+        return doctrine_id == "doubtful_debt_provision"
+    if doctrine_id == "doubtful_debt_provision":
+        return any(
+            term in normalized
+            for term in [
+                "creance",
+                "client impaye",
+                "client en retard",
+                "relance",
+                "recouvrement",
+                "encaissement posterieur",
+                "douteuse",
+            ]
+        )
+    if workflow == "expense_deductibility_evidence_case":
+        return doctrine_id == "expense_evidence"
+    if workflow == "shareholder_split_tax_analysis":
+        return doctrine_id == "dividends_withholding"
+    if workflow in {"audit_cac_response_case", "going_concern_case_analysis"}:
+        return doctrine_id == "audit_cac"
+    return True
+
+
 def select_doctrine_cards(query: str, workflow: str) -> list[DoctrineCard]:
     normalized = key(query)
     selected: list[tuple[int, bool, DoctrineCard]] = []
@@ -84,6 +130,8 @@ def select_doctrine_cards(query: str, workflow: str) -> list[DoctrineCard]:
         "golden_kb_fastpath",
     }
     for card in load_doctrine_cards():
+        if not _doctrine_card_allowed(card, normalized, workflow):
+            continue
         score = 0
         marker_hits = 0
         for marker in card.query_markers:
@@ -383,7 +431,7 @@ ELEMENT_ALIASES: dict[str, tuple[str, ...]] = {
     "withholding": ("retenue a la source", "retenue eventuelle"),
     "certificate": ("certificat de retenue", "certificat de residence"),
     "treaty check": ("convention fiscale", "traite fiscal", "certificat de residence"),
-    "no invented rate": ("ne pas inventer de taux", "aucun taux", "taux exact"),
+    "no invented rate": ("ne pas inventer de taux", "aucun taux", "taux exact", "ne pas retenir de taux", "sans passage direct"),
     "acquisition": ("acquisition", "achat", "date d achat"),
     "delivery": ("livraison", "livree"),
     "installation": ("installation", "installee", "tests"),
@@ -411,6 +459,8 @@ ELEMENT_ALIASES: dict[str, tuple[str, ...]] = {
     "reserve if source missing": ("reserve", "passage direct manque", "source manque", "ne pas conclure"),
     "taxpayer and tax base": ("contribuable", "assiette", "base imposable", "revenu imposable"),
     "income categories": ("categories de revenus", "revenus", "benefice imposable"),
+    "income/payment categories": ("nature de paiement", "nature du revenu", "types de flux", "salaires", "honoraires", "loyers", "dividendes", "interets", "redevances"),
+    "payer and beneficiary": ("payeur", "beneficiaire", "personne physique", "personne morale", "resident", "non resident"),
     "is/irpp distinction": ("irpp", "impot sur les societes", "is"),
     "filing and withholding": ("declaration", "retenue a la source"),
     "act qualification": ("qualifier l acte", "nature de l acte", "mutation"),
@@ -524,19 +574,48 @@ def _known_fact_errors(query: str, answer: str, workflow: str) -> list[str]:
             expected = fmt_amount(gross - recovered)
             if expected not in answer and str(gross - recovered) not in answer_key:
                 errors.append("known_receivable_amounts_not_applied")
+            duration = re.search(r"\b(\d+)\s*mois\b", query_key)
+            if duration and f"{fmt_amount(gross)} - {duration.group(1)}" in answer:
+                errors.append("duration_used_as_money_amount")
     if workflow in {"fixed_asset_depreciation_case", "fixed_asset_component_depreciation_case"}:
         visible = fixed_asset_visible_block(query)
         match = re.search(r"commence le ([^,\.]+)", key(visible))
         if match and match.group(1) not in answer_key:
             errors.append("known_ready_for_use_date_not_applied")
+        if match:
+            expected_date = match.group(1)
+            for wrong in re.findall(r"amortissement(?: comptable)? commence le ([^,\.]+)", answer_key):
+                if wrong.strip() and wrong.strip() != expected_date:
+                    errors.append("wrong_depreciation_start_date")
+                    break
     if workflow == "revenue_cutoff_tva_case" and infer_contract_period(query):
         period = infer_contract_period(query)
         closing = infer_closing_date(query, period)
         if period and closing:
             total = month_span_inclusive(*period)
             earned = rendered_months_until_closing(period[0], period[1], closing)
-            if total and f"{earned}/{total}" not in answer:
+            deferred = max(0, total - earned)
+            if total and f"{earned}/{total}" not in answer and f"{earned}/12" not in answer:
                 errors.append("known_period_not_quantified")
+            if total == 12 and (f"{earned}/12" not in answer or f"{deferred}/12" not in answer):
+                errors.append("known_period_split_not_visible")
+            if earned and "0/12" in answer:
+                errors.append("wrong_zero_cutoff_split")
+    if workflow == "tva_operational_case" and any(term in query_key for term in ["exigibilite", "exigible", "paye avant", "payee avant", "encaisse avant", "avance"]):
+        if not any(term in answer_key for term in ["encaissement", "montant encaisse", "total ou partiel", "avant realisation", "avant execution"]):
+            errors.append("tva_service_exigibility_rule_not_stated")
+        if "produit constate" in answer_key or "cut off" in answer_key:
+            errors.append("tva_answer_contaminated_by_cutoff")
+    if workflow == "standards_hierarchy_case":
+        if any(term in query_key for term in ["pme tunisienne", "non cotee", "non cote"]) and not any(term in answer_key for term in ["non", "ne s appliquent pas automatiquement", "pas automatiquement"]):
+            errors.append("standards_question_missing_explicit_no")
+        if not any(term in answer_key for term in ["normes comptables tunisiennes", "referentiel tunisien", "sct", "nc/sct"]):
+            errors.append("standards_question_missing_tunisian_primary")
+    if workflow == "withholding_tax_general_case":
+        if not all(term in answer_key for term in ["declaration", "certificat"]):
+            errors.append("withholding_missing_declaration_or_certificate")
+        if not any(term in answer_key for term in ["salaires", "honoraires", "loyers", "dividendes", "interets", "redevances"]):
+            errors.append("withholding_missing_income_categories")
     if "ifrs" not in query_key and "ias" not in query_key and ("ifrs" in answer_key or "ias " in answer_key):
         if not any(marker in answer_key for marker in ["normes comptables tunisiennes", "referentiel tunisien", " nc ", "sct"]):
             errors.append("ifrs_used_without_tunisian_framework")
@@ -582,7 +661,7 @@ def validate_final_answer_doctrine(
     unsafe_patterns.extend(known_fact_errors)
     checklist_only = final_answer.count("\n-") >= 3 and not any(
         marker in answer_key
-        for marker in ["conclusion cabinet", "conclusion pratique", "position preliminaire", "sur les faits", "dans le cas donne"]
+        for marker in ["conclusion", "conclusion cabinet", "conclusion pratique", "conclusion client", "reponse de principe", "position preliminaire", "sur les faits", "dans le cas donne"]
     )
     if checklist_only:
         unsafe_patterns.append("checklist_only")
@@ -642,6 +721,8 @@ def doctrine_completion_block(card: DoctrineCard, query: str, workflow: str) -> 
     if card.doctrine_id == "tva_services_exigibility":
         return (
             "## Regle TVA appliquee\n"
+            "Pour une prestation de services relevant du champ de la TVA tunisienne, l'exigibilite doit etre rattachee a la realisation du service et a l'encaissement. Si un encaissement total ou partiel intervient avant la realisation/execution, la TVA doit etre analysee comme exigible sur le montant encaisse, sous reserve du passage TVA applicable.\n\n"
+            "## Application TVA services\n"
             "La nature du service, le statut B2B/B2C et la localisation du client, le lieu d'utilisation ou d'exploitation, la partie executee en Tunisie ou a l'etranger, la facturation et l'encaissement doivent etre analyses separement. La conclusion TVA ne peut etre qualifiee d'exportation ou d'operation hors TVA sans preuves du client etranger et de l'utilisation a l'etranger. Conserver contrat, facture, preuve d'encaissement, statut fiscal du client, livrables et preuves d'execution/utilisation."
         )
     if card.doctrine_id == "tva_deduction":
@@ -669,7 +750,7 @@ def doctrine_completion_block(card: DoctrineCard, query: str, workflow: str) -> 
     if card.doctrine_id == "facturation_tunisia":
         return (
             "## Controle de facturation\n"
-            "Verifier identification du fournisseur et du client, numero et date, nature de l'operation, base HT, taux et montant de TVA, total TTC et mentions du regime particulier. Controler numerotation, conservation, transmission et facturation electronique seulement selon le champ et la date d'entree applicables. Une facture formelle ne remplace pas la preuve de la realite de l'operation."
+            "Verifier identification du fournisseur et du client, numero et date, nature de l'operation, base HT, taux et montant de TVA, total TTC, mentions du regime particulier, numerotation et conservation. Une facture formelle ne remplace pas la preuve de la realite de l'operation."
         )
     if card.doctrine_id == "cdpf_procedure":
         return (
@@ -687,6 +768,17 @@ def doctrine_completion_block(card: DoctrineCard, query: str, workflow: str) -> 
             "Identifier d'abord le contribuable et distinguer IRPP et IS, puis la categorie de revenu ou le benefice imposable, l'assiette, les charges admises et reintegrations, les retenues a la source et les obligations declaratives. Les taux, seuils, avantages et delais doivent provenir de la version consolidee et de la loi de finances applicable a l'exercice.\n\n"
             "## Conclusion pratique\n"
             "Le cabinet doit fixer l'exercice, le profil du contribuable et la nature du revenu ou de la charge avant de calculer l'impot, puis rapprocher declaration, retenues et justificatifs."
+        )
+    if card.doctrine_id == "withholding_tax_general":
+        return (
+            "## Retenue a la source\n"
+            "La retenue a la source ne se traite pas par un taux unique. Il faut classer le paiement par nature de revenu ou de flux: salaires, honoraires, loyers, dividendes, interets, redevances, commissions, marches ou prestations de services.\n\n"
+            "## Application cabinet\n"
+            "- Identifier le payeur, le beneficiaire, sa qualite personne physique/personne morale et sa residence fiscale.\n"
+            "- Verifier l'obligation de retenue dans le Code IRPP/IS selon la nature du paiement et la date de paiement.\n"
+            "- Preparer la declaration, le reversement, le calcul brut/retenue/net et le certificat de retenue.\n"
+            "- Pour un non-resident, verifier le pays, le certificat de residence et la convention fiscale applicable avant tout taux conventionnel.\n"
+            "- Ne jamais inventer un taux, un delai ou un article sans passage direct de la version applicable."
         )
     if card.doctrine_id == "fiscal_framework_tunisia":
         return (
@@ -765,6 +857,31 @@ def repair_missing_facts(answer: str, query: str) -> tuple[str, bool]:
     return output, changed
 
 
+def _effective_required_elements(cards: list[DoctrineCard], query: str) -> list[str]:
+    query_key = key(query)
+    requires_electronic_invoice = any(
+        marker in query_key
+        for marker in [
+            "facturation electronique",
+            "facture electronique",
+            "factures electroniques",
+            "e facture",
+            "e-facturation",
+            "fawtara",
+            "foutara",
+            "transmission electronique",
+        ]
+    )
+    required_elements: list[str] = []
+    for card in cards:
+        for element in card.required_final_answer_elements:
+            if element == "electronic invoicing" and not requires_electronic_invoice:
+                continue
+            if element not in required_elements:
+                required_elements.append(element)
+    return required_elements
+
+
 def apply_doctrine_engine(answer: str, query: str, workflow: str) -> tuple[str, dict]:
     output, hidden_control_removed = _remove_visible_doctrine_control(answer or "")
     changed = hidden_control_removed
@@ -806,11 +923,7 @@ def apply_doctrine_engine(answer: str, query: str, workflow: str) -> tuple[str, 
     ]
     unsafe = [pattern for pattern in unsafe_markers if pattern in key(output)]
 
-    required_elements: list[str] = []
-    for card in cards:
-        for element in card.required_final_answer_elements:
-            if element not in required_elements:
-                required_elements.append(element)
+    required_elements = _effective_required_elements(cards, query)
     validation_before = validate_final_answer_doctrine(workflow, cards, required_elements, output, query)
     regenerated = False
     if cards and not validation_before["pass"]:
