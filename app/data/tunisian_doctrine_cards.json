@@ -122,7 +122,7 @@
     "doctrine_id": "standards_hierarchy_tunisia",
     "domain": "comptabilite",
     "topic": "Hierarchie referentiel comptable",
-    "workflow_tags": ["accounting_closing_estimate_case", "fixed_asset_depreciation_case", "goodwill_accounting_case"],
+    "workflow_tags": ["accounting_closing_estimate_case", "standards_hierarchy_case", "fixed_asset_depreciation_case", "goodwill_accounting_case"],
     "query_markers": ["ias", "ifrs", "normes tunisiennes", "sct", "nc", "referentiel", "pme tunisienne"],
     "primary_source_document": "loi_comptable + normes comptables tunisiennes",
     "article_page": "Loi comptable et NC/SCT; IFRS seulement si contexte exige",
@@ -167,6 +167,23 @@
     "practical_cabinet_consequence": "Appliquer le code consolide de l'exercice et la loi de finances; ne pas reutiliser une ancienne edition par defaut.",
     "required_final_answer_elements": ["taxpayer and tax base", "income categories", "IS/IRPP distinction", "filing and withholding", "practical conclusion"],
     "common_wrong_answers_to_block": ["ancien code utilise sans justification", "taux invente", "traitement comptable confondu avec deduction fiscale"],
+    "source_support_level": "framework_source"
+  },
+  {
+    "doctrine_id": "withholding_tax_general",
+    "domain": "fiscalite_directe",
+    "topic": "Retenues a la source",
+    "workflow_tags": ["withholding_tax_general_case"],
+    "query_markers": ["retenue a la source", "retenues a la source", "withholding tax", "certificat de retenue", "reversement"],
+    "primary_source_document": "code_irpp_is_2025 + procedures_fiscales_2026",
+    "article_page": "Passages a verifier par nature de revenu",
+    "exact_extracted_passage": "Selectionner le passage direct selon nature du paiement, payeur, beneficiaire, residence et date de paiement.",
+    "legal_accounting_rule": "La retenue a la source est analysee par nature de revenu, qualite du payeur, qualite et residence du beneficiaire, puis par obligations de declaration, reversement et certificat.",
+    "conditions": ["nature du revenu", "payeur", "beneficiaire", "residence fiscale", "date de paiement", "article/taux direct"],
+    "exceptions": ["convention fiscale pour non-resident", "dispense ou regime particulier documente"],
+    "practical_cabinet_consequence": "Structurer la reponse par types de flux et pieces, sans inventer un taux unique.",
+    "required_final_answer_elements": ["income/payment categories", "payer and beneficiary", "withholding", "declaration", "certificate", "treaty check", "no invented rate"],
+    "common_wrong_answers_to_block": ["deductibility-only answer", "single rate for all payments", "TVA as withholding source"],
     "source_support_level": "framework_source"
   },
   {

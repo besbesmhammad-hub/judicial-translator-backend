@@ -1811,6 +1811,57 @@ def is_tva_cross_border_service_case(query: str) -> bool:
     )
 
 
+def is_tva_service_exigibility_case(query: str) -> bool:
+    return (
+        any(marker in query for marker in ["tva", "taxe sur la valeur ajoutee"])
+        and any(marker in query for marker in ["prestation", "service", "services", "maintenance", "assistance", "support"])
+        and any(marker in query for marker in ["exigibilite", "exigible", "paye avant", "payee avant", "encaisse avant", "avance", "avant la realisation", "avant execution"])
+    )
+
+
+def is_tva_deduction_case(query: str) -> bool:
+    return (
+        any(marker in query for marker in ["tva", "taxe sur la valeur ajoutee"])
+        and any(marker in query for marker in ["deduction", "deduire", "deductible", "droit a deduction", "achats"])
+    )
+
+
+def is_invoice_formal_case(query: str) -> bool:
+    formal_markers = [
+        "mentions",
+        "mentions obligatoires",
+        "numero de facture",
+        "facture normale",
+        "facture conforme",
+        "conforme",
+        "forme de la facture",
+        "que doit contenir une facture",
+        "doit figurer sur une facture",
+        "doivent figurer sur une facture",
+    ]
+    accounting_context = [
+        "actif",
+        "equipement",
+        "machine",
+        "immobilisation",
+        "amortissement",
+        "date comptable",
+        "pret a fonctionner",
+        "contrat de service",
+        "contrat annuel",
+        "prorata",
+        "cloture",
+        "produit constate",
+        "facture d'avance",
+        "facture d avance",
+    ]
+    return (
+        any(marker in query for marker in formal_markers)
+        and not any(marker in query for marker in ["electronique", "e-facturation", "fawtara", "foutara"])
+        and not any(marker in query for marker in accounting_context)
+    )
+
+
 def is_mixed_dividends_case(query: str) -> bool:
     distribution_markers = [
         "dividende", "dividendes", "benefices distribues", "distribue des benefices",
@@ -1839,6 +1890,26 @@ def is_dividend_tax_case(query: str) -> bool:
         "certificat", "associe", "actionnaire", "resident", "non resident",
     ]
     return any(marker in query for marker in distribution_markers) and any(marker in query for marker in tax_markers)
+
+
+def is_withholding_tax_general_case(query: str) -> bool:
+    if not any(marker in query for marker in ["retenue a la source", "retenues a la source", "withholding tax"]):
+        return False
+    narrow_cases = [
+        "dividende",
+        "dividendes",
+        "benefices distribues",
+        "charge deductible",
+        "charges deductibles",
+        "deduire",
+        "deductibilite",
+        "consulting",
+        "honoraires",
+        "client francais",
+        "convention fiscale",
+        "etablissement stable",
+    ]
+    return not any(marker in query for marker in narrow_cases)
 
 
 def is_audit_cac_event_case(query: str) -> bool:
@@ -1988,7 +2059,7 @@ def is_standards_hierarchy_case(query: str) -> bool:
     ]
     decision_markers = [
         "peut", "suffit", "remplacer", "prioriser", "utiliser", "comparaison",
-        "source", "justifier", "repondre", "eviter",
+        "source", "justifier", "repondre", "eviter", "appliquer", "doit",
     ]
     return any(marker in query for marker in hierarchy_markers) and any(marker in query for marker in decision_markers)
 
@@ -3141,6 +3212,47 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
             "code_commerce_2014",
             "code_obligations_contrats_2015",
         }
+    elif is_tva_service_exigibility_case(query) or is_tva_deduction_case(query) or is_invoice_formal_case(query):
+        priority_doc_ids = [tva_doc_id_for_query(query), "procedures_fiscales_2026", "loi_finances_2026"]
+        blocked_doc_ids = {
+            *IRPP_IS_DOC_IDS,
+            "convention_fiscale_france_tunisie",
+            "convention_fiscale_france_tunisie_texte_1973",
+            "boi_france_tunisie_convention_fiscale_2012",
+            "code_societes_commerciales_2022",
+            "guide_creation_sarl_tunisie",
+            "fiscalite_locale",
+            "code_commerce_2014",
+            "code_obligations_contrats_2015",
+            "ias_7_tableau_flux_tresorerie",
+        }
+    elif is_withholding_tax_general_case(query):
+        priority_doc_ids = [irpp_is_doc_id, "procedures_fiscales_2026", "loi_finances_2026"]
+        blocked_doc_ids = {
+            "tva_droit_consommation",
+            "fiscalite_locale",
+            "droits_taxes_hors_codes",
+            "code_societes_commerciales_2022",
+            "ias_7_tableau_flux_tresorerie",
+            "audit_resume_gaida_normes_missions",
+        }
+    elif is_standards_hierarchy_case(query):
+        priority_doc_ids = [
+            "loi_comptable",
+            "nc_01_norme_generale",
+            "nc_05_immobilisations_corporelles",
+            "nc_14_eventualites_post_cloture",
+            "ias_37_provisions_passifs_actifs_eventuels",
+            "ias_10_evenements_post_cloture",
+        ]
+        blocked_doc_ids = {
+            *IRPP_IS_DOC_IDS,
+            "tva_droit_consommation",
+            "procedures_fiscales_2026",
+            "loi_finances_2026",
+            "fiscalite_locale",
+            "code_societes_commerciales_2022",
+        }
     elif ("credit bail" in query or "credit-bail" in query or "location financement" in query) and any(
         marker in query for marker in ["machine", "actif", "immobilisation", "traitement comptable", "ecritures"]
     ):
@@ -3385,7 +3497,7 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
         ]
         blocked_doc_ids = {"fiscalite_locale", "tva_droit_consommation", "ias_7_tableau_flux_tresorerie"}
 
-    elif coverage_workflow := detect_cabinet_workflow(query):
+    elif (coverage_workflow := detect_cabinet_workflow(query)) and not is_standards_hierarchy_case(query):
         priority_doc_ids = list(coverage_workflow.source_doc_ids)
         for treaty_doc_id in reversed(treaty_doc_ids):
             if treaty_doc_id not in priority_doc_ids:
@@ -3663,7 +3775,15 @@ def case_analysis_sources(message: str, legal_sources: list[dict]) -> list[dict]
                     if doc_id != "tva_droit_consommation" and doc_id != selected_tva_doc_id
                 ],
             ]
-            blocked_doc_ids = {"code_societes_commerciales_2022", "ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
+            blocked_doc_ids = {
+                *IRPP_IS_DOC_IDS,
+                "code_societes_commerciales_2022",
+                "ias_7_tableau_flux_tresorerie",
+                "fiscalite_locale",
+                "convention_fiscale_france_tunisie",
+                "convention_fiscale_france_tunisie_texte_1973",
+                "boi_france_tunisie_convention_fiscale_2012",
+            }
         elif coverage_workflow.family == "fiscalite_directe":
             blocked_doc_ids = {"ias_7_tableau_flux_tresorerie", "fiscalite_locale"}
         elif coverage_workflow.family == "comptabilite":
@@ -4308,6 +4428,115 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             },
         )
 
+    elif is_withholding_tax_general_case(query):
+        workflow_name = "withholding_tax_general_case"
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"La retenue a la source doit etre analysee par nature de paiement, payeur et beneficiaire. Faits transmis: {facts_summary}. "
+                    "Une reponse generale ne doit pas donner un seul taux: le cabinet doit classer le flux, verifier le statut resident/non-resident, puis rattacher la declaration, le reversement et le certificat au texte fiscal applicable."
+                ),
+                "Application pratique": (
+                    "- Nature du revenu: distinguer salaires, honoraires, loyers, revenus de capitaux mobiliers, dividendes, interets, redevances, commissions, marches ou prestations de services.\n"
+                    "- Payeur et beneficiaire: identifier personne physique ou morale, resident ou non-resident, regime fiscal et qualite de beneficiaire effectif.\n"
+                    "- Obligation de retenue: verifier dans le Code de l'IRPP et de l'IS si le paiement entre dans un cas de retenue a la source; ne pas retenir de taux sans passage direct.\n"
+                    "- Declaration et reversement: preparer la declaration applicable, la periode de paiement, le montant brut, la retenue operee, le net paye et la preuve de reversement.\n"
+                    "- Certificat: remettre ou conserver le certificat de retenue et les justificatifs permettant l'imputation ou la preuve fiscale.\n"
+                    "- Non-resident: verifier la convention fiscale applicable uniquement si le beneficiaire est non-resident et si le pays de residence est connu.\n"
+                    "- Pieces: contrat, facture, decision de paiement, identite fiscale, preuve de residence le cas echeant, calcul brut/retenue/net, declaration et quittance de paiement.\n"
+                    "- Conclusion: repondre par familles de revenus et par profil beneficiaire, preparer declaration/reversement/certificat, puis seulement apres passage direct retenir un taux ou un delai."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas confondre retenue a la source et deductibilite de la charge: ce sont deux controles differents.\n"
+                    "- Ne pas appliquer le regime dividendes, salaires ou honoraires a tous les paiements.\n"
+                    "- Ne pas citer TVA, BOFiP ou convention fiscale si la question reste generale et tunisienne.\n"
+                    "- Les taux, delais et articles doivent rester reserves tant que le passage direct de la version applicable n'est pas selectionne."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_tva_service_exigibility_case(query):
+        workflow_name = "tva_operational_case"
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Pour une prestation de services, l'exigibilite TVA doit etre analysee comme une question fiscale autonome. Faits transmis: {facts_summary}. "
+                    "Si l'operation entre dans le champ de la TVA tunisienne, la regle decisive a verifier est la realisation du service et l'encaissement: lorsqu'un encaissement total ou partiel intervient avant la realisation ou l'execution, la TVA doit etre analysee comme exigible sur le montant encaisse, sous reserve du passage TVA applicable."
+                ),
+                "Application pratique": (
+                    "- Champ TVA: confirmer que la prestation est imposable en Tunisie ou que le regime particulier invoque est justifie.\n"
+                    "- Fait generateur/exigibilite: rapprocher contrat, periode d'execution, facture et encaissement; un paiement avant execution peut rendre la TVA exigible sur la somme encaissee.\n"
+                    "- Facturation: verifier date, numero, base HT, taux, montant TVA, total TTC, description du service et periode couverte.\n"
+                    "- Declaration: rattacher la TVA collectee a la periode d'exigibilite, distincte de la reconnaissance du revenu comptable.\n"
+                    "- Pieces: contrat, facture, preuve d'encaissement, preuve d'execution et tableau de rapprochement."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas conclure hors champ, exportation ou exonération sans qualifier territorialite et source directe.\n"
+                    "- Ne pas inventer de taux ou d'article."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_tva_deduction_case(query):
+        workflow_name = "tva_operational_case"
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Le droit a deduction de la TVA se raisonne achat par achat. Faits transmis: {facts_summary}. "
+                    "La TVA supportee est deductible seulement si la depense est affectee a des operations ouvrant droit a deduction, appuyee par une facture conforme, rattachee a la bonne periode et non visee par une exclusion ou une regularisation."
+                ),
+                "Application pratique": (
+                    "- Affectation: verifier que l'achat sert une activite taxable ou ouvrant droit a deduction; si usage mixte, analyser le prorata ou la regularisation.\n"
+                    "- Facture conforme: controler fournisseur/client, matricule fiscal, numero/date, base HT, taux, montant TVA, total et description de l'operation.\n"
+                    "- Exclusions et restrictions: verifier si la nature de la depense limite ou interdit la deduction.\n"
+                    "- Declaration: rattacher la TVA deductible a la periode autorisee et rapprocher facture, comptabilite et declaration.\n"
+                    "- Justificatifs: conserver facture originale ou justificatif admis, contrat/bon de commande, reception/livrable et preuve de paiement si pertinente."
+                ),
+                "Points de vigilance": (
+                    "- Ne pas accepter une deduction parce que la facture mentionne TVA: affectation, forme et exclusions doivent etre controles.\n"
+                    "- Ne pas inventer les exclusions, delais ou taux sans passage direct.\n"
+                    "- Si l'achat concerne une operation exoneree ou hors champ sans droit a deduction, la TVA peut devenir non recuperable."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
+    elif is_invoice_formal_case(query):
+        workflow_name = "tva_operational_case"
+        returned_intent = "legal_basis"
+        returned_domain = "fiscalite"
+        answer = compose_structured_answer(
+            "practical_analysis",
+            {
+                "Reponse": (
+                    f"Pour une facture normale, le controle porte d'abord sur les mentions fiscales obligatoires et la preuve de l'operation. Faits transmis: {facts_summary}. "
+                    "Le cabinet doit verifier l'identite des parties, la numerotation, la date, la nature de l'operation, la base HT, le taux et le montant de TVA, le total TTC, ainsi que la conservation de la facture."
+                ),
+                "Application pratique": (
+                    "- Mentions: fournisseur, client, identifiants fiscaux, numero, date, description precise, quantite ou service, base HT, taux TVA, montant TVA et total TTC.\n"
+                    "- Coherence: rapprocher facture, contrat ou commande, bon de livraison/livrable, reception, paiement et comptabilisation.\n"
+                    "- TVA: verifier le taux ou regime applique, la date d'exigibilite, la declaration et le droit a deduction chez le client.\n"
+                    "- Conservation: garder la facture et les pieces justificatives pendant la duree requise par les textes applicables."
+                ),
+                "Points de vigilance": (
+                    "- Une facture correcte en forme ne prouve pas seule la realite economique.\n"
+                    "- Ne pas valider deduction ou charge si l'operation n'est pas justifiee."
+                ),
+                "Sources utilisees": source_lines,
+            },
+        )
+
     elif is_tva_cross_border_service_case(query):
         workflow_name = "tva_operational_case"
         returned_intent = "legal_basis"
@@ -4642,7 +4871,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
         )
 
     elif is_standards_hierarchy_case(query):
-        workflow_name = "accounting_closing_estimate_case"
+        workflow_name = "standards_hierarchy_case"
         returned_intent = "accounting_treatment"
         returned_domain = "comptabilite"
         standard_sources = merge_priority_sources(
@@ -4665,7 +4894,7 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
             {
                 "Reponse": (
                     f"Pour une societe tunisienne ordinaire, la source comptable prioritaire est le referentiel tunisien: loi comptable, systeme comptable des entreprises et normes comptables tunisiennes (NC/SCT). Faits transmis: {facts_summary}. "
-                    "IAS/IFRS ne doivent pas remplacer automatiquement une norme tunisienne disponible. Ils peuvent etre utilises comme comparaison, ou comme referentiel applicable seulement si l'entite y est legalement tenue, si le groupe l'exige, ou si la question le demande explicitement."
+                    "Donc, pour une PME tunisienne non cotee, la reponse de principe est non: IAS 10 et IAS 37 ne s'appliquent pas automatiquement comme referentiel primaire. Ils peuvent etre utilises comme comparaison, ou comme referentiel applicable seulement si un texte, un groupe, une consolidation ou une obligation contractuelle l'impose."
                 ),
                 "Application pratique": (
                     "- Hierarchie pratique: chercher d'abord la norme tunisienne directement applicable au sujet; citer IAS/IFRS seulement comme source comparative ou complementaire clairement etiquetee.\n"
