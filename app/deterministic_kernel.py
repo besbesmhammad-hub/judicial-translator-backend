@@ -26,7 +26,13 @@ MONTHS = {
 def _key(text: str) -> str:
     normalized = unicodedata.normalize("NFKD", text or "")
     ascii_text = "".join(ch for ch in normalized if not unicodedata.combining(ch))
-    return ascii_text.lower()
+    ascii_text = ascii_text.lower().replace("’", "'").replace("-", " ")
+    ascii_text = ascii_text.replace("r?alis?e", "realisee").replace("r?alis?", "realise")
+    ascii_text = ascii_text.replace("ex?cut?e", "executee").replace("ex?cut?", "execute")
+    ascii_text = ascii_text.replace("d?cembre", "decembre").replace("f?vrier", "fevrier")
+    ascii_text = ascii_text.replace("soci?t?", "societe").replace("cl?ture", "cloture")
+    ascii_text = re.sub(r"(?<=[a-z])\?+(?=[a-z])", "e", ascii_text)
+    return ascii_text.replace("?", "e")
 
 
 def _fmt_date(value: date | None) -> str:
@@ -145,6 +151,32 @@ def _date_after_marker(text: str, markers: list[str], *, fallback_year: int | No
     return None
 
 
+def _closing_date(text: str, fallback_year: int | None = None) -> date | None:
+    source = _key(text)
+    for pattern in [
+        r"\b31/12/((?:19|20)?\d{2})\b",
+        r"\b31-12-((?:19|20)?\d{2})\b",
+        r"\b31\s+decembre\s+((?:19|20)\d{2})\b",
+    ]:
+        match = re.search(pattern, source)
+        if match:
+            year = match.group(1)
+            if len(year) == 2:
+                year = "20" + year
+            return date(int(year), 12, 31)
+    close_match = re.search(r"\bcloture\b", source)
+    if close_match:
+        local = source[close_match.start() : close_match.start() + 80]
+        dates = _dates_in(local, fallback_year)
+        december_dates = [item for item in dates if item.month == 12 and item.day == 31]
+        if december_dates:
+            return december_dates[0]
+        if dates:
+            return dates[0]
+    year = fallback_year or _default_year(source)
+    return date(year, 12, 31) if year else None
+
+
 def _amounts_with_currency(text: str) -> list[int]:
     values: list[int] = []
     pattern = re.compile(
@@ -234,7 +266,7 @@ def _detect_workflow(query: str, workflow: str) -> str:
         return "receivable_impairment_subsequent_event"
     if "tva" in key and "quelle consequence tva" in key and "cloture" not in key:
         return "tva_operational_case"
-    if ("prestation" in key or "maintenance" in key or "contrat" in key or "facture annuelle" in key or "periode du" in key or "acompte" in key or "avance" in key) and (
+    if ("prestation" in key or "service" in key or "formation" in key or "conseil" in key or "mission" in key or "support" in key or "maintenance" in key or "contrat" in key or "facture annuelle" in key or "periode du" in key or "acompte" in key or "avance" in key) and (
         "produit constate" in key
         or "cut-off" in key
         or "cut off" in key
@@ -303,9 +335,7 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
 
     if detected == "revenue_cutoff_tva_case":
         period_start, period_end = _extract_period(query)
-        closing = _date_after_marker(query, ["cloture", "31/12", "au 31"], fallback_year=default_year)
-        if not closing and default_year:
-            closing = date(default_year, 12, 31)
+        closing = _closing_date(query, default_year)
         execution_markers = [
             "realisee", "realise", "effectuee", "effectue", "execution", "executee", "execute",
             "sera realisee", "sera realise", "sera effectuee", "sera effectue", "sera executee", "sera execute",
@@ -313,6 +343,14 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
         collection_markers = ["recoit", "recu", "encaisse", "encaissement", "paye", "paiement", "regle", "acompte", "avance"]
         realization = _date_after_marker(query, execution_markers, fallback_year=default_year)
         collection = _date_after_marker(query, collection_markers, fallback_year=default_year)
+        if (
+            closing
+            and any(term in key for term in ["acompte", "avance", "facture avant cloture", "facturee avant cloture", "encaissement avant cloture"])
+            and realization
+            and realization > closing
+            and (not collection or collection >= realization)
+        ):
+            collection = closing
         amounts = _all_large_amounts(query)
         facts.update(
             {
@@ -683,8 +721,8 @@ def validate_answer_against_decision(answer: str, facts: dict[str, Any], decisio
         gross = facts.get("gross_receivable")
         months = facts.get("months_overdue")
         if gross is not None and months is not None:
-            bad_formula = f"{_format_amount(gross)} - {months}"
-            if _key(bad_formula) in key_answer or "179 986" in key_answer:
+            gross_pattern = re.escape(_key(_format_amount(gross)))
+            if re.search(rf"{gross_pattern}\s*-\s*{months}(?!\s*\d)", key_answer) or "179 986" in key_answer:
                 errors.append("money_month_confusion")
 
     if workflow == "revenue_cutoff_tva_case" and decision.get("available"):

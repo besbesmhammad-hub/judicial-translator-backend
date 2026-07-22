@@ -1813,22 +1813,24 @@ def is_tva_cross_border_service_case(query: str) -> bool:
 
 
 def is_tva_service_exigibility_case(query: str) -> bool:
+    if is_prepaid_future_service_accounting_tva_case(query):
+        return False
     return (
         any(marker in query for marker in ["tva", "taxe sur la valeur ajoutee"])
-        and any(marker in query for marker in ["prestation", "service", "services", "maintenance", "assistance", "support"])
+        and any(marker in query for marker in ["prestation", "service", "services", "maintenance", "assistance", "support", "formation", "conseil", "mission"])
         and any(marker in query for marker in ["exigibilite", "exigible", "paye avant", "payee avant", "encaisse avant", "avance", "avant la realisation", "avant execution"])
     )
 
 
 def is_prepaid_future_service_accounting_tva_case(query: str) -> bool:
-    service_markers = ["prestation", "service", "services", "maintenance", "assistance", "support"]
-    payment_markers = ["paiement", "encaisse", "encaissement", "recoit", "reçoit", "avance", "integral", "integralement", "payee avant", "paye avant"]
+    service_markers = ["prestation", "service", "services", "maintenance", "assistance", "support", "formation", "conseil", "mission", "honoraires"]
+    payment_markers = ["paiement", "encaisse", "encaissement", "recoit", "reçoit", "avance", "acompte", "integral", "integralement", "payee avant", "paye avant", "facture avant"]
     future_markers = [
         "sera realisee", "sera realise", "sera executee", "sera execute", "realisee en", "realise en",
         "executee en", "execute en", "realisation en", "execution en", "janvier", "fevrier",
         "mars", "avril", "mois suivant", "exercice suivant", "2026"
     ]
-    domain_markers = ["comptablement", "comptabilite", "tva", "produit constate", "revenu", "exigibilite"]
+    domain_markers = ["comptablement", "comptabilite", "comptable", "tva", "produit constate", "revenu", "produit", "cloture", "31/12", "pca", "exigibilite"]
     return (
         any(marker in query for marker in service_markers)
         and any(marker in query for marker in payment_markers)
@@ -1966,7 +1968,8 @@ def is_multi_beneficiary_dividend_case(query: str) -> bool:
 def is_revenue_cutoff_tva_case(query: str) -> bool:
     service_markers = [
         "maintenance", "contrat annuel", "contrat de service", "abonnement", "support",
-        "service annuel", "assistance", "prestation annuelle", "contrat du", "contrat de"
+        "service annuel", "assistance", "prestation annuelle", "contrat du", "contrat de",
+        "formation", "conseil", "mission", "prestation", "service"
     ]
     timing_markers = ["avance", "upfront", "paye", "payee", "facture", "facture d avance", "facture d'avance", "encaisse", "12 mois", "annuel"]
     cutoff_markers = ["2025", "2026", "cloture", "cut off", "cut-off", "produit constate d'avance", "rattachement", "periode", "produit 2025", "prorata"]

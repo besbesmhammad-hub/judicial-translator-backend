@@ -155,11 +155,28 @@ def revenue_cutoff_cases(rng: random.Random, count: int) -> list[dict[str, Any]]
         future_amount = rng.choice([50000, 90000, 150000])
         service_month = rng.randint(2, 6)
         service_date = date(year + 1, service_month, rng.randint(1, 20))
+        service_label = rng.choice(["prestation", "formation", "mission", "conseil", "support"])
+        payment_label = rng.choice(["un paiement integral", "un acompte", "un encaissement", "une avance"])
+        mixed_wording = rng.choice(
+            [
+                "Une societe tunisienne recoit en decembre {year} {payment_label} de {amount} TND pour une {service_label} qui sera realisee le {service_date}. Que faire comptablement et en TVA a la cloture du 31/12/{year} ?",
+                "Une societe tunisienne encaisse {amount} TND en decembre {year} pour une {service_label} qui sera executee en {service_month_name} {next_year}. Quel traitement comptable et TVA au 31/12/{year} ?",
+                "Acompte de {amount} TND facture avant cloture pour une {service_label} a realiser en {service_month_name} {next_year}: produit, PCA et TVA au 31/12/{year} ?",
+            ]
+        )
         cases.append(
             {
                 "id": f"mut_revenue_future_{i + 1:02d}",
                 "family": "revenue_cutoff_prepaid_services",
-                "prompt": f"Une societe tunisienne recoit en decembre {year} un paiement integral de {_format_amount(future_amount)} TND pour une prestation qui sera realisee le {fr_date(service_date)}. Que faire comptablement et en TVA a la cloture du 31/12/{year} ?",
+                "prompt": mixed_wording.format(
+                    year=year,
+                    next_year=year + 1,
+                    payment_label=payment_label,
+                    amount=_format_amount(future_amount),
+                    service_label=service_label,
+                    service_date=fr_date(service_date),
+                    service_month_name=MONTHS[service_date.month - 1],
+                ),
                 "expected": {
                     "workflow": "revenue_cutoff_tva_case",
                     "required": ["revenu 2025 est 0" if year == 2025 else f"revenu {year} est 0", _format_amount(future_amount), "encaissement avant realisation"],
@@ -194,7 +211,8 @@ def receivable_cases(rng: random.Random, count: int) -> list[dict[str, Any]]:
                 "expected": {
                     "workflow": "receivable_impairment_subsequent_event",
                     "required": [_format_amount(residual), f"{_format_amount(gross)} - {_format_amount(recovery)} = {_format_amount(residual)}"],
-                    "forbidden": [f"{_format_amount(gross)} - {months}", "montant facture x", "produit constate d'avance"],
+                    "forbidden": ["montant facture x", "produit constate d'avance"],
+                    "forbidden_money_month_formula": {"gross": _format_amount(gross), "months": months},
                 },
             }
         )
@@ -322,6 +340,14 @@ def validate_case(case: dict[str, Any], answer: str, trace: dict[str, Any]) -> t
             categories["wrong_deterministic_calculation"] = "-" in str(item)
             categories["legacy_template_contamination"] = categories["legacy_template_contamination"] or "montant facture" in norm(str(item))
             categories["irrelevant_final_blocks"] = categories["irrelevant_final_blocks"] or "produit constate" in norm(str(item))
+
+    money_month = expected.get("forbidden_money_month_formula") or {}
+    if money_month:
+        gross = re.escape(norm(str(money_month.get("gross") or "")))
+        months = re.escape(str(money_month.get("months") or ""))
+        if gross and months and re.search(rf"{gross}\s*-\s*{months}(?!\s*\d)", answer_key):
+            reasons.append(f"forbidden_money_month_formula:{money_month.get('gross')} - {money_month.get('months')}")
+            categories["wrong_deterministic_calculation"] = True
 
     for wrong_date in expected.get("forbidden_start_dates", []):
         pattern = rf"amortissement[^.\n]{{0,120}}commence[^.\n]{{0,120}}{re.escape(norm(wrong_date))}"
