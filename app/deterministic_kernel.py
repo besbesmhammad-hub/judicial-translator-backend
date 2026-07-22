@@ -190,11 +190,28 @@ def _extract_period(text: str) -> tuple[date | None, date | None]:
 
 def _detect_workflow(query: str, workflow: str) -> str:
     key = _key(f"{workflow} {query}")
+    if (
+        "retenue a la source" in key
+        or "ras" in key
+        or "withholding" in key
+        or "prelevement a la source" in key
+    ):
+        return "withholding_tax_classification_case"
+    if (
+        "hierarchie des normes" in key
+        or "hierarchie juridique" in key
+        or "ordre des normes" in key
+        or ("sct" in key and ("ias" in key or "ifrs" in key))
+        or ("normes comptables tunisiennes" in key and ("ias" in key or "ifrs" in key))
+    ):
+        return "accounting_standards_hierarchy_case"
     if "amort" in key or "immobilisation" in key or "machine" in key or "pret a fonctionner" in key:
         return "fixed_asset_depreciation_case"
     if "creance" in key or "client impaye" in key or "provisionner le solde" in key:
         return "receivable_impairment_subsequent_event"
-    if ("prestation" in key or "maintenance" in key or "contrat" in key) and (
+    if "tva" in key and "quelle consequence tva" in key and "cloture" not in key:
+        return "tva_operational_case"
+    if ("prestation" in key or "maintenance" in key or "contrat" in key or "facture annuelle" in key or "periode du" in key) and (
         "produit constate" in key
         or "cut-off" in key
         or "cut off" in key
@@ -294,6 +311,47 @@ def extract_deterministic_facts(query: str, workflow: str) -> dict[str, Any]:
         )
         return facts
 
+    if detected == "withholding_tax_classification_case":
+        income_type = "service_or_fees"
+        if any(term in key for term in ["dividende", "benefices distribues", "revenus distribues"]):
+            income_type = "dividends"
+        elif any(term in key for term in ["loyer", "location"]):
+            income_type = "rent"
+        elif any(term in key for term in ["redevance", "royalt", "licence", "logiciel"]):
+            income_type = "royalties_or_licence"
+        elif any(term in key for term in ["salaire", "traitement", "personnel"]):
+            income_type = "employment_income"
+        country = None
+        for candidate in ["france", "italie", "allemagne", "emirats", "algerie", "maroc", "suisse", "canada"]:
+            if candidate in key:
+                country = candidate
+                break
+        non_resident = "non resident" in key or "non-resident" in key or bool(country)
+        facts.update(
+            {
+                "income_type": income_type,
+                "beneficiary_residency": "non_resident" if non_resident else "resident_or_unspecified",
+                "beneficiary_country": country,
+                "payment_amount": (_all_large_amounts(query) or [None])[0],
+                "has_contract": "contrat" in key,
+                "has_invoice": "facture" in key,
+            }
+        )
+        return facts
+
+    if detected == "accounting_standards_hierarchy_case":
+        explicit_ifrs = any(term in key for term in ["ifrs obligatoire", "referentiel ifrs", "consolide ifrs", "cotee", "groupe ifrs"])
+        ordinary_tunisian = any(term in key for term in ["societe tunisienne", "entreprise tunisienne", "sarl", "sa tunisienne", "tunisie"])
+        facts.update(
+            {
+                "ordinary_tunisian_company": ordinary_tunisian,
+                "explicit_ifrs_context": explicit_ifrs,
+                "mentions_sct": "sct" in key or "normes comptables tunisiennes" in key,
+                "mentions_ias_ifrs": "ias" in key or "ifrs" in key,
+            }
+        )
+        return facts
+
     return facts
 
 
@@ -363,6 +421,7 @@ def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
                     "earned_months": 0,
                     "deferred_months": None,
                     "service_future_at_closing": True,
+                    "closing_year": closing.year,
                 }
             )
             if amount is not None:
@@ -383,14 +442,72 @@ def compute_deterministic_decision(facts: dict[str, Any]) -> dict[str, Any]:
             )
         return decision
 
+    if workflow == "withholding_tax_classification_case":
+        income_type = facts.get("income_type")
+        non_resident = facts.get("beneficiary_residency") == "non_resident"
+        decision.update(
+            {
+                "available": True,
+                "status": "computed",
+                "income_type": income_type,
+                "withholding_analysis_required": True,
+                "treaty_check_required": non_resident,
+                "rate_supported": False,
+                "rule": "classify_payment_before_rate",
+            }
+        )
+        return decision
+
+    if workflow == "accounting_standards_hierarchy_case":
+        explicit_ifrs = bool(facts.get("explicit_ifrs_context"))
+        decision.update(
+            {
+                "available": True,
+                "status": "computed",
+                "primary_framework": "IFRS" if explicit_ifrs else "SCT/NC tunisiennes",
+                "ifrs_context_required": not explicit_ifrs,
+                "rule": "tunisian_framework_first_unless_explicit_ifrs_context",
+            }
+        )
+        return decision
+
     return decision
 
 
-def _sources_tail(answer: str) -> str:
+def _source_allowed(line: str, workflow: str) -> bool:
+    key = _key(line)
+    if not key.strip().startswith("-"):
+        return True
+    allowed_by_workflow = {
+        "fixed_asset_depreciation_case": ["nc 05", "ias 16", "immobilisations corporelles"],
+        "revenue_cutoff_tva_case": ["nc 03", "nc 01", "code tva", "taxe sur la valeur ajoutee"],
+        "receivable_impairment_subsequent_event": ["nc 01", "ias 37", "ias 10", "irpp", "is"],
+        "tva_operational_case": ["code tva", "taxe sur la valeur ajoutee", "cdpf", "procedures fiscaux"],
+        "withholding_tax_classification_case": ["irpp", "is", "loi de finances", "convention", "cdpf"],
+        "accounting_standards_hierarchy_case": ["loi comptable", "normes comptables", "sct", "nc ", "ias", "ifrs", "cadre conceptuel"],
+    }
+    allowed = allowed_by_workflow.get(workflow)
+    if not allowed:
+        return True
+    return any(term in key for term in allowed)
+
+
+def _sources_tail(answer: str, workflow: str = "") -> str:
     for marker in ["\n## Sources"]:
         idx = answer.find(marker)
         if idx >= 0:
-            return answer[idx:].strip()
+            tail = answer[idx:].strip()
+            lines = tail.splitlines()
+            if not workflow:
+                return tail
+            filtered = [lines[0]]
+            kept_source = False
+            for line in lines[1:]:
+                if _source_allowed(line, workflow):
+                    filtered.append(line)
+                    if _key(line).strip().startswith("-"):
+                        kept_source = True
+            return "\n".join(filtered).strip() if kept_source else ""
     return ""
 
 
@@ -439,11 +556,12 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
             if decision.get("earned_fraction") == "1/12" and decision.get("deferred_fraction") == "11/12":
                 lines.append("Decembre est rendu avant le 31/12: 1/12 en produit 2025; janvier a novembre restent a differer: 11/12 en produit constate d'avance.")
         elif decision.get("service_future_at_closing"):
+            closing_year = decision.get("closing_year") or (facts.get("closing_date").year if facts.get("closing_date") else 2025)
             lines.append("Au 31/12, la prestation n'est pas encore realisee: le produit ne doit pas etre reconnu en chiffre d'affaires de l'exercice clos.")
             if decision.get("deferred_amount") is not None:
-                lines.append(f"Le revenu 2025 est 0 TND; le montant encaisse doit donc etre traite comme produit constate d'avance pour {_format_amount(decision['deferred_amount'])} TND HT, sous reserve du contrat et de la facture.")
+                lines.append(f"Le revenu {closing_year} est 0 TND; le montant encaisse doit donc etre traite comme produit constate d'avance pour {_format_amount(decision['deferred_amount'])} TND HT, sous reserve du contrat et de la facture.")
             else:
-                lines.append("Le revenu 2025 est 0; le montant encaisse doit donc etre traite comme produit constate d'avance, sous reserve des pieces contractuelles.")
+                lines.append(f"Le revenu {closing_year} est 0; le montant encaisse doit donc etre traite comme produit constate d'avance, sous reserve des pieces contractuelles.")
         if decision.get("tva_collection_before_realization"):
             lines.append("La TVA doit etre analysee separement: si l'operation entre dans le champ de la TVA tunisienne, l'encaissement avant realisation peut rendre la TVA exigible sur le montant encaisse.")
         lines.append("Pieces a verifier: contrat, facture, preuve d'encaissement, periode couverte, date de realisation effective, declaration TVA et justification du cut-off.")
@@ -453,6 +571,34 @@ def build_deterministic_answer_block(facts: dict[str, Any], decision: dict[str, 
         lines.append("Pour une prestation de services, si l'encaissement total ou partiel intervient avant la realisation, l'exigibilite TVA doit etre analysee sur le montant encaisse.")
         lines.append("Cette conclusion reste separee de la reconnaissance comptable du produit: la TVA peut devenir exigible avant que le produit soit acquis comptablement.")
         lines.append("Il faut confirmer le champ territorial, la qualite du client, le lieu d'utilisation/exploitation, la facture et la periode declarative.")
+        return "\n".join(lines)
+
+    if workflow == "withholding_tax_classification_case" and decision.get("available"):
+        type_label = {
+            "dividends": "distribution de dividendes ou revenus distribues",
+            "rent": "loyer",
+            "royalties_or_licence": "redevance/licence",
+            "employment_income": "revenu salarial",
+            "service_or_fees": "prestation de services ou honoraires",
+        }.get(str(facts.get("income_type")), "paiement a qualifier")
+        lines.append(f"Le paiement doit d'abord etre classe comme {type_label}; c'est cette qualification qui commande l'analyse de retenue a la source.")
+        if facts.get("payment_amount") is not None:
+            lines.append(f"Le montant donne ({_format_amount(facts.get('payment_amount'))} TND) sert de base de controle, mais le taux ne doit pas etre invente sans passage legal direct.")
+        if decision.get("treaty_check_required"):
+            country = facts.get("beneficiary_country") or "le pays du beneficiaire"
+            lines.append(f"Comme le beneficiaire est non-resident ({country}), il faut verifier le droit interne tunisien puis la convention fiscale applicable avant de conclure sur le taux ou l'exoneration.")
+        else:
+            lines.append("Si le beneficiaire est resident ou non precise, l'analyse reste fondee d'abord sur le droit interne tunisien et la declaration correspondante.")
+        lines.append("Pieces a verifier: contrat, facture, residence fiscale du beneficiaire, nature exacte du revenu, preuve de paiement, declaration et certificat de retenue.")
+        return "\n".join(lines)
+
+    if workflow == "accounting_standards_hierarchy_case" and decision.get("available"):
+        if decision.get("primary_framework") == "IFRS":
+            lines.append("Le contexte IFRS est explicitement mentionne: il faut donc analyser le traitement selon le referentiel IFRS applicable, tout en verifiant les obligations tunisiennes de presentation ou de reporting.")
+        else:
+            lines.append("Pour une societe tunisienne ordinaire, le referentiel de depart est le Systeme Comptable des Entreprises et les Normes Comptables Tunisiennes.")
+            lines.append("IAS/IFRS peuvent servir de reference technique ou comparative, mais ne doivent pas remplacer les normes tunisiennes sauf contexte IFRS explicite.")
+        lines.append("La conclusion doit donc identifier d'abord le referentiel applicable, puis seulement utiliser IAS/IFRS si le dossier le justifie.")
         return "\n".join(lines)
 
     return ""
@@ -509,6 +655,21 @@ def validate_answer_against_decision(answer: str, facts: dict[str, Any], decisio
     if workflow == "tva_operational_case" and decision.get("tva_collection_before_realization"):
         if not ("encaisse" in key_answer and "avant" in key_answer and "exigib" in key_answer):
             errors.append("missing_collection_before_realization_tva_rule")
+
+    if workflow == "withholding_tax_classification_case" and decision.get("available"):
+        if "retenue a la source" not in key_answer:
+            errors.append("missing_withholding_classification")
+        if decision.get("treaty_check_required") and "convention" not in key_answer:
+            errors.append("missing_treaty_check")
+        if re.search(r"\b(5|10|15|20)\s*%", key_answer) and not decision.get("rate_supported"):
+            errors.append("invented_withholding_rate_without_direct_source")
+
+    if workflow == "accounting_standards_hierarchy_case" and decision.get("available"):
+        if decision.get("primary_framework") == "SCT/NC tunisiennes":
+            if not any(term in key_answer for term in ["systeme comptable", "normes comptables tunisiennes", "sct"]):
+                errors.append("missing_tunisian_primary_framework")
+            if re.search(r"ifrs[^.\n]{0,80}(prime|prioritaire|obligatoire)", key_answer) and not facts.get("explicit_ifrs_context"):
+                errors.append("ifrs_wrongly_primary_without_context")
 
     return {
         "pass": not errors,
@@ -568,7 +729,7 @@ def apply_deterministic_kernel(answer: str, query: str, workflow: str) -> tuple[
         trace["consistency"] = initial
         return answer, trace
 
-    tail = _sources_tail(answer)
+    tail = _sources_tail(answer, str(facts.get("workflow") or ""))
     new_answer = f"{block}\n\n{tail}".strip() if tail else block
     mode = "deterministic_compact_answer"
     final = validate_answer_against_decision(new_answer, facts, decision)
