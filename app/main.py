@@ -900,9 +900,6 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": "code_societes_commerciales_2022", "terms": ["fusion", "rapport", "commissaire", "assemblee", "apport"], "min_matches": 2},
             {"doc_id": irpp_is_doc_id, "terms": ["fusion", "scission", "plus-value d'apport", "benefice imposable"], "min_matches": 2},
         ]
-    procedure_rules = tax_procedure_precision_rules(query)
-    if procedure_rules:
-        return procedure_rules
     if is_dividend_tax_case(query):
         rules = [
             {"doc_id": irpp_is_doc_id, "terms": ["article 52", "c bis", "revenus distribues", "10%"], "min_matches": 2},
@@ -929,6 +926,9 @@ def source_precision_rules(message: str) -> list[dict]:
             {"doc_id": "convention_fiscale_applicable", "title": "Convention fiscale applicable et certificat de residence", "missing": True},
             {"doc_id": "loi_comptable", "terms": ["pieces justificatives", "operation", "livres", "comptabilite"], "min_matches": 2},
         ]
+    procedure_rules = tax_procedure_precision_rules(query)
+    if procedure_rules:
+        return procedure_rules
     if is_expense_cutoff_prepaid_case(query):
         return [
             {"doc_id": "nc_01_norme_generale", "terms": ["charges", "rattachement", "exercice", "periodicite"], "min_matches": 2},
@@ -1900,9 +1900,10 @@ def is_expense_cutoff_prepaid_case(query: str) -> bool:
 
 
 def is_nonresident_service_payment_tax_case(query: str) -> bool:
+    query = match_key(query)
     payment_markers = ["paie", "paye", "paiement", "regle", "facture", "honoraires", "consulting", "conseil", "service"]
     nonresident_markers = ["non resident", "non-resident", "etranger", "residence fiscale", "certificat de residence", "sans certificat"]
-    tax_markers = ["retenue", "source", "convention", "deductibilite", "fiscal", "reversement", "declaration"]
+    tax_markers = ["retenue", "source", "convention", "deductibilite", "fiscal", "fiscaux", "controle", "controles", "reversement", "declaration"]
     return (
         any(marker in query for marker in payment_markers)
         and any(marker in query for marker in nonresident_markers)
@@ -5036,10 +5037,10 @@ def fastpath_case_analysis_answer(message: str, intent: str, legal_domain: str, 
                     "- Droit interne: verifier si le paiement entre dans une categorie soumise a retenue a la source en Tunisie, sans inventer de taux sans passage direct.\n"
                     "- Convention fiscale: sans certificat de residence et sans convention applicable identifiee, ne pas appliquer un avantage conventionnel; conserver la conclusion sous reserve.\n"
                     "- Declaration/reversement: si une retenue est applicable, preparer declaration, reversement, certificat de retenue et rapprochement avec le paiement.\n"
-                    "- Deductibilite: verifier contrat, facture, livrables, rapport de mission, preuve de paiement et interet de l'entreprise avant deduction de la charge."
+                    "- Deductibilite: verifier contrat, facture, preuve de service, livrables, rapport de mission, preuve de paiement et interet de l'entreprise avant deduction de la charge."
                 ),
                 "Points de vigilance": (
-                    "- Ne pas router ce cas comme simple charge deductible: le risque principal est la retenue non-resident et la convention.\n"
+                    "- Le risque principal est la retenue non-resident et la convention; l'analyse de deductibilite vient ensuite.\n"
                     "- Ne pas appliquer la convention sans certificat de residence.\n"
                     "- Ne pas qualifier automatiquement un service comme redevance sans analyser contrat, licence, droits transmis et beneficiaire effectif."
                 ),

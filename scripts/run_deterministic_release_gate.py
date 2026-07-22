@@ -80,7 +80,7 @@ def run_static_regressions_direct() -> dict[str, Any]:
         answer, trace = apply_deterministic_kernel(
             make_legacy_answer(),
             case["question"],
-            case.get("expected_workflow") or "",
+            case.get("workflow") or case.get("expected_workflow") or "",
         )
         answer_key = key(answer)
         missing = [item for item in case.get("must_include", []) if key(item) not in answer_key]

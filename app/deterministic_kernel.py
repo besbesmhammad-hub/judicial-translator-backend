@@ -269,8 +269,16 @@ def _extract_period(text: str) -> tuple[date | None, date | None]:
 
 def _detect_workflow(query: str, workflow: str) -> str:
     key = _key(f"{workflow} {query}")
+    if "revenue_cutoff_tva_case" in key:
+        return "revenue_cutoff_tva_case"
     if "expense_cutoff_prepaid_case" in key:
         return "expense_cutoff_prepaid_case"
+    if "sales_cutoff_delivery_case" in key:
+        return "sales_cutoff_delivery_case"
+    if "goods_advance_delivery_case" in key:
+        return "goods_advance_delivery_case"
+    if "fixed_asset_depreciation_case" in key:
+        return "fixed_asset_depreciation_case"
     if (
         any(term in key for term in ["assurance", "charge", "honoraires", "loyer", "abonnement", "facture"])
         and any(term in key for term in ["charge constatee d'avance", "charges constatees d'avance", "cca", "janvier", "2026", "service effectue", "service realise", "couvre"])
